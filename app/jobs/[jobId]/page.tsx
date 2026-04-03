@@ -1,17 +1,17 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
-import { JobWorkflowControls } from '@/components/jobs/job-workflow-controls'
+import { JobStageActionButton } from '@/components/jobs/job-stage-action-button'
 import { getRankedJob } from '@/lib/data/jobs'
+import { requireActiveOperatorSelection } from '@/lib/data/operators'
+import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
 import {
   formatDateLabel,
   formatQueueSegmentLabel,
-  formatRecommendationLabel,
   formatRemoteLabel,
   formatSalaryRange,
   formatScore,
   formatWorkflowLabel,
-  recommendationTone,
 } from '@/lib/jobs/presentation'
 
 export const dynamic = 'force-dynamic'
@@ -22,7 +22,181 @@ interface JobDetailPageProps {
   }>
 }
 
+function getMatchReason(job: QualifiedJobRecord) {
+  const candidates = [...job.fitReasons, ...job.strongReasons, job.queueReason].filter(Boolean)
+
+  return (
+    candidates.find((reason) => {
+      const normalized = reason.toLowerCase()
+      return !normalized.includes('remote-only eligibility') && !normalized.includes('remote region')
+    }) ??
+    candidates[0] ??
+    job.queueReason
+  )
+}
+
+function getRiskReason(job: QualifiedJobRecord) {
+  return job.weakReasons[0] ?? 'No major blockers noted.'
+}
+
+function getLocationDisplay(job: QualifiedJobRecord) {
+  const remoteLabel = formatRemoteLabel(job)
+  const locationLabel = job.locationLabel?.trim()
+
+  if (!locationLabel) {
+    return remoteLabel
+  }
+
+  if (
+    remoteLabel.toLowerCase() === locationLabel.toLowerCase() ||
+    remoteLabel.toLowerCase().includes(locationLabel.toLowerCase())
+  ) {
+    return remoteLabel
+  }
+
+  return `${remoteLabel} · ${locationLabel}`
+}
+
+function getSalarySignal(job: QualifiedJobRecord) {
+  if (job.salaryCurrency && (job.salaryMin || job.salaryMax)) {
+    return formatSalaryRange(job)
+  }
+
+  return 'Estimated market range pending'
+}
+
+function toPlainDescription(value: string) {
+  return value
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&amp;', '&')
+    .replaceAll('&nbsp;', ' ')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#39;', "'")
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function DetailActions({
+  actionsEnabled,
+  job,
+}: {
+  actionsEnabled: boolean
+  job: QualifiedJobRecord
+}) {
+  switch (job.workflowStatus) {
+    case 'new':
+    case 'ranked':
+      return (
+        <div className="stage-actions">
+          <JobStageActionButton
+            canEdit={actionsEnabled}
+            disabledReason="Switch back to the database-backed queue to save jobs."
+            intent="shortlist"
+            jobId={job.id}
+            label="Save"
+            sourceContext="job-detail"
+            variant="primary"
+          />
+          <JobStageActionButton
+            canEdit={actionsEnabled}
+            disabledReason="Switch back to the database-backed queue to skip jobs."
+            intent="dismiss"
+            jobId={job.id}
+            label="Skip"
+            sourceContext="job-detail"
+            variant="secondary"
+          />
+          <a className="button button-ghost button-small" href={job.sourceUrl} rel="noreferrer" target="_blank">
+            Source
+          </a>
+        </div>
+      )
+    case 'shortlisted':
+      return (
+        <div className="stage-actions">
+          <Link className="button button-primary button-small" href={`/jobs/${job.id}/packet`}>
+            Prepare Application
+          </Link>
+          <JobStageActionButton
+            canEdit={actionsEnabled}
+            disabledReason="Switch back to the database-backed queue to remove saved jobs."
+            intent="dismiss"
+            jobId={job.id}
+            label="Remove"
+            sourceContext="job-detail"
+            variant="secondary"
+          />
+          <a className="button button-ghost button-small" href={job.sourceUrl} rel="noreferrer" target="_blank">
+            Source
+          </a>
+        </div>
+      )
+    case 'preparing':
+      return (
+        <div className="stage-actions">
+          <Link className="button button-primary button-small" href={`/jobs/${job.id}/packet`}>
+            Continue Preparation
+          </Link>
+          <JobStageActionButton
+            canEdit={actionsEnabled}
+            disabledReason="Switch back to the database-backed queue to mark jobs ready."
+            jobId={job.id}
+            label="Mark Ready"
+            sourceContext="job-detail"
+            variant="secondary"
+            workflowStatus="ready_to_apply"
+          />
+          <a className="button button-ghost button-small" href={job.sourceUrl} rel="noreferrer" target="_blank">
+            Source
+          </a>
+        </div>
+      )
+    case 'ready_to_apply':
+      return (
+        <div className="stage-actions">
+          <a
+            className="button button-primary button-small"
+            href={job.applicationUrl ?? job.sourceUrl}
+            rel="noreferrer"
+            target="_blank"
+          >
+            Apply
+          </a>
+          <JobStageActionButton
+            canEdit={actionsEnabled}
+            disabledReason="Switch back to the database-backed queue to mark jobs applied."
+            jobId={job.id}
+            label="Mark Applied"
+            sourceContext="job-detail"
+            variant="secondary"
+            workflowStatus="applied"
+          />
+          <Link className="button button-ghost button-small" href={`/jobs/${job.id}/packet`}>
+            Packet
+          </Link>
+        </div>
+      )
+    default:
+      return (
+        <div className="stage-actions">
+          <Link className="button button-secondary button-small" href={`/jobs/${job.id}/packet`}>
+            Packet
+          </Link>
+          <a className="button button-ghost button-small" href={job.sourceUrl} rel="noreferrer" target="_blank">
+            Source
+          </a>
+          <Link className="button button-ghost button-small" href="/dashboard">
+            Back to jobs
+          </Link>
+        </div>
+      )
+  }
+}
+
 export default async function JobDetailPage({ params }: JobDetailPageProps) {
+  await requireActiveOperatorSelection()
   const { jobId } = await params
   const { job, source } = await getRankedJob(jobId)
 
@@ -31,86 +205,117 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
   }
 
   const actionsEnabled = source === 'database'
-  const strongReasons = job.strongReasons.length > 0 ? job.strongReasons : job.fitReasons.slice(0, 3)
-  const weakReasons =
-    job.weakReasons.length > 0
-      ? job.weakReasons
-      : [...job.missingRequirements, ...job.redFlags, ...job.redFlagNotes].slice(0, 3)
 
   return (
     <main className="page-stack">
-      <section className="page-header page-header-split">
+      <section className="page-header flow-header">
         <div className="page-heading">
           <p className="panel-label">{job.companyName}</p>
           <h1>{job.title}</h1>
-          <div className="status-track">
-            <span>{formatRemoteLabel(job)}</span>
-            <span>{formatSalaryRange(job)}</span>
-            <span>{job.seniorityLabel ?? 'seniority pending'}</span>
-            <span>{formatWorkflowLabel(job.workflowStatus)}</span>
+          <p>{job.fitSummary}</p>
+        </div>
+        <div className="flow-snapshot">
+          <div>
+            <span className="panel-label">Queue</span>
+            <strong>{formatQueueSegmentLabel(job.queueSegment)}</strong>
+          </div>
+          <div>
+            <span className="panel-label">Fit / score</span>
+            <strong>
+              {job.roleFit.label} · {formatScore(job.queueScore)}
+            </strong>
+          </div>
+          <div>
+            <span className="panel-label">Status</span>
+            <strong>{formatWorkflowLabel(job.workflowStatus)}</strong>
           </div>
         </div>
-        <div className="header-meta-grid">
-          <article className="header-meta">
-            <p className="panel-label">Queue</p>
-            <p className={`row-tone ${recommendationTone(job.recommendationLevel)}`}>
-              {formatQueueSegmentLabel(job.queueSegment)}
-            </p>
-            <p>Score {formatScore(job.queueScore)}</p>
-          </article>
-          <article className="header-meta">
-            <p className="panel-label">Freshness</p>
-            <p>{job.freshness.label}</p>
-            <p>{formatRecommendationLabel(job.recommendationLevel)}</p>
-          </article>
+      </section>
+
+      <section className="stage-shell">
+        <div className="stage-summary-row">
+          <div className="stage-summary-item">
+            <span className="panel-label">Remote / location</span>
+            <strong>{getLocationDisplay(job)}</strong>
+          </div>
+          <div className="stage-summary-item">
+            <span className="panel-label">Salary</span>
+            <strong>{getSalarySignal(job)}</strong>
+          </div>
+          <div className="stage-summary-item">
+            <span className="panel-label">Posted</span>
+            <strong>{formatDateLabel(job.postedAt)}</strong>
+          </div>
+          <div className="stage-summary-item">
+            <span className="panel-label">Freshness</span>
+            <strong>{job.freshness.label}</strong>
+          </div>
+        </div>
+
+        <DetailActions actionsEnabled={actionsEnabled} job={job} />
+      </section>
+
+      <section className="stage-shell">
+        <div className="detail-pair-grid detail-pair-grid-stack">
+          <div>
+            <p className="panel-label">Why this job</p>
+            <p>{getMatchReason(job)}</p>
+          </div>
+          <div>
+            <p className="panel-label">What weakens it</p>
+            <p>{getRiskReason(job)}</p>
+          </div>
         </div>
       </section>
 
-      <div className="job-row-links">
-        <Link className="button button-secondary" href="/dashboard">
-          Back to jobs
-        </Link>
-        <Link className="button button-secondary" href={`/jobs/${job.id}/packet`}>
-          Packet
-        </Link>
-        <a
-          className="button button-primary"
-          href={job.applicationUrl ?? job.sourceUrl}
-          rel="noreferrer"
-          target="_blank"
-        >
-          Apply
-        </a>
-        <a className="button button-secondary" href={job.sourceUrl} rel="noreferrer" target="_blank">
-          Source
-        </a>
-      </div>
+      <details className="panel disclosure" open>
+        <summary className="disclosure-summary">
+          <div>
+            <p className="panel-label">Review</p>
+            <h2>Fit reasoning</h2>
+          </div>
+        </summary>
+        <div className="disclosure-body">
+          <div className="detail-pair-grid detail-pair-grid-stack">
+            <div>
+              <p className="panel-label">Why it matches</p>
+              <p>{job.fitSummary}</p>
+              <ul className="reason-list">
+                {job.strongReasons.length > 0 ? (
+                  job.strongReasons.map((reason) => <li key={reason}>{reason}</li>)
+                ) : (
+                  <li>{getMatchReason(job)}</li>
+                )}
+              </ul>
+            </div>
+            <div>
+              <p className="panel-label">Risks / gaps</p>
+              <ul className="reason-list">
+                {job.weakReasons.length > 0 ? (
+                  job.weakReasons.map((reason) => <li key={reason}>{reason}</li>)
+                ) : (
+                  <li>{getRiskReason(job)}</li>
+                )}
+                {[...job.missingRequirements, ...job.redFlags, ...job.redFlagNotes]
+                  .slice(0, 4)
+                  .map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </details>
 
-      <section className="panel">
-        <p className="panel-label">Status</p>
-        <h2>Workflow</h2>
-        <JobWorkflowControls
-          canEdit={actionsEnabled}
-          currentStatus={job.workflowStatus}
-          disabledReason="This job is read-only in the fallback feed."
-          jobId={job.id}
-          sourceContext="job-detail"
-        />
-      </section>
-
-      <section className="panel-grid panel-grid-2">
-        <article className="panel">
-          <p className="panel-label">Decision</p>
-          <h2>Record</h2>
+      <details className="panel disclosure">
+        <summary className="disclosure-summary">
+          <div>
+            <p className="panel-label">Qualification</p>
+            <h2>Decision record</h2>
+          </div>
+        </summary>
+        <div className="disclosure-body">
           <ul className="compact-list">
-            <li>
-              <strong>Queue</strong>
-              <span>{formatQueueSegmentLabel(job.queueSegment)}</span>
-            </li>
-            <li>
-              <strong>Posted</strong>
-              <span>{formatDateLabel(job.postedAt)}</span>
-            </li>
             <li>
               <strong>Eligibility</strong>
               <span>{job.eligibility.label}</span>
@@ -118,6 +323,10 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
             <li>
               <strong>Market fit</strong>
               <span>{job.marketFit.label}</span>
+            </li>
+            <li>
+              <strong>Portfolio fit</strong>
+              <span>{job.portfolioFitSignal.label}</span>
             </li>
             <li>
               <strong>Compensation</strong>
@@ -128,89 +337,53 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
               <span>{job.applicationFriction.label}</span>
             </li>
           </ul>
-        </article>
+        </div>
+      </details>
 
-        <article className="panel">
-          <p className="panel-label">Why this queue</p>
-          <h2>Strengths</h2>
-          <p>{job.queueReason}</p>
-          <ul className="reason-list">
-            {strongReasons.map((reason) => (
-              <li key={reason}>{reason}</li>
-            ))}
-          </ul>
-        </article>
+      <details className="panel disclosure">
+        <summary className="disclosure-summary">
+          <div>
+            <p className="panel-label">Role</p>
+            <h2>Description</h2>
+          </div>
+        </summary>
+        <div className="disclosure-body disclosure-body-stack">
+          <p>{toPlainDescription(job.descriptionText)}</p>
 
-        <article className="panel">
-          <p className="panel-label">What weakens it</p>
-          <h2>Weaknesses</h2>
-          <div className="page-stack">
-            <div>
-              <p className="panel-label subtle-label">Current tradeoffs</p>
-              {weakReasons.length > 0 ? (
-                <ul className="reason-list">
-                  {weakReasons.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p>No major blockers noted.</p>
-              )}
+          {job.requirements.length > 0 ? (
+            <div className="detail-group">
+              <strong>Requirements</strong>
+              <ul className="reason-list">
+                {job.requirements.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
             </div>
-            <div>
-              <p className="panel-label subtle-label">Open gaps</p>
-              {job.missingRequirements.length > 0 || job.redFlags.length > 0 || job.redFlagNotes.length > 0 ? (
-                <ul className="reason-list">
-                  {[...job.missingRequirements, ...job.redFlags, ...job.redFlagNotes].map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p>No open gaps noted.</p>
-              )}
+          ) : null}
+
+          {job.preferredQualifications.length > 0 ? (
+            <div className="detail-group">
+              <strong>Preferred qualifications</strong>
+              <ul className="reason-list">
+                {job.preferredQualifications.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
             </div>
-          </div>
-        </article>
-      </section>
+          ) : null}
 
-      <section className="panel">
-        <p className="panel-label">Role detail</p>
-        <h2>Description</h2>
-        <p>{job.descriptionText}</p>
-
-        {job.requirements.length > 0 ? (
-          <div className="detail-group">
-            <strong>Requirements</strong>
-            <ul className="reason-list">
-              {job.requirements.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-
-        {job.preferredQualifications.length > 0 ? (
-          <div className="detail-group">
-            <strong>Preferred qualifications</strong>
-            <ul className="reason-list">
-              {job.preferredQualifications.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-
-        {job.skillsKeywords.length > 0 ? (
-          <div className="detail-group">
-            <strong>Skills</strong>
-            <div className="job-card-tags">
-              {job.skillsKeywords.map((skill) => (
-                <span key={skill}>{skill}</span>
-              ))}
+          {job.skillsKeywords.length > 0 ? (
+            <div className="detail-group">
+              <strong>Skills</strong>
+              <div className="job-card-tags">
+                {job.skillsKeywords.map((skill) => (
+                  <span key={skill}>{skill}</span>
+                ))}
+              </div>
             </div>
-          </div>
-        ) : null}
-      </section>
+          ) : null}
+        </div>
+      </details>
     </main>
   )
 }

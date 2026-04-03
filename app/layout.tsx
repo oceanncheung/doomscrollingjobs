@@ -1,8 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { Suspense } from 'react'
 
+import { WorkspaceHeader } from '@/components/navigation/workspace-header'
 import { site } from '@/lib/config/site'
+import { getRankedJobs } from '@/lib/data/jobs'
+import { getOperatorSessionState } from '@/lib/data/operators'
+import { getDashboardQueues, type QueueView } from '@/lib/jobs/dashboard-queue'
 
 import './globals.css'
 
@@ -14,39 +19,78 @@ export const metadata: Metadata = {
   description: site.description,
 }
 
-const navItems = [
-  { href: '/dashboard', label: 'Jobs' },
-  { href: '/profile', label: 'Profile' },
-]
+function HeaderFallback({
+  counts,
+  operatorLabel,
+}: {
+  counts?: Partial<Record<QueueView, number>>
+  operatorLabel: string
+}) {
+  return (
+    <header className="site-header">
+      <Link className="site-brand" href="/dashboard">
+        <strong>Doom Scrolling Jobs</strong>
+      </Link>
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+      <nav className="site-workflow-nav" aria-label="Queue views">
+        <Link className="site-workflow-link" href="/dashboard">
+          <span>Potential</span>
+          {typeof counts?.potential === 'number' ? (
+            <span className="site-workflow-count">{counts.potential}</span>
+          ) : null}
+        </Link>
+        <Link className="site-workflow-link" href="/dashboard?view=saved">
+          <span>Saved</span>
+          {typeof counts?.saved === 'number' ? (
+            <span className="site-workflow-count">{counts.saved}</span>
+          ) : null}
+        </Link>
+        <Link className="site-workflow-link" href="/dashboard?view=prepared">
+          <span>Prepared</span>
+          {typeof counts?.prepared === 'number' ? (
+            <span className="site-workflow-count">{counts.prepared}</span>
+          ) : null}
+        </Link>
+        <Link className="site-workflow-link" href="/dashboard?view=applied">
+          <span>Applied</span>
+          {typeof counts?.applied === 'number' ? (
+            <span className="site-workflow-count">{counts.applied}</span>
+          ) : null}
+        </Link>
+        <Link className="site-workflow-link" href="/dashboard?view=archive">
+          <span>Archive</span>
+          {typeof counts?.archive === 'number' ? (
+            <span className="site-workflow-count">{counts.archive}</span>
+          ) : null}
+        </Link>
+      </nav>
+
+      <Link className="site-profile-link" href="/profile">
+        <span className="site-profile-label">{operatorLabel}</span>
+        <span aria-hidden="true" className="site-profile-mark" />
+      </Link>
+    </header>
+  )
+}
+
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const session = await getOperatorSessionState()
+  const counts = session.activeOperator
+    ? getDashboardQueues((await getRankedJobs()).jobs).counts
+    : undefined
+  const operatorLabel = session.activeOperator
+    ? session.activeOperator.displayName
+    : session.needsSetup
+      ? 'Create Operator'
+      : 'Choose Operator'
+
   return (
     <html lang="en">
       <body>
         <div className="workspace-shell">
-          <aside className="workspace-sidebar">
-            <Link className="workspace-brand" href="/dashboard">
-              <span className="workspace-brand-mark">DSJ</span>
-              <span className="workspace-brand-copy">
-                <strong>{site.name}</strong>
-                <span>{site.tagline}</span>
-              </span>
-            </Link>
-
-            <nav className="workspace-nav" aria-label="Primary">
-              {navItems.map((item) => (
-                <Link key={item.href} href={item.href}>
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-
-            <div className="workspace-meta">
-              <p>internal workspace</p>
-              <p>remote-only queue</p>
-              <p>manual apply flow</p>
-            </div>
-          </aside>
+          <Suspense fallback={<HeaderFallback counts={counts} operatorLabel={operatorLabel || site.name} />}>
+            <WorkspaceHeader counts={counts} operatorLabel={operatorLabel || site.name} />
+          </Suspense>
 
           <div className="workspace-main">{children}</div>
         </div>

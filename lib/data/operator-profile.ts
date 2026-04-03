@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { defaultOperator } from '@/lib/config/runtime'
+import { getActiveOperatorContext } from '@/lib/data/operators'
 import type {
   OperatorPortfolioItemRecord,
   OperatorProfileRecord,
@@ -294,42 +295,46 @@ export async function getOperatorProfile(): Promise<OperatorProfileResult> {
     }
   }
 
-  const supabase = createClient()
+  const operatorContext = await getActiveOperatorContext()
 
-  const [userResult, profileResult, resumeResult, portfolioResult] = await Promise.all([
-    supabase
-      .from('users')
-      .select('id, email, display_name')
-      .eq('id', defaultOperator.userId)
-      .maybeSingle(),
-    supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('user_id', defaultOperator.userId)
-      .maybeSingle(),
-    supabase
-      .from('resume_master')
-      .select('*')
-      .eq('user_id', defaultOperator.userId)
-      .maybeSingle(),
-    supabase
-      .from('portfolio_items')
-      .select('*')
-      .eq('user_id', defaultOperator.userId)
-      .order('is_primary', { ascending: false })
-      .order('created_at', { ascending: true }),
-  ])
-
-  if (userResult.error || profileResult.error || !profileResult.data) {
+  if (!operatorContext) {
     return {
-      issue:
-        'The internal operator seed is not available in Supabase yet. Apply the migration and seed to persist the profile workspace.',
+      issue: 'Choose an operator before loading the profile workspace.',
       source: 'database-fallback',
       workspace: seededWorkspace,
     }
   }
 
-  const user = userResult.data
+  const supabase = createClient()
+
+  const [profileResult, resumeResult, portfolioResult] = await Promise.all([
+    supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('operator_id', operatorContext.operator.id)
+      .maybeSingle(),
+    supabase
+      .from('resume_master')
+      .select('*')
+      .eq('operator_id', operatorContext.operator.id)
+      .maybeSingle(),
+    supabase
+      .from('portfolio_items')
+      .select('*')
+      .eq('operator_id', operatorContext.operator.id)
+      .order('is_primary', { ascending: false })
+      .order('created_at', { ascending: true }),
+  ])
+
+  if (profileResult.error || !profileResult.data) {
+    return {
+      issue:
+        'The selected operator does not have a persisted workspace yet. Open the operator picker to create one, or apply the latest migration and seed.',
+      source: 'database-fallback',
+      workspace: seededWorkspace,
+    }
+  }
+
   const profile = profileResult.data
   const issues: string[] = []
   const secondaryMarkets = asStringArray(profile.secondary_markets)
@@ -361,10 +366,10 @@ export async function getOperatorProfile(): Promise<OperatorProfileResult> {
     workspace: {
       portfolioItems,
       profile: {
-        userId: user?.id ?? seededProfile.userId,
+        userId: operatorContext.userId,
         profileId: profile.id ?? seededProfile.profileId,
-        displayName: asString(user?.display_name) || seededProfile.displayName,
-        email: asString(user?.email) || seededProfile.email,
+        displayName: operatorContext.operator.displayName || seededProfile.displayName,
+        email: operatorContext.operator.email || seededProfile.email,
         searchBrief: asString(profile.search_brief) || seededProfile.searchBrief,
         headline: asString(profile.headline) || seededProfile.headline,
         locationLabel: asString(profile.location_label),

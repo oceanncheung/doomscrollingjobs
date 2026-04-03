@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { defaultOperator } from '@/lib/config/runtime'
+import { getActiveOperatorContext } from '@/lib/data/operators'
 import { hasSupabaseServerEnv } from '@/lib/env'
 import type {
   ApplicationAnswerRecord,
@@ -479,6 +479,19 @@ export async function getApplicationPacketReview(
     }
   }
 
+  const operatorContext = await getActiveOperatorContext()
+
+  if (!operatorContext) {
+    return {
+      canSave: false,
+      issue: 'Choose an operator before loading saved packet data.',
+      job,
+      packet: generatedPacket,
+      source: 'database-fallback',
+      workspace,
+    }
+  }
+
   const supabase = createClient()
   const { data: packetRow, error: packetError } = await supabase
     .from('application_packets')
@@ -499,7 +512,7 @@ export async function getApplicationPacketReview(
         last_reviewed_at
       `,
     )
-    .eq('user_id', defaultOperator.userId)
+    .eq('operator_id', operatorContext.operator.id)
     .eq('job_id', jobId)
     .maybeSingle()
 

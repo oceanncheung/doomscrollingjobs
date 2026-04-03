@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 
-import { defaultOperator } from '@/lib/config/runtime'
+import { getActiveOperatorContext } from '@/lib/data/operators'
 import type {
   OperatorPortfolioItemRecord,
   ResumeAchievementRecord,
@@ -359,19 +359,35 @@ export async function saveOperatorProfile(
 
   const supabase = createClient()
   const displayName = asOptionalText(formData.get('displayName'))
+  const operatorContext = await getActiveOperatorContext()
+
+  if (!operatorContext || !operatorContext.profileId || !operatorContext.resumeMasterId) {
+    return {
+      message: 'Choose an operator before saving profile changes.',
+      status: 'error',
+    }
+  }
 
   const userPayload = {
     account_status: 'active',
     auth_provider: 'internal',
     display_name: displayName,
-    email: 'internal@doomscrollingjobs.local',
-    id: defaultOperator.userId,
+    email: operatorContext.operator.email,
+    id: operatorContext.userId,
     is_internal: true,
   }
 
+  const operatorPayload = {
+    display_name: displayName ?? operatorContext.operator.displayName,
+    email: operatorContext.operator.email,
+    id: operatorContext.operator.id,
+    slug: operatorContext.operator.slug,
+  }
+
   const profilePayload = {
-    id: defaultOperator.profileId,
-    user_id: defaultOperator.userId,
+    id: operatorContext.profileId,
+    operator_id: operatorContext.operator.id,
+    user_id: operatorContext.userId,
     search_brief: searchBrief,
     headline,
     location_label: asOptionalText(formData.get('locationLabel')) ?? '',
@@ -404,8 +420,9 @@ export async function saveOperatorProfile(
   }
 
   const resumePayload = {
-    id: defaultOperator.resumeMasterId,
-    user_id: defaultOperator.userId,
+    id: operatorContext.resumeMasterId,
+    operator_id: operatorContext.operator.id,
+    user_id: operatorContext.userId,
     base_title: headline,
     summary_text: asOptionalText(formData.get('resumeSummaryText')),
     experience_entries: experienceEntries,
@@ -429,16 +446,18 @@ export async function saveOperatorProfile(
     },
   }
 
-  const [userResult, profileResult, resumeResult] = await Promise.all([
+  const [userResult, operatorResult, profileResult, resumeResult] = await Promise.all([
     supabase.from('users').upsert(userPayload, { onConflict: 'id' }),
+    supabase.from('operators').upsert(operatorPayload, { onConflict: 'id' }),
     supabase.from('user_profiles').upsert(profilePayload, { onConflict: 'id' }),
     supabase.from('resume_master').upsert(resumePayload, { onConflict: 'id' }),
   ])
 
-  if (userResult.error || profileResult.error || resumeResult.error) {
+  if (userResult.error || operatorResult.error || profileResult.error || resumeResult.error) {
     return {
       message:
         userResult.error?.message ??
+        operatorResult.error?.message ??
         profileResult.error?.message ??
         resumeResult.error?.message ??
         'Supabase rejected the profile update.',
@@ -448,7 +467,8 @@ export async function saveOperatorProfile(
 
   const portfolioPayload = portfolioItems.map((item) => ({
     id: item.id,
-    user_id: defaultOperator.userId,
+    operator_id: operatorContext.operator.id,
+    user_id: operatorContext.userId,
     title: item.title,
     slug: toSlug(item.title),
     url: item.url,
@@ -478,7 +498,7 @@ export async function saveOperatorProfile(
     const deleteResult = await supabase
       .from('portfolio_items')
       .delete()
-      .eq('user_id', defaultOperator.userId)
+      .eq('operator_id', operatorContext.operator.id)
       .not('id', 'in', toPostgresInList(portfolioPayload.map((item) => item.id)))
 
     if (deleteResult.error) {
@@ -491,7 +511,7 @@ export async function saveOperatorProfile(
     const deleteResult = await supabase
       .from('portfolio_items')
       .delete()
-      .eq('user_id', defaultOperator.userId)
+      .eq('operator_id', operatorContext.operator.id)
 
     if (deleteResult.error) {
       return {
@@ -506,7 +526,7 @@ export async function saveOperatorProfile(
   revalidatePath('/profile')
 
   return {
-    message: `Internal operator workspace saved with ${experienceEntries.length} experience entries and ${portfolioItems.length} portfolio items.`,
+    message: `${operatorPayload.display_name} workspace saved with ${experienceEntries.length} experience entries and ${portfolioItems.length} portfolio items.`,
     status: 'success',
   }
 }

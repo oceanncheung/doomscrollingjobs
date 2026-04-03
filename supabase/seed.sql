@@ -22,9 +22,28 @@ set
   account_status = excluded.account_status,
   is_internal = excluded.is_internal;
 
+insert into public.operators (
+  id,
+  display_name,
+  email,
+  slug
+)
+values (
+  '11111111-1111-4111-8111-111111111111',
+  'Internal Operator',
+  'internal@doomscrollingjobs.local',
+  'internal-operator'
+)
+on conflict (id) do update
+set
+  display_name = excluded.display_name,
+  email = excluded.email,
+  slug = excluded.slug;
+
 insert into public.user_profiles (
   id,
   user_id,
+  operator_id,
   search_brief,
   headline,
   location_label,
@@ -50,6 +69,7 @@ insert into public.user_profiles (
 )
 values (
   '22222222-2222-4222-8222-222222222222',
+  '11111111-1111-4111-8111-111111111111',
   '11111111-1111-4111-8111-111111111111',
   'Find remote-first design roles that prioritize quality, strong salary, and thoughtful brand, presentation, or campaign work. Designers first, but adjacent creative roles are okay if the fit is genuinely high.',
   'Graphic Designer',
@@ -153,6 +173,42 @@ values
   true
 ),
 (
+  'remotive',
+  'Remotive',
+  'remote_board',
+  'remotive',
+  'https://remotive.com/api/remote-jobs',
+  '{"category":"design"}'::jsonb,
+  true
+),
+(
+  'wellfound',
+  'Wellfound',
+  'remote_board',
+  'wellfound',
+  'https://wellfound.com/role/r/designer?location=remote',
+  '{"role":"designer"}'::jsonb,
+  true
+),
+(
+  'jobspresso',
+  'Jobspresso',
+  'remote_board',
+  'jobspresso',
+  'https://jobspresso.co/jm-ajax/get_listings/?filter_job_type%5B%5D=designer',
+  '{"category":"design"}'::jsonb,
+  true
+),
+(
+  'authentic-jobs',
+  'Authentic Jobs',
+  'remote_board',
+  'authenticjobs',
+  'https://authenticjobs.com/?feed=job_feed',
+  '{"format":"rss"}'::jsonb,
+  true
+),
+(
   'greenhouse-ats',
   'Greenhouse ATS',
   'ats_hosted_job_page',
@@ -172,6 +228,7 @@ set
 
 insert into public.company_watchlist (
   user_id,
+  operator_id,
   source_registry_id,
   company_name,
   company_slug,
@@ -187,6 +244,7 @@ insert into public.company_watchlist (
 values
 (
   '11111111-1111-4111-8111-111111111111',
+  '11111111-1111-4111-8111-111111111111',
   (select id from public.source_registry where slug = 'greenhouse-ats'),
   'Fluxon',
   'fluxon',
@@ -200,6 +258,7 @@ values
   true
 ),
 (
+  '11111111-1111-4111-8111-111111111111',
   '11111111-1111-4111-8111-111111111111',
   (select id from public.source_registry where slug = 'greenhouse-ats'),
   'Metalab',
@@ -215,6 +274,7 @@ values
 ),
 (
   '11111111-1111-4111-8111-111111111111',
+  '11111111-1111-4111-8111-111111111111',
   (select id from public.source_registry where slug = 'greenhouse-ats'),
   'NinjaTrader',
   'ninjatrader',
@@ -228,6 +288,7 @@ values
   true
 ),
 (
+  '11111111-1111-4111-8111-111111111111',
   '11111111-1111-4111-8111-111111111111',
   (select id from public.source_registry where slug = 'greenhouse-ats'),
   'Universal Audio',
@@ -243,6 +304,7 @@ values
 ),
 (
   '11111111-1111-4111-8111-111111111111',
+  '11111111-1111-4111-8111-111111111111',
   (select id from public.source_registry where slug = 'greenhouse-ats'),
   'Flo Health',
   'flohealth',
@@ -257,6 +319,7 @@ values
 ),
 (
   '11111111-1111-4111-8111-111111111111',
+  '11111111-1111-4111-8111-111111111111',
   (select id from public.source_registry where slug = 'greenhouse-ats'),
   'Appspace',
   'appspace',
@@ -269,7 +332,7 @@ values
   '{"regionHint":"Europe"}'::jsonb,
   true
 )
-on conflict (source_key) do update
+on conflict (operator_id, source_key) do update
 set
   source_registry_id = excluded.source_registry_id,
   company_name = excluded.company_name,
@@ -285,6 +348,7 @@ set
 insert into public.resume_master (
   id,
   user_id,
+  operator_id,
   base_title,
   summary_text,
   experience_entries,
@@ -298,6 +362,7 @@ insert into public.resume_master (
 )
 values (
   '33333333-3333-4333-8333-333333333333',
+  '11111111-1111-4111-8111-111111111111',
   '11111111-1111-4111-8111-111111111111',
   'Graphic Designer',
   'Designer focused on brand systems, presentation design, and campaign work for high-quality remote teams.',
@@ -376,6 +441,7 @@ set
 insert into public.portfolio_items (
   id,
   user_id,
+  operator_id,
   title,
   slug,
   url,
@@ -393,6 +459,7 @@ values
 (
   '44444444-4444-4444-8444-444444444444',
   '11111111-1111-4111-8111-111111111111',
+  '11111111-1111-4111-8111-111111111111',
   'Brand System Refresh',
   'brand-system-refresh',
   'https://portfolio.example.com/brand-system-refresh',
@@ -408,6 +475,7 @@ values
 ),
 (
   '55555555-5555-4555-8555-555555555555',
+  '11111111-1111-4111-8111-111111111111',
   '11111111-1111-4111-8111-111111111111',
   'Executive Launch Deck',
   'executive-launch-deck',
@@ -621,6 +689,7 @@ set
 insert into public.job_scores (
   id,
   user_id,
+  operator_id,
   job_id,
   profile_id,
   remote_gate_passed,
@@ -646,6 +715,7 @@ values
 (
   'aaaa1111-1111-4111-8111-111111111111',
   '11111111-1111-4111-8111-111111111111',
+  '11111111-1111-4111-8111-111111111111',
   '66666666-6666-4666-8666-666666666666',
   '22222222-2222-4222-8222-222222222222',
   true,
@@ -669,6 +739,7 @@ values
 ),
 (
   'bbbb2222-2222-4222-8222-222222222222',
+  '11111111-1111-4111-8111-111111111111',
   '11111111-1111-4111-8111-111111111111',
   '77777777-7777-4777-8777-777777777777',
   '22222222-2222-4222-8222-222222222222',
@@ -694,6 +765,7 @@ values
 (
   'cccc3333-3333-4333-8333-333333333333',
   '11111111-1111-4111-8111-111111111111',
+  '11111111-1111-4111-8111-111111111111',
   '88888888-8888-4888-8888-888888888888',
   '22222222-2222-4222-8222-222222222222',
   true,
@@ -718,6 +790,7 @@ values
 (
   'dddd4444-4444-4444-8444-444444444444',
   '11111111-1111-4111-8111-111111111111',
+  '11111111-1111-4111-8111-111111111111',
   '99999999-9999-4999-8999-999999999999',
   '22222222-2222-4222-8222-222222222222',
   true,
@@ -739,7 +812,7 @@ values
   'low',
   '2026-04-01T10:30:00.000Z'::timestamptz
 )
-on conflict (user_id, job_id) do update
+on conflict (operator_id, job_id) do update
 set
   quality_score = excluded.quality_score,
   salary_score = excluded.salary_score,

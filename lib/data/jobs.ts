@@ -1,6 +1,8 @@
 import 'server-only'
 
-import { defaultOperator } from '@/lib/config/runtime'
+import { cache } from 'react'
+
+import { getActiveOperatorContext } from '@/lib/data/operators'
 import { getOperatorProfile } from '@/lib/data/operator-profile'
 import { hasSupabaseServerEnv } from '@/lib/env'
 import type { QualifiedJobRecord, RankedJobRecord } from '@/lib/jobs/contracts'
@@ -13,6 +15,7 @@ import { createClient } from '@/lib/supabase/server'
 type JobsSource = 'seed' | 'database' | 'database-fallback'
 
 export interface RankedJobsResult {
+  candidatePoolCount: number
   issue?: string
   jobs: QualifiedJobRecord[]
   source: JobsSource
@@ -403,18 +406,31 @@ function normalizeRankedJob(value: unknown): RankedJobRecord | null {
   }
 }
 
-export async function getRankedJobs(): Promise<RankedJobsResult> {
+export const getRankedJobs = cache(async function getRankedJobs(): Promise<RankedJobsResult> {
   const { workspace } = await getOperatorProfile()
 
   if (!hasSupabaseServerEnv()) {
+    const learnedJobs = await applyWorkflowLearning(seededJobs)
+
     return {
+      candidatePoolCount: learnedJobs.length,
       issue:
         'Supabase server environment variables are not configured yet, so the jobs dashboard is showing seeded fallback listings.',
-      jobs: applyQualificationEngine(
-        dedupeRankedJobs(applyWorkflowLearning(seededJobs)),
-        workspace.profile,
-      ),
+      jobs: applyQualificationEngine(dedupeRankedJobs(learnedJobs), workspace.profile),
       source: 'seed',
+    }
+  }
+
+  const operatorContext = await getActiveOperatorContext()
+
+  if (!operatorContext) {
+    const learnedJobs = await applyWorkflowLearning(seededJobs)
+
+    return {
+      candidatePoolCount: learnedJobs.length,
+      issue: 'Choose an operator before loading the ranked jobs queue.',
+      jobs: applyQualificationEngine(dedupeRankedJobs(learnedJobs), workspace.profile),
+      source: 'database-fallback',
     }
   }
 
@@ -474,19 +490,19 @@ export async function getRankedJobs(): Promise<RankedJobsResult> {
         )
       `,
     )
-    .eq('user_id', defaultOperator.userId)
+    .eq('operator_id', operatorContext.operator.id)
     .eq('remote_gate_passed', true)
     .order('total_score', { ascending: false })
 
   if (error || !data || data.length === 0) {
+    const learnedJobs = await applyWorkflowLearning(seededJobs, operatorContext.operator.id)
+
     return {
+      candidatePoolCount: learnedJobs.length,
       issue:
         importResult.issue ??
         'No persisted job scores were found yet, so the dashboard is using the seeded ranked-job fallback set.',
-      jobs: applyQualificationEngine(
-        dedupeRankedJobs(applyWorkflowLearning(seededJobs)),
-        workspace.profile,
-      ),
+      jobs: applyQualificationEngine(dedupeRankedJobs(learnedJobs), workspace.profile),
       source: 'database-fallback',
     }
   }
@@ -498,14 +514,14 @@ export async function getRankedJobs(): Promise<RankedJobsResult> {
   )
 
   if (jobs.length === 0) {
+    const learnedJobs = await applyWorkflowLearning(seededJobs, operatorContext.operator.id)
+
     return {
+      candidatePoolCount: learnedJobs.length,
       issue:
         importResult.issue ??
         'Job scores were loaded, but the joined job records were incomplete. The dashboard is falling back to the seeded ranked set.',
-      jobs: applyQualificationEngine(
-        dedupeRankedJobs(applyWorkflowLearning(seededJobs)),
-        workspace.profile,
-      ),
+      jobs: applyQualificationEngine(dedupeRankedJobs(learnedJobs), workspace.profile),
       source: 'database-fallback',
     }
   }
@@ -513,32 +529,31 @@ export async function getRankedJobs(): Promise<RankedJobsResult> {
   const importedJobs = jobs.filter((job) => isImportedSourceName(job.sourceName))
 
   if (importedJobs.length > 0) {
+    const learnedJobs = await applyWorkflowLearning(importedJobs, operatorContext.operator.id)
     const diagnosticsSummary = summarizeSourceDiagnostics(importResult.sourceDiagnostics ?? [])
 
     return {
+      candidatePoolCount: learnedJobs.length,
       issue:
         importResult.importedCount > 0
           ? `Imported ${importResult.importedCount} jobs into the primary ranked feed.${diagnosticsSummary ? ` ${diagnosticsSummary}.` : ''}`
           : undefined,
-      jobs: applyQualificationEngine(
-        dedupeRankedJobs(applyWorkflowLearning(importedJobs)),
-        workspace.profile,
-      ),
+      jobs: applyQualificationEngine(dedupeRankedJobs(learnedJobs), workspace.profile),
       source: 'database',
     }
   }
 
+  const learnedJobs = await applyWorkflowLearning(jobs, operatorContext.operator.id)
+
   return {
+    candidatePoolCount: learnedJobs.length,
     issue:
       importResult.issue ??
       'Imported-source jobs are not available yet, so the database-backed feed is still showing the existing seeded demo records.',
-    jobs: applyQualificationEngine(
-      dedupeRankedJobs(applyWorkflowLearning(jobs)),
-      workspace.profile,
-    ),
+    jobs: applyQualificationEngine(dedupeRankedJobs(learnedJobs), workspace.profile),
     source: 'database-fallback',
   }
-}
+})
 
 export async function getRankedJob(jobId: string) {
   const { issue, jobs, source } = await getRankedJobs()

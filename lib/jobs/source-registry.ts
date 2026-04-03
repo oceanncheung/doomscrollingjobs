@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { defaultOperator } from '@/lib/config/runtime'
+import { getActiveOperatorContext } from '@/lib/data/operators'
 import type { JobSourceKind, SourceDiagnostics } from '@/lib/jobs/contracts'
 import { createClient } from '@/lib/supabase/server'
 
@@ -32,6 +32,46 @@ const defaultSourceRegistry: SourceRegistryEntry[] = [
     metadata: {},
     provider: 'remoteok',
     slug: 'remote-ok',
+    sourceKind: 'remote_board',
+  },
+  {
+    baseUrl: 'https://remotive.com/api/remote-jobs',
+    displayName: 'Remotive',
+    metadata: {
+      category: 'design',
+    },
+    provider: 'remotive',
+    slug: 'remotive',
+    sourceKind: 'remote_board',
+  },
+  {
+    baseUrl: 'https://wellfound.com/role/r/designer?location=remote',
+    displayName: 'Wellfound',
+    metadata: {
+      role: 'designer',
+    },
+    provider: 'wellfound',
+    slug: 'wellfound',
+    sourceKind: 'remote_board',
+  },
+  {
+    baseUrl: 'https://jobspresso.co/jm-ajax/get_listings/?filter_job_type%5B%5D=designer',
+    displayName: 'Jobspresso',
+    metadata: {
+      category: 'design',
+    },
+    provider: 'jobspresso',
+    slug: 'jobspresso',
+    sourceKind: 'remote_board',
+  },
+  {
+    baseUrl: 'https://authenticjobs.com/?feed=job_feed',
+    displayName: 'Authentic Jobs',
+    metadata: {
+      format: 'rss',
+    },
+    provider: 'authenticjobs',
+    slug: 'authentic-jobs',
     sourceKind: 'remote_board',
   },
   {
@@ -255,6 +295,12 @@ export async function getSourceRegistry() {
 
 export async function getCompanyWatchlist() {
   try {
+    const operatorContext = await getActiveOperatorContext()
+
+    if (!operatorContext) {
+      return defaultCompanyWatchlist
+    }
+
     const supabase = createClient()
     const { data, error } = await supabase
       .from('company_watchlist')
@@ -273,7 +319,7 @@ export async function getCompanyWatchlist() {
           )
         `,
       )
-      .eq('user_id', defaultOperator.userId)
+      .eq('operator_id', operatorContext.operator.id)
       .eq('is_active', true)
       .order('priority', { ascending: true })
 
@@ -307,8 +353,16 @@ export function isImportedSourceName(sourceName: string) {
   return !seededDemoSourceNames.has(sourceName)
 }
 
-export function getImportedSourceNames(watchlist: CompanyWatchlistEntry[]) {
-  return new Set(['Remote OK', ...watchlist.map((entry) => entry.sourceName)])
+export function getImportedSourceNames(
+  registry: SourceRegistryEntry[],
+  watchlist: CompanyWatchlistEntry[],
+) {
+  return new Set([
+    ...registry
+      .filter((entry) => entry.sourceKind === 'remote_board' || entry.sourceKind === 'company_career_page')
+      .map((entry) => entry.displayName),
+    ...watchlist.map((entry) => entry.sourceName),
+  ])
 }
 
 export async function saveSourceDiagnostics(diagnostics: SourceDiagnostics[]) {

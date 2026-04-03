@@ -103,17 +103,19 @@ function AddRowButton({
 
 function DisclosureSection({
   children,
+  defaultOpen = false,
   label,
   meta,
   title,
 }: {
   children: ReactNode
+  defaultOpen?: boolean
   label: string
   meta?: string
   title: string
 }) {
   return (
-    <details className="panel disclosure">
+    <details className="panel disclosure" open={defaultOpen}>
       <summary className="disclosure-summary">
         <div>
           <p className="panel-label">{label}</p>
@@ -147,46 +149,93 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
 
   return (
     <form action={formAction} className="profile-form">
-      <section className="panel">
-        <p className="panel-label">Search brief</p>
-        <h2>Search brief</h2>
-        <label className="field">
-          <span>What should the queue prioritize?</span>
-          <textarea
-            defaultValue={workspace.profile.searchBrief}
-            name="searchBrief"
-            rows={7}
-          />
-          <small>
-            Write this like a direct note: target roles, salary, remote rules, industries, and
-            hard no&apos;s.
-          </small>
-        </label>
+      <section className="panel settings-section" id="source-files">
+        <div className="settings-section-header">
+          <div>
+            <p className="panel-label">Source files</p>
+            <h2>Keep the core source material current.</h2>
+          </div>
+          <p className="settings-section-note">
+            Resume source and portfolio links stay visible here so the queue and prep workspace can
+            update without digging through the full form.
+          </p>
+        </div>
+
+        <div className="settings-source-grid">
+          <div className="settings-source-primary">
+            <label className="field">
+              <span>Resume source</span>
+              <textarea
+                defaultValue={workspace.resumeMaster.summaryText}
+                name="resumeSummaryText"
+                rows={8}
+              />
+              <small>Use this as the base summary the packet workspace tailors per role.</small>
+            </label>
+          </div>
+
+          <div className="settings-source-secondary">
+            <label className="field">
+              <span>Portfolio primary URL</span>
+              <input
+                defaultValue={workspace.profile.portfolioPrimaryUrl}
+                name="portfolioPrimaryUrl"
+                type="url"
+              />
+            </label>
+            <label className="field">
+              <span>LinkedIn URL</span>
+              <input defaultValue={workspace.profile.linkedinUrl} name="linkedinUrl" type="url" />
+            </label>
+            <label className="field">
+              <span>Personal site URL</span>
+              <input
+                defaultValue={workspace.profile.personalSiteUrl}
+                name="personalSiteUrl"
+                type="url"
+              />
+            </label>
+          </div>
+
+          <div className="settings-source-note">
+            <p className="panel-label">Cover letter</p>
+            <h3>Prepared per job</h3>
+            <p>
+              Cover letters stay inside packet prep, so the settings page only needs the core
+              resume and portfolio source.
+            </p>
+            <a className="button button-secondary button-small" href="/dashboard?view=prepared">
+              Open prepared queue
+            </a>
+          </div>
+        </div>
       </section>
 
-      <section className="panel">
-        <p className="panel-label">Operator identity</p>
-        <h2>Identity</h2>
-        <div className="field-grid field-grid-2">
-          <label className="field">
-            <span>Display name</span>
-            <input defaultValue={workspace.profile.displayName} name="displayName" type="text" />
+      <section className="panel settings-section">
+        <div className="settings-section-header">
+          <div>
+            <p className="panel-label">What I&apos;m looking for</p>
+            <h2>Shape the queue around the work you actually want.</h2>
+          </div>
+        </div>
+
+        <div className="settings-core-grid">
+          <label className="field settings-field-wide">
+            <span>Queue brief</span>
+            <textarea
+              defaultValue={workspace.profile.searchBrief}
+              name="searchBrief"
+              rows={7}
+            />
+            <small>
+              Write this like a direct note: target roles, salary, remote rules, industries, and
+              hard no&apos;s.
+            </small>
           </label>
-          <label className="field">
-            <span>Internal account</span>
-            <input defaultValue={workspace.profile.email} disabled readOnly type="email" />
-          </label>
+
           <label className="field">
             <span>Headline</span>
             <input defaultValue={workspace.profile.headline} name="headline" required type="text" />
-          </label>
-          <label className="field">
-            <span>Seniority level</span>
-            <input
-              defaultValue={workspace.profile.seniorityLevel}
-              name="seniorityLevel"
-              type="text"
-            />
           </label>
           <label className="field">
             <span>Location label</span>
@@ -194,33 +243,6 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
               defaultValue={workspace.profile.locationLabel}
               name="locationLabel"
               type="text"
-            />
-          </label>
-          <label className="field">
-            <span>Timezone</span>
-            <input defaultValue={workspace.profile.timezone} name="timezone" type="text" />
-          </label>
-        </div>
-      </section>
-
-      <section className="panel">
-        <p className="panel-label">Ranking preferences</p>
-        <h2>Queue rules</h2>
-        <div className="field-grid field-grid-2">
-          <label className="field checkbox-field">
-            <span>Remote required</span>
-            <input
-              defaultChecked={workspace.profile.remoteRequired}
-              name="remoteRequired"
-              type="checkbox"
-            />
-          </label>
-          <label className="field checkbox-field">
-            <span>Open to relocation</span>
-            <input
-              defaultChecked={workspace.profile.relocationOpen}
-              name="relocationOpen"
-              type="checkbox"
             />
           </label>
           <label className="field">
@@ -232,43 +254,11 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
             />
           </label>
           <label className="field">
-            <span>Secondary markets</span>
-            <textarea
-              defaultValue={toTextAreaValue(workspace.profile.secondaryMarkets)}
-              name="secondaryMarkets"
-              rows={4}
-            />
-          </label>
-          <label className="field">
-            <span>Allowed remote regions</span>
-            <textarea
-              defaultValue={toTextAreaValue(workspace.profile.allowedRemoteRegions)}
-              name="allowedRemoteRegions"
-              rows={4}
-            />
-          </label>
-          <label className="field">
-            <span>Timezone tolerance (hours)</span>
+            <span>Seniority level</span>
             <input
-              defaultValue={workspace.profile.timezoneToleranceHours}
-              name="timezoneToleranceHours"
-              type="number"
-            />
-          </label>
-          <label className="field">
-            <span>Salary currency</span>
-            <input
-              defaultValue={workspace.profile.salaryFloorCurrency}
-              name="salaryFloorCurrency"
+              defaultValue={workspace.profile.seniorityLevel}
+              name="seniorityLevel"
               type="text"
-            />
-          </label>
-          <label className="field">
-            <span>Salary floor</span>
-            <input
-              defaultValue={workspace.profile.salaryFloorAmount}
-              name="salaryFloorAmount"
-              type="number"
             />
           </label>
           <label className="field">
@@ -287,57 +277,50 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
               type="number"
             />
           </label>
-        </div>
-        <div className="field-grid field-grid-2">
-          <label className="field">
+
+          <label className="field settings-field-wide">
             <span>Target roles</span>
             <textarea
               defaultValue={toTextAreaValue(workspace.profile.targetRoles)}
               name="targetRoles"
-              rows={6}
+              rows={5}
             />
           </label>
-          <label className="field">
+          <label className="field settings-field-wide">
             <span>Allowed adjacent roles</span>
             <textarea
               defaultValue={toTextAreaValue(workspace.profile.allowedAdjacentRoles)}
               name="allowedAdjacentRoles"
-              rows={6}
-            />
-          </label>
-        </div>
-        <div className="field-grid field-grid-2">
-          <label className="field">
-            <span>Preferred industries</span>
-            <textarea
-              defaultValue={toTextAreaValue(workspace.profile.industriesPreferred)}
-              name="industriesPreferred"
-              rows={5}
-            />
-          </label>
-          <label className="field">
-            <span>Industries to avoid</span>
-            <textarea
-              defaultValue={toTextAreaValue(workspace.profile.industriesAvoid)}
-              name="industriesAvoid"
               rows={5}
             />
           </label>
         </div>
-        <label className="field">
-          <span>Work authorization notes</span>
-          <textarea
-            defaultValue={workspace.profile.workAuthorizationNotes}
-            name="workAuthorizationNotes"
-            rows={4}
-          />
-        </label>
+
+        <div className="settings-toggle-row">
+          <label className="field checkbox-field">
+            <span>Remote required</span>
+            <input
+              defaultChecked={workspace.profile.remoteRequired}
+              name="remoteRequired"
+              type="checkbox"
+            />
+          </label>
+          <label className="field checkbox-field">
+            <span>Open to relocation</span>
+            <input
+              defaultChecked={workspace.profile.relocationOpen}
+              name="relocationOpen"
+              type="checkbox"
+            />
+          </label>
+        </div>
       </section>
 
       <DisclosureSection
-        label="Skills and links"
+        defaultOpen={false}
+        label="Auto-derived signals"
         meta="collapsed"
-        title="Supporting info"
+        title="Review the source libraries when you need to."
       >
         <div className="field-grid field-grid-2">
           <label className="field">
@@ -357,55 +340,6 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
             />
           </label>
           <label className="field">
-            <span>Portfolio primary URL</span>
-            <input
-              defaultValue={workspace.profile.portfolioPrimaryUrl}
-              name="portfolioPrimaryUrl"
-              type="url"
-            />
-          </label>
-          <label className="field">
-            <span>LinkedIn URL</span>
-            <input defaultValue={workspace.profile.linkedinUrl} name="linkedinUrl" type="url" />
-          </label>
-          <label className="field">
-            <span>Personal site URL</span>
-            <input
-              defaultValue={workspace.profile.personalSiteUrl}
-              name="personalSiteUrl"
-              type="url"
-            />
-          </label>
-        </div>
-        <label className="field">
-          <span>Professional summary</span>
-          <textarea defaultValue={workspace.profile.bioSummary} name="bioSummary" rows={6} />
-        </label>
-        <label className="field">
-          <span>Preferences notes</span>
-          <textarea
-            defaultValue={workspace.profile.preferencesNotes}
-            name="preferencesNotes"
-            rows={5}
-          />
-        </label>
-      </DisclosureSection>
-
-      <DisclosureSection
-        label="Resume master"
-        meta={`${workspace.resumeMaster.skillsSection.length} skills`}
-        title="Resume source"
-      >
-        <label className="field">
-          <span>Resume summary</span>
-          <textarea
-            defaultValue={workspace.resumeMaster.summaryText}
-            name="resumeSummaryText"
-            rows={5}
-          />
-        </label>
-        <div className="field-grid field-grid-2">
-          <label className="field">
             <span>Resume skills section</span>
             <textarea
               defaultValue={toTextAreaValue(workspace.resumeMaster.skillsSection)}
@@ -422,44 +356,51 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
             />
           </label>
         </div>
-      </DisclosureSection>
 
-      <DisclosureSection
-        label="Experience history"
-        meta={`${experienceEntries.length} entries`}
-        title="Experience"
-      >
-        <div className="section-header">
-          <AddRowButton
-            label="Add experience"
-            onClick={() => {
-              setExperienceEntries((current) => [...current, createExperienceEntry()])
-            }}
-          />
-        </div>
-        <div className="repeat-list">
-          {experienceEntries.map((entry, index) => (
-            <article className="repeat-card" key={`${entry.companyName}-${entry.roleTitle}-${index}`}>
-              <div className="repeat-card-header">
-                <strong>Experience {index + 1}</strong>
-                {experienceEntries.length > 1 ? (
-                  <button
-                    className="button button-ghost button-small"
-                    onClick={() => {
-                      setExperienceEntries((current) =>
-                        current.filter((_, itemIndex) => itemIndex !== index),
-                      )
-                    }}
-                    type="button"
-                  >
-                    Remove
-                  </button>
-                ) : null}
-              </div>
-              <div className="field-grid field-grid-2">
-                <label className="field">
-                  <span>Role title</span>
-                  <input
+        <label className="field">
+          <span>Professional summary</span>
+          <textarea defaultValue={workspace.profile.bioSummary} name="bioSummary" rows={6} />
+        </label>
+
+        <DisclosureSection
+          label="Experience history"
+          meta={`${experienceEntries.length} entries`}
+          title="Experience"
+        >
+          <div className="section-header">
+            <AddRowButton
+              label="Add experience"
+              onClick={() => {
+                setExperienceEntries((current) => [...current, createExperienceEntry()])
+              }}
+            />
+          </div>
+          <div className="repeat-list">
+            {experienceEntries.map((entry, index) => (
+              <article
+                className="repeat-card"
+                key={`${entry.companyName}-${entry.roleTitle}-${index}`}
+              >
+                <div className="repeat-card-header">
+                  <strong>Experience {index + 1}</strong>
+                  {experienceEntries.length > 1 ? (
+                    <button
+                      className="button button-ghost button-small"
+                      onClick={() => {
+                        setExperienceEntries((current) =>
+                          current.filter((_, itemIndex) => itemIndex !== index),
+                        )
+                      }}
+                      type="button"
+                    >
+                      Remove
+                    </button>
+                  ) : null}
+                </div>
+                <div className="field-grid field-grid-2">
+                  <label className="field">
+                    <span>Role title</span>
+                    <input
                     name="experienceRoleTitle"
                     onChange={(event) => {
                       setExperienceEntries((current) =>
@@ -553,152 +494,161 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
                     )
                   }}
                   rows={5}
-                  value={entry.summary}
-                />
-              </label>
-              <label className="field">
-                <span>Highlights</span>
-                <textarea
-                  name="experienceHighlights"
-                  onChange={(event) => {
-                    setExperienceEntries((current) =>
-                      current.map((item, itemIndex) =>
-                        itemIndex === index
-                          ? { ...item, highlights: event.target.value.split('\n').map((line) => line.trim()).filter(Boolean) }
-                          : item,
-                      ),
-                    )
-                  }}
-                  rows={5}
-                  value={toTextAreaValue(entry.highlights)}
-                />
-                <small>One bullet per line.</small>
-              </label>
-            </article>
-          ))}
-        </div>
-      </DisclosureSection>
-
-      <DisclosureSection
-        label="Achievement bank"
-        meta={`${achievementBank.length} entries`}
-        title="Achievements"
-      >
-        <div className="section-header">
-          <AddRowButton
-            label="Add achievement"
-            onClick={() => {
-              setAchievementBank((current) => [...current, createAchievementEntry()])
-            }}
-          />
-        </div>
-        <div className="repeat-list">
-          {achievementBank.map((achievement, index) => (
-            <article className="repeat-card" key={`${achievement.title}-${index}`}>
-              <div className="repeat-card-header">
-                <strong>Achievement {index + 1}</strong>
-                {achievementBank.length > 1 ? (
-                  <button
-                    className="button button-ghost button-small"
-                    onClick={() => {
-                      setAchievementBank((current) =>
-                        current.filter((_, itemIndex) => itemIndex !== index),
-                      )
-                    }}
-                    type="button"
-                  >
-                    Remove
-                  </button>
-                ) : null}
-              </div>
-              <div className="field-grid field-grid-2">
-                <label className="field">
-                  <span>Category</span>
-                  <input
-                    name="achievementCategory"
-                    onChange={(event) => {
-                      setAchievementBank((current) =>
-                        current.map((item, itemIndex) =>
-                          itemIndex === index ? { ...item, category: event.target.value } : item,
-                        ),
-                      )
-                    }}
-                    type="text"
-                    value={achievement.category}
+                    value={entry.summary}
                   />
                 </label>
                 <label className="field">
-                  <span>Title</span>
-                  <input
-                    name="achievementTitle"
+                  <span>Highlights</span>
+                  <textarea
+                    name="experienceHighlights"
                     onChange={(event) => {
-                      setAchievementBank((current) =>
+                      setExperienceEntries((current) =>
                         current.map((item, itemIndex) =>
-                          itemIndex === index ? { ...item, title: event.target.value } : item,
+                          itemIndex === index
+                            ? {
+                                ...item,
+                                highlights: event.target.value
+                                  .split('\n')
+                                  .map((line) => line.trim())
+                                  .filter(Boolean),
+                              }
+                            : item,
                         ),
                       )
                     }}
-                    type="text"
-                    value={achievement.title}
+                    rows={5}
+                    value={toTextAreaValue(entry.highlights)}
                   />
+                  <small>One bullet per line.</small>
                 </label>
-              </div>
-              <label className="field">
-                <span>Detail</span>
-                <textarea
-                  name="achievementDetail"
-                  onChange={(event) => {
-                    setAchievementBank((current) =>
-                      current.map((item, itemIndex) =>
-                        itemIndex === index ? { ...item, detail: event.target.value } : item,
-                      ),
-                    )
-                  }}
-                  rows={4}
-                  value={achievement.detail}
-                />
-              </label>
-            </article>
-          ))}
-        </div>
-      </DisclosureSection>
+              </article>
+            ))}
+          </div>
+        </DisclosureSection>
 
-      <DisclosureSection
-        label="Education"
-        meta={`${educationEntries.length} entries`}
-        title="Education"
-      >
-        <div className="section-header">
-          <AddRowButton
-            label="Add education"
-            onClick={() => {
-              setEducationEntries((current) => [...current, createEducationEntry()])
-            }}
-          />
-        </div>
-        <div className="repeat-list">
-          {educationEntries.map((entry, index) => (
-            <article className="repeat-card" key={`${entry.schoolName}-${entry.credential}-${index}`}>
-              <div className="repeat-card-header">
-                <strong>Education {index + 1}</strong>
-                {educationEntries.length > 1 ? (
-                  <button
-                    className="button button-ghost button-small"
-                    onClick={() => {
-                      setEducationEntries((current) =>
-                        current.filter((_, itemIndex) => itemIndex !== index),
+        <DisclosureSection
+          label="Achievement bank"
+          meta={`${achievementBank.length} entries`}
+          title="Achievements"
+        >
+          <div className="section-header">
+            <AddRowButton
+              label="Add achievement"
+              onClick={() => {
+                setAchievementBank((current) => [...current, createAchievementEntry()])
+              }}
+            />
+          </div>
+          <div className="repeat-list">
+            {achievementBank.map((achievement, index) => (
+              <article className="repeat-card" key={`${achievement.title}-${index}`}>
+                <div className="repeat-card-header">
+                  <strong>Achievement {index + 1}</strong>
+                  {achievementBank.length > 1 ? (
+                    <button
+                      className="button button-ghost button-small"
+                      onClick={() => {
+                        setAchievementBank((current) =>
+                          current.filter((_, itemIndex) => itemIndex !== index),
+                        )
+                      }}
+                      type="button"
+                    >
+                      Remove
+                    </button>
+                  ) : null}
+                </div>
+                <div className="field-grid field-grid-2">
+                  <label className="field">
+                    <span>Category</span>
+                    <input
+                      name="achievementCategory"
+                      onChange={(event) => {
+                        setAchievementBank((current) =>
+                          current.map((item, itemIndex) =>
+                            itemIndex === index ? { ...item, category: event.target.value } : item,
+                          ),
+                        )
+                      }}
+                      type="text"
+                      value={achievement.category}
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Title</span>
+                    <input
+                      name="achievementTitle"
+                      onChange={(event) => {
+                        setAchievementBank((current) =>
+                          current.map((item, itemIndex) =>
+                            itemIndex === index ? { ...item, title: event.target.value } : item,
+                          ),
+                        )
+                      }}
+                      type="text"
+                      value={achievement.title}
+                    />
+                  </label>
+                </div>
+                <label className="field">
+                  <span>Detail</span>
+                  <textarea
+                    name="achievementDetail"
+                    onChange={(event) => {
+                      setAchievementBank((current) =>
+                        current.map((item, itemIndex) =>
+                          itemIndex === index ? { ...item, detail: event.target.value } : item,
+                        ),
                       )
                     }}
-                    type="button"
-                  >
-                    Remove
-                  </button>
-                ) : null}
-              </div>
-              <div className="field-grid field-grid-2">
-                <label className="field">
-                  <span>School name</span>
-                  <input
+                    rows={4}
+                    value={achievement.detail}
+                  />
+                </label>
+              </article>
+            ))}
+          </div>
+        </DisclosureSection>
+
+        <DisclosureSection
+          label="Education"
+          meta={`${educationEntries.length} entries`}
+          title="Education"
+        >
+          <div className="section-header">
+            <AddRowButton
+              label="Add education"
+              onClick={() => {
+                setEducationEntries((current) => [...current, createEducationEntry()])
+              }}
+            />
+          </div>
+          <div className="repeat-list">
+            {educationEntries.map((entry, index) => (
+              <article
+                className="repeat-card"
+                key={`${entry.schoolName}-${entry.credential}-${index}`}
+              >
+                <div className="repeat-card-header">
+                  <strong>Education {index + 1}</strong>
+                  {educationEntries.length > 1 ? (
+                    <button
+                      className="button button-ghost button-small"
+                      onClick={() => {
+                        setEducationEntries((current) =>
+                          current.filter((_, itemIndex) => itemIndex !== index),
+                        )
+                      }}
+                      type="button"
+                    >
+                      Remove
+                    </button>
+                  ) : null}
+                </div>
+                <div className="field-grid field-grid-2">
+                  <label className="field">
+                    <span>School name</span>
+                    <input
                     name="educationSchoolName"
                     onChange={(event) => {
                       setEducationEntries((current) =>
@@ -786,51 +736,51 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
                     )
                   }}
                   rows={4}
-                  value={entry.notes}
-                />
-              </label>
-            </article>
-          ))}
-        </div>
-      </DisclosureSection>
+                    value={entry.notes}
+                  />
+                </label>
+              </article>
+            ))}
+          </div>
+        </DisclosureSection>
 
-      <DisclosureSection
-        label="Portfolio library"
-        meta={`${portfolioItems.length} items`}
-        title="Portfolio"
-      >
-        <div className="section-header">
-          <AddRowButton
-            label="Add portfolio item"
-            onClick={() => {
-              setPortfolioItems((current) => [...current, createPortfolioItem()])
-            }}
-          />
-        </div>
-        <div className="repeat-list">
-          {portfolioItems.map((item, index) => (
-            <article className="repeat-card" key={item.id}>
-              <input name="portfolioItemId" type="hidden" value={item.id} />
-              <div className="repeat-card-header">
-                <strong>Portfolio item {index + 1}</strong>
-                {portfolioItems.length > 1 ? (
-                  <button
-                    className="button button-ghost button-small"
-                    onClick={() => {
-                      setPortfolioItems((current) =>
-                        current.filter((portfolioItem) => portfolioItem.id !== item.id),
-                      )
-                    }}
-                    type="button"
-                  >
-                    Remove
-                  </button>
-                ) : null}
-              </div>
-              <div className="field-grid field-grid-2">
-                <label className="field">
-                  <span>Title</span>
-                  <input
+        <DisclosureSection
+          label="Portfolio library"
+          meta={`${portfolioItems.length} items`}
+          title="Portfolio"
+        >
+          <div className="section-header">
+            <AddRowButton
+              label="Add portfolio item"
+              onClick={() => {
+                setPortfolioItems((current) => [...current, createPortfolioItem()])
+              }}
+            />
+          </div>
+          <div className="repeat-list">
+            {portfolioItems.map((item, index) => (
+              <article className="repeat-card" key={item.id}>
+                <input name="portfolioItemId" type="hidden" value={item.id} />
+                <div className="repeat-card-header">
+                  <strong>Portfolio item {index + 1}</strong>
+                  {portfolioItems.length > 1 ? (
+                    <button
+                      className="button button-ghost button-small"
+                      onClick={() => {
+                        setPortfolioItems((current) =>
+                          current.filter((portfolioItem) => portfolioItem.id !== item.id),
+                        )
+                      }}
+                      type="button"
+                    >
+                      Remove
+                    </button>
+                  ) : null}
+                </div>
+                <div className="field-grid field-grid-2">
+                  <label className="field">
+                    <span>Title</span>
+                    <input
                     name="portfolioTitle"
                     onChange={(event) => {
                       setPortfolioItems((current) =>
@@ -1045,18 +995,114 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
                     )
                   }}
                   rows={4}
-                  value={toTextAreaValue(item.outcomeMetrics)}
-                />
-              </label>
-            </article>
-          ))}
-        </div>
-        {portfolioItems.length === 0 ? (
-          <div className="form-message">
-            No portfolio items yet. Add at least a few strong case studies here before we move into
-            job-specific recommendations.
+                    value={toTextAreaValue(item.outcomeMetrics)}
+                  />
+                </label>
+              </article>
+            ))}
           </div>
-        ) : null}
+          {portfolioItems.length === 0 ? (
+            <div className="form-message">
+              No portfolio items yet. Add at least a few strong case studies here before we move
+              into job-specific recommendations.
+            </div>
+          ) : null}
+        </DisclosureSection>
+      </DisclosureSection>
+
+      <DisclosureSection
+        defaultOpen={false}
+        label="Fine tuning"
+        meta="collapsed"
+        title="Advanced controls and operator details."
+      >
+        <div className="field-grid field-grid-2">
+          <label className="field">
+            <span>Display name</span>
+            <input defaultValue={workspace.profile.displayName} name="displayName" type="text" />
+          </label>
+          <label className="field">
+            <span>Internal account</span>
+            <input defaultValue={workspace.profile.email} disabled readOnly type="email" />
+          </label>
+          <label className="field">
+            <span>Timezone</span>
+            <input defaultValue={workspace.profile.timezone} name="timezone" type="text" />
+          </label>
+          <label className="field">
+            <span>Timezone tolerance (hours)</span>
+            <input
+              defaultValue={workspace.profile.timezoneToleranceHours}
+              name="timezoneToleranceHours"
+              type="number"
+            />
+          </label>
+          <label className="field">
+            <span>Secondary markets</span>
+            <textarea
+              defaultValue={toTextAreaValue(workspace.profile.secondaryMarkets)}
+              name="secondaryMarkets"
+              rows={4}
+            />
+          </label>
+          <label className="field">
+            <span>Allowed remote regions</span>
+            <textarea
+              defaultValue={toTextAreaValue(workspace.profile.allowedRemoteRegions)}
+              name="allowedRemoteRegions"
+              rows={4}
+            />
+          </label>
+          <label className="field">
+            <span>Salary currency</span>
+            <input
+              defaultValue={workspace.profile.salaryFloorCurrency}
+              name="salaryFloorCurrency"
+              type="text"
+            />
+          </label>
+          <label className="field">
+            <span>Salary floor</span>
+            <input
+              defaultValue={workspace.profile.salaryFloorAmount}
+              name="salaryFloorAmount"
+              type="number"
+            />
+          </label>
+          <label className="field">
+            <span>Preferred industries</span>
+            <textarea
+              defaultValue={toTextAreaValue(workspace.profile.industriesPreferred)}
+              name="industriesPreferred"
+              rows={5}
+            />
+          </label>
+          <label className="field">
+            <span>Industries to avoid</span>
+            <textarea
+              defaultValue={toTextAreaValue(workspace.profile.industriesAvoid)}
+              name="industriesAvoid"
+              rows={5}
+            />
+          </label>
+        </div>
+
+        <label className="field">
+          <span>Work authorization notes</span>
+          <textarea
+            defaultValue={workspace.profile.workAuthorizationNotes}
+            name="workAuthorizationNotes"
+            rows={4}
+          />
+        </label>
+        <label className="field">
+          <span>Preferences notes</span>
+          <textarea
+            defaultValue={workspace.profile.preferencesNotes}
+            name="preferencesNotes"
+            rows={5}
+          />
+        </label>
       </DisclosureSection>
 
       <div className="profile-form-footer">
@@ -1070,7 +1116,7 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
           }`}
         >
           {state.message ||
-            'This workspace writes profile preferences, resume source content, and portfolio items to the seeded single-user operator.'}
+            'Saved settings update the queue, packet drafts, and portfolio picks.'}
         </div>
         <button className="button button-primary" disabled={isPending} type="submit">
           {isPending ? 'Saving workspace...' : 'Save workspace'}

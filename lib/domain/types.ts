@@ -36,6 +36,15 @@ export type RecommendationLevel = (typeof recommendationLevels)[number]
 
 export type RemoteType = 'remote' | 'hybrid' | 'onsite' | 'unknown'
 
+export interface OperatorRecord {
+  createdAt?: string
+  displayName: string
+  email: string
+  id: string
+  slug: string
+  userId: string
+}
+
 export interface UserProfileSnapshot {
   id: string
   headline: string

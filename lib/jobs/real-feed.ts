@@ -2,7 +2,7 @@ import 'server-only'
 
 import { createHash } from 'node:crypto'
 
-import { defaultOperator } from '@/lib/config/runtime'
+import { getActiveOperatorContext } from '@/lib/data/operators'
 import type { RecommendationLevel, RemoteType, WorkflowStatus } from '@/lib/domain/types'
 import type {
   JobSourceKind,
@@ -11,7 +11,10 @@ import type {
   RawJobIntakeRecord,
   SourceDiagnostics,
 } from '@/lib/jobs/contracts'
+import { fetchAuthenticJobs } from '@/lib/jobs/authentic-jobs'
 import { fetchGreenhouseCompanyJobs, type ImportedSourceBatch } from '@/lib/jobs/greenhouse'
+import { fetchJobspressoJobs } from '@/lib/jobs/jobspresso'
+import { fetchRemotiveJobs } from '@/lib/jobs/remotive'
 import {
   getCompanyWatchlist,
   getImportedSourceNames,
@@ -21,14 +24,16 @@ import {
   sourcePreferenceWeight,
   type SourceRegistryEntry,
 } from '@/lib/jobs/source-registry'
+import { fetchWellfoundJobs } from '@/lib/jobs/wellfound'
 import { createClient } from '@/lib/supabase/server'
 
 import { getOperatorProfile } from '../data/operator-profile'
 
 export const primaryImportedSourceName = 'Remote OK'
 const primaryImportedSourceApiUrl = 'https://remoteok.com/api'
-const maxImportedJobs = 30
+const maxImportedJobsPerBoardSource = 120
 const maxWatchedCompanies = 20
+const minimumHealthyCandidatePool = 40
 
 type DesignerRoleBucket = 'core' | 'adjacent'
 
@@ -135,6 +140,7 @@ const excludedTitlePhrases = [
   'machine learning',
   'ml engineer',
   'software engineer',
+  'engineer',
   'software developer',
   'developer',
   'engineering',
@@ -245,6 +251,11 @@ interface FilteredSourceBatch {
   jobs: NormalizedImportedCandidate[]
 }
 
+interface PersistedImportedJobRow {
+  id: string
+  normalizedJob: NormalizedJobRecord
+}
+
 function asRecord(value: unknown) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return null
@@ -267,6 +278,10 @@ function asStringArray(value: unknown) {
 
 function asNumber(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
+
+function asOptionalNumber(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
 }
 
 function normalizeWhitespace(value: string) {
@@ -524,6 +539,73 @@ function inferPortfolioRequirement(title: string, descriptionText: string): Port
   return getDesignerRoleMatch(title, descriptionText) ? 'yes' : 'unknown'
 }
 
+const extractedSkillPhrases = [
+  'brand design',
+  'visual design',
+  'graphic design',
+  'presentation design',
+  'marketing design',
+  'production design',
+  'web design',
+  'art direction',
+  'creative direction',
+  'editorial design',
+  'campaign design',
+  'motion design',
+  'motion graphics',
+  'typography',
+  'layout design',
+  'visual storytelling',
+  'design systems',
+  'landing pages',
+  'social creative',
+  'figma',
+  'adobe creative suite',
+  'photoshop',
+  'illustrator',
+  'indesign',
+  'after effects',
+  'powerpoint',
+  'google slides',
+]
+
+function extractImportedSkillKeywords(
+  title: string,
+  descriptionText: string,
+  metadata: Record<string, unknown> | null,
+) {
+  const searchText = normalizeSearchText([title, descriptionText].join(' '))
+  const extracted = new Set<string>()
+  const tags = asStringArray(metadata?.tags)
+  const category = asString(metadata?.category)
+
+  for (const tag of tags) {
+    const normalizedTag = normalizeWhitespace(tag)
+
+    if (normalizedTag) {
+      extracted.add(normalizedTag)
+    }
+  }
+
+  if (category) {
+    extracted.add(category)
+  }
+
+  for (const phrase of extractedSkillPhrases) {
+    if (matchesPhrase(searchText, phrase)) {
+      extracted.add(phrase)
+    }
+  }
+
+  const designerRoleMatch = getDesignerRoleMatch(title, descriptionText)
+
+  if (designerRoleMatch) {
+    extracted.add(designerRoleMatch.familyLabel)
+  }
+
+  return [...extracted].slice(0, 12)
+}
+
 function createDuplicateGroupKey(companyName: string, title: string, locationLabel: string) {
   return [companyName, title, locationLabel]
     .map((value) =>
@@ -533,6 +615,57 @@ function createDuplicateGroupKey(companyName: string, title: string, locationLab
     )
     .filter(Boolean)
     .join('--')
+}
+
+function normalizePersistedImportedJobRow(value: unknown): PersistedImportedJobRow | null {
+  const record = asRecord(value)
+
+  if (!record) {
+    return null
+  }
+
+  const id = asString(record.id)
+  const sourceName = asString(record.source_name)
+  const sourceUrl = asString(record.source_url)
+  const companyName = asString(record.company_name)
+  const title = asString(record.title)
+
+  if (!id || !sourceName || !sourceUrl || !companyName || !title) {
+    return null
+  }
+
+  return {
+    id,
+    normalizedJob: {
+      applicationUrl: asString(record.application_url) || undefined,
+      companyDomain: asString(record.company_domain) || undefined,
+      companyName,
+      department: asString(record.department) || undefined,
+      descriptionText: asString(record.description_text),
+      duplicateGroupKey: asString(record.duplicate_group_key) || undefined,
+      employmentType: asString(record.employment_type) as NormalizedJobRecord['employmentType'],
+      listingStatus: asString(record.listing_status) as NormalizedJobRecord['listingStatus'],
+      locationLabel: asString(record.location_label) || undefined,
+      portfolioRequired: asString(record.portfolio_required) as NormalizedJobRecord['portfolioRequired'],
+      postedAt: asString(record.posted_at) || undefined,
+      preferredQualifications: asStringArray(record.preferred_qualifications),
+      redFlagNotes: asStringArray(record.red_flag_notes),
+      remoteRegions: asStringArray(record.remote_regions),
+      remoteType: asString(record.remote_type) as NormalizedJobRecord['remoteType'],
+      requirements: asStringArray(record.requirements),
+      salaryCurrency: asString(record.salary_currency) || undefined,
+      salaryMax: asOptionalNumber(record.salary_max),
+      salaryMin: asOptionalNumber(record.salary_min),
+      salaryPeriod: asString(record.salary_period) as NormalizedJobRecord['salaryPeriod'],
+      seniorityLabel: asString(record.seniority_label) || undefined,
+      skillsKeywords: asStringArray(record.skills_keywords),
+      sourceJobId: asString(record.source_job_id) || undefined,
+      sourceName,
+      sourceUrl,
+      title,
+      workAuthNotes: asString(record.work_auth_notes) || undefined,
+    },
+  }
 }
 
 function getProfileRolePhrases(values: string[]) {
@@ -600,15 +733,18 @@ function normalizeImportedJob(rawJob: RawJobIntakeRecord): NormalizedJobRecord {
   const locationLabel = normalizeLocationLabel(location, remoteType)
   const salaryMin = asNumber(metadata?.salary_min)
   const salaryMax = asNumber(metadata?.salary_max)
+  const salaryCurrency = asString(metadata?.salary_currency) || (salaryMin > 0 || salaryMax > 0 ? 'USD' : '')
+  const salaryPeriod = asString(metadata?.salary_period) || (salaryMin > 0 || salaryMax > 0 ? 'annual' : 'unknown')
+  const employmentContext = [rawJob.descriptionText, asString(metadata?.job_type)].filter(Boolean).join(' ')
 
   return {
     applicationUrl: rawJob.applicationUrl || undefined,
     companyDomain: undefined,
     companyName,
-    department: departments[0] || undefined,
+    department: departments[0] || asString(metadata?.category) || undefined,
     descriptionText: rawJob.descriptionText,
     duplicateGroupKey: createDuplicateGroupKey(companyName, title, locationLabel),
-    employmentType: inferEmploymentType(title, rawJob.descriptionText),
+    employmentType: inferEmploymentType(title, employmentContext),
     listingStatus: 'active',
     locationLabel,
     portfolioRequired: inferPortfolioRequirement(title, rawJob.descriptionText),
@@ -618,12 +754,12 @@ function normalizeImportedJob(rawJob: RawJobIntakeRecord): NormalizedJobRecord {
     remoteRegions: normalizeRemoteRegions(location, remoteType),
     remoteType,
     requirements: [],
-    salaryCurrency: salaryMin > 0 || salaryMax > 0 ? 'USD' : undefined,
+    salaryCurrency: salaryCurrency || undefined,
     salaryMax: salaryMax > 0 ? salaryMax : undefined,
     salaryMin: salaryMin > 0 ? salaryMin : undefined,
-    salaryPeriod: salaryMin > 0 || salaryMax > 0 ? 'annual' : 'unknown',
+    salaryPeriod: salaryPeriod as NormalizedJobRecord['salaryPeriod'],
     seniorityLabel: inferSeniorityLabel(title),
-    skillsKeywords: [],
+    skillsKeywords: extractImportedSkillKeywords(title, rawJob.descriptionText, metadata),
     sourceKey: rawJob.sourceKey,
     sourceKind: rawJob.sourceKind,
     sourceJobId: rawJob.sourceJobId,
@@ -1126,7 +1262,7 @@ async function fetchRemoteOkBatch(
     const allRawJobs = payload
       .map((item) => normalizeRemoteOkRawRecord(item, capturedAt))
       .filter((item): item is RawJobIntakeRecord => item !== null)
-    const rawJobs = allRawJobs.slice(0, maxImportedJobs)
+    const rawJobs = allRawJobs.slice(0, maxImportedJobsPerBoardSource)
 
     return {
       provider: registryEntry?.provider ?? 'remoteok',
@@ -1153,6 +1289,10 @@ async function fetchImportedSourceBatches() {
   const [registry, watchlist] = await Promise.all([getSourceRegistry(), getCompanyWatchlist()])
   const registryBySlug = getSourceRegistryBySlug(registry)
   const remoteRegistryEntry = registry.find((entry) => entry.slug === 'remote-ok')
+  const remotiveRegistryEntry = registry.find((entry) => entry.slug === 'remotive')
+  const wellfoundRegistryEntry = registry.find((entry) => entry.slug === 'wellfound')
+  const jobspressoRegistryEntry = registry.find((entry) => entry.slug === 'jobspresso')
+  const authenticJobsRegistryEntry = registry.find((entry) => entry.slug === 'authentic-jobs')
   const greenhouseWatchlist = watchlist
     .filter((entry) => {
       const registryEntry = registryBySlug.get(entry.sourceRegistrySlug)
@@ -1160,25 +1300,54 @@ async function fetchImportedSourceBatches() {
     })
     .slice(0, maxWatchedCompanies)
 
-  const greenhouseBatches = await Promise.all(
-    greenhouseWatchlist.map((entry) => fetchGreenhouseCompanyJobs(entry)),
+  const [
+    remoteOkBatch,
+    remotiveBatch,
+    wellfoundBatch,
+    jobspressoBatch,
+    authenticJobsBatch,
+    greenhouseBatches,
+  ] = await Promise.all([
+    fetchRemoteOkBatch(remoteRegistryEntry),
+    remotiveRegistryEntry ? fetchRemotiveJobs() : Promise.resolve(null),
+    wellfoundRegistryEntry ? fetchWellfoundJobs() : Promise.resolve(null),
+    jobspressoRegistryEntry ? fetchJobspressoJobs() : Promise.resolve(null),
+    authenticJobsRegistryEntry ? fetchAuthenticJobs() : Promise.resolve(null),
+    Promise.all(greenhouseWatchlist.map((entry) => fetchGreenhouseCompanyJobs(entry))),
+  ])
+  const batches = [
+    remoteOkBatch,
+    remotiveBatch,
+    wellfoundBatch,
+    jobspressoBatch,
+    authenticJobsBatch,
+    ...greenhouseBatches,
+  ].filter((batch): batch is ImportedSourceBatch => batch !== null)
+  const successfulSourceNames = new Set(
+    batches.filter((batch) => !batch.issue).map((batch) => batch.sourceName),
   )
 
   return {
-    batches: [await fetchRemoteOkBatch(remoteRegistryEntry), ...greenhouseBatches],
-    importedSourceNames: getImportedSourceNames(watchlist),
+    batches,
+    importedSourceNames:
+      successfulSourceNames.size > 0
+        ? successfulSourceNames
+        : getImportedSourceNames(registry, watchlist),
   }
 }
 
-async function hasImportedScores(importedSourceNames: Set<string>) {
+async function hasImportedScores(operatorId: string, importedSourceNames: Set<string>) {
   const supabase = createClient()
   const sourceNames = [...importedSourceNames].filter(Boolean)
 
   if (sourceNames.length === 0) {
-    return false
+    return {
+      count: 0,
+      ready: false,
+    }
   }
 
-  const { count, error } = await supabase
+  const { data, error } = await supabase
     .from('job_scores')
     .select(
       `
@@ -1187,16 +1356,61 @@ async function hasImportedScores(importedSourceNames: Set<string>) {
           source_name
         )
       `,
-      { count: 'exact', head: true },
     )
-    .eq('user_id', defaultOperator.userId)
+    .eq('operator_id', operatorId)
     .in('jobs.source_name', sourceNames)
 
   if (error) {
-    return false
+    return {
+      count: 0,
+      ready: false,
+    }
   }
 
-  return (count ?? 0) > 0
+  const rows = data ?? []
+
+  return {
+    count: rows.length,
+    ready: rows.length >= minimumHealthyCandidatePool,
+  }
+}
+
+async function persistRawImports(batches: ImportedSourceBatch[]) {
+  const rows = batches.flatMap((batch) =>
+    batch.rawJobs.map((job) => ({
+      application_url: job.applicationUrl ?? null,
+      captured_at: job.capturedAt,
+      company_name_raw: job.companyNameRaw,
+      compensation_raw: job.compensationRaw ?? null,
+      description_text: job.descriptionText,
+      location_raw: job.locationRaw ?? null,
+      posted_at_raw: job.postedAtRaw ?? null,
+      raw_metadata: asRecord(job.metadata) ?? {},
+      source_identity_key:
+        job.sourceJobId && job.sourceJobId.length > 0
+          ? `${job.sourceName}::${job.sourceJobId}`
+          : normalizeSourceUrl(job.sourceUrl),
+      source_job_id: job.sourceJobId ?? null,
+      source_key: job.sourceKey ?? null,
+      source_kind: job.sourceKind ?? 'remote_board',
+      source_name: job.sourceName,
+      source_url: job.sourceUrl,
+      title_raw: job.titleRaw,
+    })),
+  )
+
+  if (rows.length === 0) {
+    return
+  }
+
+  try {
+    const supabase = createClient()
+    await supabase.from('raw_job_imports').upsert(rows, {
+      onConflict: 'source_identity_key',
+    })
+  } catch {
+    // Raw intake persistence is optional until the candidate-pool migration is applied.
+  }
 }
 
 async function markMissingImportedJobsAsStale(
@@ -1284,16 +1498,27 @@ export async function ensurePrimaryImportedJobs(
   options: ImportedJobsSyncOptions = {},
 ): Promise<ImportedJobsSyncResult> {
   try {
-    const { batches, importedSourceNames } = await fetchImportedSourceBatches()
+    const operatorContext = await getActiveOperatorContext()
 
-    if (!options.force && (await hasImportedScores(importedSourceNames))) {
+    if (!operatorContext) {
       return {
         importedCount: 0,
+        issue: 'Choose an operator before syncing imported jobs.',
+      }
+    }
+
+    const { batches, importedSourceNames } = await fetchImportedSourceBatches()
+    const existingCoverage = await hasImportedScores(operatorContext.operator.id, importedSourceNames)
+
+    if (!options.force && existingCoverage.ready) {
+      return {
+        importedCount: existingCoverage.count,
         skipped: true,
       }
     }
 
     const { workspace } = await getOperatorProfile()
+    await persistRawImports(batches)
     const filteredBatches = batches.map((batch) => filterNormalizedSourceBatch(batch))
     const diagnosticsBySourceKey = new Map(
       filteredBatches.map((batch) => [batch.diagnostics.sourceKey, batch.diagnostics] as const),
@@ -1327,17 +1552,6 @@ export async function ensurePrimaryImportedJobs(
         ...(currentSourceJobIdsBySourceName.get(job.sourceName) ?? []),
         sourceJobId,
       ])
-    }
-
-    if (normalizedJobs.length === 0) {
-      const sourceDiagnostics = [...diagnosticsBySourceKey.values()]
-      await saveSourceDiagnostics(sourceDiagnostics)
-
-      return {
-        importedCount: 0,
-        issue: 'No remote designer-first roles passed the source expansion gate.',
-        sourceDiagnostics,
-      }
     }
 
     const supabase = createClient()
@@ -1382,21 +1596,24 @@ export async function ensurePrimaryImportedJobs(
         .filter(Boolean),
     )
 
-    const { data: existingJobs, error: existingJobsError } = await supabase
-      .from('jobs')
-      .select('id, source_job_id, source_name')
-      .in('source_name', sourceNames)
+    const existingJobs =
+      sourceNames.length > 0
+        ? await supabase
+            .from('jobs')
+            .select('id, source_job_id, source_name')
+            .in('source_name', sourceNames)
+        : { data: [], error: null }
 
-    if (existingJobsError) {
+    if (existingJobs.error) {
       return {
         importedCount: 0,
-        issue: existingJobsError.message,
+        issue: existingJobs.error.message,
         sourceDiagnostics: [...diagnosticsBySourceKey.values()],
       }
     }
 
     const existingJobIdBySourceId = new Map(
-      (existingJobs ?? [])
+      ((existingJobs.data as Array<Record<string, unknown>> | null) ?? [])
         .map((row) => [
           createSourceIdentityKey(asString(row.source_name), asString(row.source_job_id)),
           asString(row.id),
@@ -1419,69 +1636,102 @@ export async function ensurePrimaryImportedJobs(
         ),
       }))
 
-    const persistedJobs: Array<{ id: string; source_job_id: string; source_name: string }> = []
-
     if (rowsToInsert.length > 0) {
-      const { data: insertedJobs, error: insertJobsError } = await supabase
+      const { error: insertJobsError } = await supabase
         .from('jobs')
         .insert(rowsToInsert)
-        .select('id, source_job_id, source_name')
 
-      if (insertJobsError || !insertedJobs) {
+      if (insertJobsError) {
         return {
           importedCount: 0,
           issue: insertJobsError?.message ?? 'Imported jobs could not be inserted.',
           sourceDiagnostics: [...diagnosticsBySourceKey.values()],
         }
       }
-
-      persistedJobs.push(
-        ...insertedJobs.map((row) => ({
-          id: asString(row.id),
-          source_job_id: asString(row.source_job_id),
-          source_name: asString(row.source_name),
-        })),
-      )
     }
 
     if (rowsToUpdate.length > 0) {
-      const { data: updatedJobs, error: updateJobsError } = await supabase
+      const { error: updateJobsError } = await supabase
         .from('jobs')
         .upsert(rowsToUpdate, {
           onConflict: 'id',
         })
-        .select('id, source_job_id, source_name')
 
-      if (updateJobsError || !updatedJobs) {
+      if (updateJobsError) {
         return {
           importedCount: 0,
           issue: updateJobsError?.message ?? 'Imported jobs could not be updated.',
           sourceDiagnostics: [...diagnosticsBySourceKey.values()],
         }
       }
-
-      persistedJobs.push(
-        ...updatedJobs.map((row) => ({
-          id: asString(row.id),
-          source_job_id: asString(row.source_job_id),
-          source_name: asString(row.source_name),
-        })),
-      )
     }
 
-    const jobIdBySourceId = new Map(
-      persistedJobs
-        .map((row) => [
-          createSourceIdentityKey(row.source_name, row.source_job_id),
-          row.id,
-        ] as const)
-        .filter((entry) => entry[0] && entry[1]),
-    )
-    const persistedJobIds = [...jobIdBySourceId.values()]
+    const poolSourceNames = [...importedSourceNames].filter(Boolean)
+    const { data: persistedImportedJobs, error: persistedJobsError } = await supabase
+      .from('jobs')
+      .select(
+        `
+          id,
+          source_name,
+          source_job_id,
+          source_url,
+          application_url,
+          company_name,
+          company_domain,
+          title,
+          department,
+          employment_type,
+          location_label,
+          remote_type,
+          remote_regions,
+          salary_currency,
+          salary_min,
+          salary_max,
+          salary_period,
+          posted_at,
+          description_text,
+          requirements,
+          preferred_qualifications,
+          skills_keywords,
+          seniority_label,
+          portfolio_required,
+          work_auth_notes,
+          duplicate_group_key,
+          listing_status,
+          red_flag_notes
+        `,
+      )
+      .in('source_name', poolSourceNames)
+      .neq('listing_status', 'closed')
+
+    if (persistedJobsError || !persistedImportedJobs) {
+      return {
+        importedCount: 0,
+        issue: persistedJobsError?.message ?? 'Persisted imported jobs could not be loaded.',
+        sourceDiagnostics: [...diagnosticsBySourceKey.values()],
+      }
+    }
+
+    const persistedPool = persistedImportedJobs
+      .map((row) => normalizePersistedImportedJobRow(row))
+      .filter((row): row is PersistedImportedJobRow => row !== null)
+    const persistedJobIds = persistedPool.map((row) => row.id)
+
+    if (persistedJobIds.length === 0) {
+      const sourceDiagnostics = [...diagnosticsBySourceKey.values()]
+      await saveSourceDiagnostics(sourceDiagnostics)
+
+      return {
+        importedCount: 0,
+        issue: 'No remote designer-first roles are available in the candidate pool yet.',
+        sourceDiagnostics,
+      }
+    }
+
     const { data: existingScores, error: scoreLookupError } = await supabase
       .from('job_scores')
       .select('job_id, workflow_status, last_status_changed_at')
-      .eq('user_id', defaultOperator.userId)
+      .eq('operator_id', operatorContext.operator.id)
       .in('job_id', persistedJobIds)
 
     if (scoreLookupError) {
@@ -1500,48 +1750,39 @@ export async function ensurePrimaryImportedJobs(
         },
       ]),
     )
-    const scoreRows = normalizedJobs
-      .map((job) => {
-        const sourceJobId = job.sourceJobId ?? ''
-        const jobId = sourceJobId
-          ? jobIdBySourceId.get(createSourceIdentityKey(job.sourceName, sourceJobId))
-          : undefined
 
-        if (!jobId) {
-          return null
-        }
+    const scoreRows = persistedPool.map(({ id: jobId, normalizedJob: job }) => {
+      const score = buildBasicScore(job, workspace.profile)
+      const existingScore = existingScoreMap.get(jobId)
 
-        const score = buildBasicScore(job, workspace.profile)
-        const existingScore = existingScoreMap.get(jobId)
-
-        return {
-          effort_score: score.effortScore,
-          fit_reasons: score.fitReasons,
-          fit_summary: score.fitSummary,
-          job_id: jobId,
-          last_status_changed_at: existingScore?.lastStatusChangedAt ?? ingestedAt,
-          missing_requirements: score.missingRequirements,
-          penalty_score: score.penaltyScore,
-          portfolio_fit_score: score.portfolioFitScore,
-          profile_id: workspace.profile.profileId,
-          quality_score: score.qualityScore,
-          recommendation_level: score.recommendationLevel,
-          red_flags: score.redFlags,
-          remote_gate_passed: score.remoteGatePassed,
-          role_relevance_score: score.roleRelevanceScore,
-          salary_score: score.salaryScore,
-          scam_risk_level: score.scamRiskLevel,
-          scored_at: ingestedAt,
-          seniority_score: score.seniorityScore,
-          total_score: score.totalScore,
-          user_id: defaultOperator.userId,
-          workflow_status: existingScore?.workflowStatus ?? 'ranked',
-        }
-      })
-      .filter((item): item is NonNullable<typeof item> => item !== null)
+      return {
+        effort_score: score.effortScore,
+        fit_reasons: score.fitReasons,
+        fit_summary: score.fitSummary,
+        job_id: jobId,
+        last_status_changed_at: existingScore?.lastStatusChangedAt ?? ingestedAt,
+        missing_requirements: score.missingRequirements,
+        penalty_score: score.penaltyScore,
+        portfolio_fit_score: score.portfolioFitScore,
+        profile_id: workspace.profile.profileId,
+        quality_score: score.qualityScore,
+        recommendation_level: score.recommendationLevel,
+        red_flags: score.redFlags,
+        remote_gate_passed: score.remoteGatePassed,
+        role_relevance_score: score.roleRelevanceScore,
+        salary_score: score.salaryScore,
+        scam_risk_level: score.scamRiskLevel,
+        scored_at: ingestedAt,
+        seniority_score: score.seniorityScore,
+        total_score: score.totalScore,
+        operator_id: operatorContext.operator.id,
+        user_id: operatorContext.userId,
+        workflow_status: existingScore?.workflowStatus ?? 'ranked',
+      }
+    })
 
     const { error: scoreUpsertError } = await supabase.from('job_scores').upsert(scoreRows, {
-      onConflict: 'user_id,job_id',
+      onConflict: 'operator_id,job_id',
     })
 
     if (scoreUpsertError) {

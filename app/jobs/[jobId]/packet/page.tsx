@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+import { JobStageActionButton } from '@/components/jobs/job-stage-action-button'
 import { ApplicationPacketForm } from '@/components/jobs/application-packet-form'
 import { getApplicationPacketReview } from '@/lib/data/application-packets'
+import { requireActiveOperatorSelection } from '@/lib/data/operators'
 import {
   formatDateLabel,
-  formatQueueSegmentLabel,
   formatRemoteLabel,
   formatSalaryRange,
   formatWorkflowLabel,
@@ -19,7 +20,62 @@ interface PacketReviewPageProps {
   }>
 }
 
+function PacketActions({
+  canEdit,
+  jobId,
+  sourceUrl,
+  workflowStatus,
+}: {
+  canEdit: boolean
+  jobId: string
+  sourceUrl: string
+  workflowStatus: string
+}) {
+  if (workflowStatus === 'ready_to_apply') {
+    return (
+      <div className="stage-actions">
+        <a className="button button-primary button-small" href={sourceUrl} rel="noreferrer" target="_blank">
+          Apply
+        </a>
+        <JobStageActionButton
+          canEdit={canEdit}
+          disabledReason="Switch back to the database-backed queue to mark jobs applied."
+          jobId={jobId}
+          label="Mark Applied"
+          sourceContext="packet-review"
+          variant="secondary"
+          workflowStatus="applied"
+        />
+        <Link className="button button-ghost button-small" href={`/jobs/${jobId}`}>
+          View Job
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <div className="stage-actions">
+      <JobStageActionButton
+        canEdit={canEdit}
+        disabledReason="Switch back to the database-backed queue to mark packets ready."
+        jobId={jobId}
+        label="Mark Ready to Apply"
+        sourceContext="packet-review"
+        variant="primary"
+        workflowStatus="ready_to_apply"
+      />
+      <a className="button button-secondary button-small" href={sourceUrl} rel="noreferrer" target="_blank">
+        Source
+      </a>
+      <Link className="button button-ghost button-small" href={`/jobs/${jobId}`}>
+        View Job
+      </Link>
+    </div>
+  )
+}
+
 export default async function PacketReviewPage({ params }: PacketReviewPageProps) {
+  await requireActiveOperatorSelection()
   const { jobId } = await params
   const { canSave, issue, job, packet } = await getApplicationPacketReview(jobId)
 
@@ -29,54 +85,60 @@ export default async function PacketReviewPage({ params }: PacketReviewPageProps
 
   return (
     <main className="page-stack">
-      <section className="page-header page-header-split">
+      <section className="page-header flow-header">
         <div className="page-heading">
-          <p className="panel-label">Packet</p>
+          <p className="panel-label">Application prep</p>
           <h1>{job.title}</h1>
-          <div className="status-track">
-            <span>{job.companyName}</span>
-            <span>{formatRemoteLabel(job)}</span>
-            <span>{formatSalaryRange(job)}</span>
-            <span>{formatWorkflowLabel(job.workflowStatus)}</span>
-          </div>
+          <p>{job.companyName}</p>
         </div>
-        <div className="header-meta-grid">
-          <article className="header-meta">
-            <p className="panel-label">Status</p>
-            <p>{packet.packetStatus}</p>
-            <p>{canSave ? 'Editable' : 'Read only'}</p>
-          </article>
-          <article className="header-meta">
-            <p className="panel-label">Queue</p>
-            <p>{formatQueueSegmentLabel(job.queueSegment)}</p>
-            <p>{packet.generatedAt ? formatDateLabel(packet.generatedAt) : 'Current draft'}</p>
-          </article>
+        <div className="flow-snapshot">
+          <div>
+            <span className="panel-label">Remote / location</span>
+            <strong>{job.locationLabel ? `${formatRemoteLabel(job)} · ${job.locationLabel}` : formatRemoteLabel(job)}</strong>
+          </div>
+          <div>
+            <span className="panel-label">Salary</span>
+            <strong>{formatSalaryRange(job)}</strong>
+          </div>
+          <div>
+            <span className="panel-label">Workflow</span>
+            <strong>{formatWorkflowLabel(job.workflowStatus)}</strong>
+          </div>
         </div>
       </section>
 
-      <div className="job-row-links">
-        <Link className="button button-secondary" href={`/jobs/${job.id}`}>
-          Back to detail
-        </Link>
-        <Link className="button button-secondary" href="/dashboard">
-          Back to jobs
-        </Link>
-        <a
-          className="button button-primary"
-          href={job.applicationUrl ?? job.sourceUrl}
-          rel="noreferrer"
-          target="_blank"
-        >
-          Apply
-        </a>
-      </div>
+      <section className="stage-shell">
+        <div className="stage-summary-row">
+          <div className="stage-summary-item">
+            <span className="panel-label">Packet status</span>
+            <strong>{packet.packetStatus.replaceAll('_', ' ')}</strong>
+          </div>
+          <div className="stage-summary-item">
+            <span className="panel-label">Last draft</span>
+            <strong>{packet.generatedAt ? formatDateLabel(packet.generatedAt) : 'Current draft'}</strong>
+          </div>
+          <div className="stage-summary-item">
+            <span className="panel-label">Mode</span>
+            <strong>{canSave ? 'Editable' : 'Read only'}</strong>
+          </div>
+        </div>
 
-      <ApplicationPacketForm
-        canSave={canSave}
-        disabledReason={issue}
-        job={job}
-        packet={packet}
-      />
+        <PacketActions
+          canEdit={canSave}
+          jobId={job.id}
+          sourceUrl={job.applicationUrl ?? job.sourceUrl}
+          workflowStatus={job.workflowStatus}
+        />
+
+        {issue ? <p className="stage-helper-text">{issue}</p> : null}
+      </section>
+
+      <ApplicationPacketForm canSave={canSave} disabledReason={issue} job={job} packet={packet} />
+
+      <div className="inline-link-row">
+        <Link href="/dashboard">Back to jobs</Link>
+        <Link href={`/jobs/${job.id}`}>Back to detail</Link>
+      </div>
     </main>
   )
 }

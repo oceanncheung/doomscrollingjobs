@@ -2,7 +2,7 @@
 
 import { refresh, revalidatePath } from 'next/cache'
 
-import { defaultOperator } from '@/lib/config/runtime'
+import { getActiveOperatorContext } from '@/lib/data/operators'
 import {
   packetStatuses,
   workflowStatuses,
@@ -10,6 +10,7 @@ import {
   type WorkflowStatus,
 } from '@/lib/domain/types'
 import { hasSupabaseServerEnv } from '@/lib/env'
+import { persistPreferenceSignal } from '@/lib/jobs/learning'
 import { createClient } from '@/lib/supabase/server'
 
 export interface JobWorkflowActionState {
@@ -163,6 +164,8 @@ function getEventType(targetStatus: WorkflowStatus) {
 
 function getSuccessMessage(targetStatus: WorkflowStatus) {
   switch (targetStatus) {
+    case 'ranked':
+      return 'Job returned to the Potential queue.'
     case 'shortlisted':
       return 'Job shortlisted and saved to the workflow queue.'
     case 'archived':
@@ -206,6 +209,15 @@ export async function updateJobWorkflow(
     }
   }
 
+  const operatorContext = await getActiveOperatorContext()
+
+  if (!operatorContext) {
+    return {
+      message: 'Choose an operator before updating workflow status.',
+      status: 'error',
+    }
+  }
+
   const targetStatus = resolveTargetStatus(formData)
 
   if (!targetStatus) {
@@ -219,7 +231,7 @@ export async function updateJobWorkflow(
   const { data: existingScore, error: existingScoreError } = await supabase
     .from('job_scores')
     .select('id, workflow_status')
-    .eq('user_id', defaultOperator.userId)
+    .eq('operator_id', operatorContext.operator.id)
     .eq('job_id', jobId)
     .maybeSingle()
 
@@ -255,7 +267,7 @@ export async function updateJobWorkflow(
       workflow_status: targetStatus,
     })
     .eq('id', existingScore.id)
-    .eq('user_id', defaultOperator.userId)
+    .eq('operator_id', operatorContext.operator.id)
 
   if (updateResult.error) {
     return {
@@ -265,7 +277,8 @@ export async function updateJobWorkflow(
   }
 
   const eventResult = await supabase.from('application_events').insert({
-    user_id: defaultOperator.userId,
+    operator_id: operatorContext.operator.id,
+    user_id: operatorContext.userId,
     job_id: jobId,
     event_type: getEventType(targetStatus),
     from_status: currentStatus,
@@ -281,6 +294,14 @@ export async function updateJobWorkflow(
         : intent === 'shortlist'
           ? 'Moved into the shortlist.'
           : `Workflow status updated to ${targetStatus.replaceAll('_', ' ')}.`,
+  })
+
+  await persistPreferenceSignal({
+    jobId,
+    operatorId: operatorContext.operator.id,
+    sourceContext,
+    targetStatus,
+    userId: operatorContext.userId,
   })
 
   revalidatePath('/dashboard')
@@ -316,6 +337,7 @@ export async function saveApplicationPacket(
   const packetId = asPersistedId(formData.get('packetId')) ?? crypto.randomUUID()
   const resumeVersionId = asPersistedId(formData.get('resumeVersionId')) ?? crypto.randomUUID()
   const suppliedJobScoreId = asPersistedId(formData.get('jobScoreId'))
+  const operatorContext = await getActiveOperatorContext()
 
   if (!jobId) {
     return {
@@ -324,11 +346,18 @@ export async function saveApplicationPacket(
     }
   }
 
+  if (!operatorContext || !operatorContext.resumeMasterId) {
+    return {
+      message: 'Choose an operator before saving packet prep.',
+      status: 'error',
+    }
+  }
+
   const supabase = createClient()
   const { data: jobScore, error: jobScoreError } = await supabase
     .from('job_scores')
-    .select('id')
-    .eq('user_id', defaultOperator.userId)
+    .select('id, workflow_status')
+    .eq('operator_id', operatorContext.operator.id)
     .eq('job_id', jobId)
     .maybeSingle()
 
@@ -352,7 +381,7 @@ export async function saveApplicationPacket(
   const { data: existingPacket, error: existingPacketError } = await supabase
     .from('application_packets')
     .select('id, resume_version_id, generated_at')
-    .eq('user_id', defaultOperator.userId)
+    .eq('operator_id', operatorContext.operator.id)
     .eq('job_id', jobId)
     .maybeSingle()
 
@@ -376,8 +405,9 @@ export async function saveApplicationPacket(
       generated_at: now,
       job_id: jobId,
       job_score_id: jobScoreId,
+      operator_id: operatorContext.operator.id,
       packet_status: asPacketStatus(asTextValue(formData.get('packetStatus'))),
-      user_id: defaultOperator.userId,
+      user_id: operatorContext.userId,
     })
 
     if (scaffoldResult.error) {
@@ -396,11 +426,12 @@ export async function saveApplicationPacket(
       highlighted_requirements: asList(formData.get('highlightedRequirements')),
       id: persistedResumeVersionId,
       job_id: jobId,
-      resume_master_id: defaultOperator.resumeMasterId,
+      operator_id: operatorContext.operator.id,
+      resume_master_id: operatorContext.resumeMasterId,
       skills_section: asList(formData.get('resumeSkillsSection')),
       summary_text: asOptionalText(formData.get('resumeSummaryText')),
       tailoring_notes: asOptionalText(formData.get('tailoringNotes')),
-      user_id: defaultOperator.userId,
+      user_id: operatorContext.userId,
       version_label: asTextValue(formData.get('resumeVersionLabel')) || 'Packet resume',
     },
     { onConflict: 'id' },
@@ -424,6 +455,7 @@ export async function saveApplicationPacket(
       job_score_id: jobScoreId,
       last_reviewed_at: now,
       manual_notes: asOptionalText(formData.get('manualNotes')),
+      operator_id: operatorContext.operator.id,
       packet_status: asPacketStatus(asTextValue(formData.get('packetStatus'))),
       portfolio_recommendation: {
         primaryLabel: asTextValue(formData.get('portfolioPrimaryLabel')),
@@ -432,7 +464,7 @@ export async function saveApplicationPacket(
       },
       professional_summary: asOptionalText(formData.get('professionalSummary')),
       resume_version_id: persistedResumeVersionId,
-      user_id: defaultOperator.userId,
+      user_id: operatorContext.userId,
     },
     { onConflict: 'id' },
   )
@@ -462,7 +494,8 @@ export async function saveApplicationPacket(
         ...answer,
         application_packet_id: persistedPacketId,
         job_id: jobId,
-        user_id: defaultOperator.userId,
+        operator_id: operatorContext.operator.id,
+        user_id: operatorContext.userId,
       })),
     )
 
@@ -472,6 +505,54 @@ export async function saveApplicationPacket(
         status: 'error',
       }
     }
+  }
+
+  const currentWorkflowStatus = asWorkflowStatus(asTextValue(jobScore?.workflow_status))
+  const shouldMarkPreparing =
+    currentWorkflowStatus === 'new' ||
+    currentWorkflowStatus === 'ranked' ||
+    currentWorkflowStatus === 'shortlisted'
+
+  if (shouldMarkPreparing) {
+    await supabase
+      .from('job_scores')
+      .update({
+        last_status_changed_at: now,
+        workflow_status: 'preparing',
+      })
+      .eq('operator_id', operatorContext.operator.id)
+      .eq('job_id', jobId)
+
+    await supabase.from('application_events').insert({
+      operator_id: operatorContext.operator.id,
+      user_id: operatorContext.userId,
+      job_id: jobId,
+      event_type: 'status_changed',
+      from_status: currentWorkflowStatus,
+      to_status: 'preparing',
+      event_payload: {
+        sourceContext: 'packet-save',
+        targetStatus: 'preparing',
+      },
+      notes: 'Packet work started from the prep workspace.',
+    })
+  }
+
+  const signalStatus =
+    currentWorkflowStatus === 'ready_to_apply' || currentWorkflowStatus === 'applied'
+      ? currentWorkflowStatus
+      : currentWorkflowStatus === 'archived' || currentWorkflowStatus === 'rejected'
+        ? null
+        : 'preparing'
+
+  if (signalStatus) {
+    await persistPreferenceSignal({
+      jobId,
+      operatorId: operatorContext.operator.id,
+      sourceContext: 'packet-save',
+      targetStatus: signalStatus,
+      userId: operatorContext.userId,
+    })
   }
 
   revalidatePath('/dashboard')
