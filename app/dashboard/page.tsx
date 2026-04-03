@@ -359,27 +359,29 @@ function PotentialRow({
       </details>
 
       <div aria-label="Screening actions" className="screening-actions-bar" role="group">
-        <div className="screening-action-slot">
-          <JobStageActionButton
-            canEdit={actionsEnabled}
-            disabledReason="Switch back to the database-backed queue to save jobs."
-            intent="shortlist"
-            jobId={job.id}
-            label="Save"
-            sourceContext="potential-jobs"
-            variant="primary"
-          />
-        </div>
-        <div className="screening-action-slot">
-          <JobStageActionButton
-            canEdit={actionsEnabled}
-            disabledReason="Switch back to the database-backed queue to skip jobs."
-            intent="dismiss"
-            jobId={job.id}
-            label="Skip"
-            sourceContext="potential-jobs"
-            variant="secondary"
-          />
+        <div className="screening-actions-cluster">
+          <div className="screening-action-slot">
+            <JobStageActionButton
+              canEdit={actionsEnabled}
+              disabledReason="Switch back to the database-backed queue to save jobs."
+              intent="shortlist"
+              jobId={job.id}
+              label="Save"
+              sourceContext="potential-jobs"
+              variant="primary"
+            />
+          </div>
+          <div className="screening-action-slot">
+            <JobStageActionButton
+              canEdit={actionsEnabled}
+              disabledReason="Switch back to the database-backed queue to skip jobs."
+              intent="dismiss"
+              jobId={job.id}
+              label="Skip"
+              sourceContext="potential-jobs"
+              variant="secondary"
+            />
+          </div>
         </div>
       </div>
     </article>

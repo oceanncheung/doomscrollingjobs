@@ -3,6 +3,7 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { Suspense } from 'react'
 
+import { ProfileSettingsIcon } from '@/components/navigation/profile-settings-icon'
 import { WorkspaceHeader } from '@/components/navigation/workspace-header'
 import { site } from '@/lib/config/site'
 import { getRankedJobs } from '@/lib/data/jobs'
@@ -27,7 +28,9 @@ function HeaderFallback({ counts }: { counts?: Partial<Record<QueueView, number>
           <strong>Doom Scrolling Jobs</strong>
         </Link>
         <Link aria-label="Profile settings" className="site-profile-avatar-link" href="/profile">
-          <span aria-hidden="true" className="site-profile-mark" />
+          <span className="site-profile-mark">
+            <ProfileSettingsIcon className="site-profile-icon" />
+          </span>
         </Link>
       </div>
 

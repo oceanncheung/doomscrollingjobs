@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
+
+import { ProfileSettingsIcon } from '@/components/navigation/profile-settings-icon'
 import type { QueueView } from '@/lib/jobs/dashboard-queue'
 
 const queueViews = ['potential', 'saved', 'prepared', 'applied', 'archive'] as const
@@ -34,7 +36,9 @@ export function WorkspaceHeader({ counts }: { counts?: Partial<Record<QueueView,
           <strong>Doom Scrolling Jobs</strong>
         </Link>
         <Link aria-label="Profile settings" className="site-profile-avatar-link" href="/profile">
-          <span aria-hidden="true" className="site-profile-mark" />
+          <span className="site-profile-mark">
+            <ProfileSettingsIcon className="site-profile-icon" />
+          </span>
         </Link>
       </div>
 
