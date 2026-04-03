@@ -145,7 +145,7 @@ main {
 
 .site-header {
   display: grid;
-  grid-template-columns: var(--dashboard-rail) repeat(5, minmax(0, 1fr)) auto;
+  grid-template-columns: var(--dashboard-rail) repeat(5, minmax(0, 1fr));
   gap: 0;
   padding: 0;
   border-bottom: 1px solid var(--line-soft);
@@ -158,29 +158,30 @@ main {
 .site-brand {
   display: flex;
   align-items: center;
-  min-height: 72px;
+  gap: 16px;
+  min-height: 56px;
   padding-left: var(--site-gutter);
   padding-right: 24px;
-  /* Divider before first nav tab only (avoids double stroke with Potential) */
   border-right: 0;
 }
 
 .site-brand strong {
   font-family: var(--font-mono), monospace;
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
 }
 
 .site-workflow-link {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 72px;
+  gap: 6px;
+  min-height: 56px;
   padding: 0 24px;
   border-left: 1px solid var(--line-soft);
-  font-size: 0.875rem;
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.8125rem;
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -192,7 +193,7 @@ main {
 
 .site-workflow-link[aria-current="page"] {
   background: var(--accent);
-  color: var(--text);
+  color: #000000;
 }
 
 .site-workflow-count {
@@ -203,52 +204,14 @@ main {
   letter-spacing: 0.02em;
 }
 
-.site-profile-link {
-  display: flex;
-  align-items: stretch;
-  justify-content: flex-end;
-  gap: 0;
-  min-height: 72px;
-  min-width: 0;
-  width: max-content;
-  max-width: 100%;
-  justify-self: end;
-  padding-left: 0;
-  border-left: 1px solid var(--line-soft);
-  font-size: 0.875rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.site-profile-link:hover .site-profile-label {
-  background: var(--text);
-  color: var(--bg);
-}
-
 .site-profile-mark {
-  flex: 0 0 72px;
-  width: 72px;
-  min-height: 72px;
-  align-self: stretch;
-  box-sizing: border-box;
-  border: 0;
-  border-left: 1px solid var(--line-soft);
-  background: transparent;
-}
-
-.site-profile-label {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  text-align: left;
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: 16rem;
-  padding: 0 18px;
-  background: transparent;
-  color: var(--text);
-  border: 1px solid var(--text);
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line-soft);
+  border-radius: 0;
 }
 
 .workspace-main > main {
@@ -332,7 +295,7 @@ main {
 .panel-label {
   color: var(--muted);
   font-family: var(--font-body), sans-serif;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -399,8 +362,8 @@ main {
 .today-block-heading h2 {
   font-family: var(--font-display), sans-serif;
   font-size: 1.5rem;
-  font-weight: 600;
-  letter-spacing: 0;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .today-apply-next,
@@ -436,6 +399,18 @@ main {
   gap: 16px;
 }
 
+.today-resume-status .button,
+.today-block .button {
+  padding: 10px 20px;
+  border: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .today-stats {
   display: grid;
   gap: 16px;
@@ -459,7 +434,7 @@ main {
 .today-stats dt {
   color: var(--muted);
   font-family: var(--font-body), sans-serif;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -487,15 +462,17 @@ main {
 
 .queue-meta-heading h1 {
   font-family: var(--font-display), sans-serif;
-  font-size: clamp(2rem, 4vw, 2.625rem);
+  font-size: clamp(2rem, 4vw, 2.75rem);
   font-weight: 300;
-  letter-spacing: 0;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
 }
 
 .queue-meta > p:last-child {
   max-width: 42rem;
   color: var(--muted);
-  font-size: 1rem;
+  font-size: 0.875rem;
+  letter-spacing: 0.16px;
   text-align: left;
 }
 
@@ -509,8 +486,8 @@ main.jobs-index .queue-meta::after {
   content: '';
   position: absolute;
   bottom: 0;
-  left: 0;
-  width: 100%;
+  left: calc(-1 * var(--queue-column-pad));
+  width: calc(100% + var(--queue-column-pad));
   height: 1px;
   background: var(--line-soft);
   pointer-events: none;
@@ -595,19 +572,11 @@ main.jobs-index .queue-meta::after {
 }
 
 main.jobs-index .queue-list .screening-row:not(:first-child) {
-  padding-top: 24px;
+  padding-top: 0;
 }
 
 main.jobs-index .queue-list .screening-row:not(:first-child)::before {
-  content: '';
-  display: block;
-  margin-left: calc(-1 * var(--queue-column-pad));
-  width: calc(100% + var(--queue-column-pad));
-  height: 0;
-  border-top: 1px solid var(--line);
-  box-sizing: border-box;
-  margin-bottom: 24px;
-  pointer-events: none;
+  display: none;
 }
 
 .screening-disclosure {
@@ -645,30 +614,34 @@ main.jobs-index .queue-list .screening-row:not(:first-child)::before {
   gap: 6px;
 }
 
-.screening-cell strong {
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.4;
-  letter-spacing: 0.16px;
+.screening-cell .stage-column-label {
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  line-height: 1.3;
 }
 
-.screening-cell span {
-  font-size: 0.98rem;
+.screening-cell strong {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
 }
 
 .screening-title-cell strong {
   display: block;
   font-family: var(--font-display), sans-serif;
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: 0;
-  line-height: 1.05;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
 .screening-title-cell span {
   color: var(--muted);
-  font-size: 0.875rem;
-  font-weight: 400;
+  font-size: 0.8125rem;
   letter-spacing: 0.16px;
 }
 
@@ -677,32 +650,26 @@ main.jobs-index .queue-list .screening-row:not(:first-child)::before {
   color: var(--muted);
   font-size: 0.875rem;
   letter-spacing: 0.16px;
+  line-height: 1.5;
 }
 
 .screening-freshness {
   color: var(--muted);
-  font-family: var(--font-body), sans-serif;
-  font-size: 0.75rem;
-  font-weight: 400;
-  letter-spacing: 0.32px;
-  text-transform: none;
-}
-
-.screening-fit-meta {
-  color: var(--muted);
   font-family: var(--font-mono), monospace;
-  font-size: 0.875rem;
+  font-size: 0.6875rem;
   font-weight: 400;
-  letter-spacing: 0.16px;
+  letter-spacing: 0.02em;
   text-transform: none;
 }
 
+.screening-fit-meta,
 .stage-fit-meta {
   color: var(--muted);
   font-family: var(--font-mono), monospace;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 400;
   letter-spacing: 0.02em;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .screening-expanded {
@@ -724,15 +691,11 @@ main.jobs-index .queue-list .screening-row:not(:first-child)::before {
   grid-template-columns: 1fr 1fr;
   margin-top: 24px;
   margin-left: calc(-1 * var(--queue-column-pad));
+  margin-right: 0;
   width: calc(100% + var(--queue-column-pad));
   max-width: none;
   box-sizing: border-box;
   border-top: 1px solid var(--line);
-  border-bottom: 0;
-}
-
-/* Single bottom edge for the whole potential list */
-main.jobs-index .queue-list .screening-row:last-child .screening-actions-bar {
   border-bottom: 1px solid var(--line);
 }
 
@@ -740,7 +703,7 @@ main.jobs-index .queue-list .screening-row:last-child .screening-actions-bar {
   display: flex;
   align-items: stretch;
   justify-content: stretch;
-  min-height: 3.5rem;
+  min-height: 48px;
 }
 
 .screening-action-slot:first-child {
@@ -759,16 +722,18 @@ main.jobs-index .queue-list .screening-row:last-child .screening-actions-bar {
 .screening-actions-bar .button {
   width: 100%;
   flex: 1;
-  min-height: 3.5rem;
-  padding: 1.125rem 1.25rem;
+  min-height: 48px;
+  padding: 14px 20px;
+  margin: 0;
   border: 0;
   border-radius: 0;
   justify-content: center;
-  font-size: 0.875rem;
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  line-height: 1.2;
+  line-height: 1;
   background: transparent;
 }
 
@@ -1401,11 +1366,6 @@ main.jobs-index .queue-list .screening-row:last-child .screening-actions-bar {
     width: 100%;
   }
 
-  main.jobs-index .queue-list .screening-row:not(:first-child)::before {
-    margin-left: 0;
-    width: 100%;
-  }
-
   .screening-row,
   .stage-column-actions {
     justify-items: start;
@@ -1447,20 +1407,6 @@ main.jobs-index .queue-list .screening-row:last-child .screening-actions-bar {
     border-bottom: 1px solid var(--line-soft);
     padding-left: var(--site-gutter);
   }
-
-  .site-profile-link {
-    justify-content: flex-start;
-    min-height: 56px;
-    padding-left: var(--site-gutter);
-    border-left: 0;
-    border-top: 1px solid var(--line-soft);
-  }
-
-  .site-profile-mark {
-    flex-basis: 56px;
-    width: 56px;
-    min-height: 56px;
-  }
 }
 
 @media (max-width: 720px) {
@@ -1473,10 +1419,6 @@ main.jobs-index .queue-list .screening-row:last-child .screening-actions-bar {
   }
 
   .site-brand {
-    padding-left: 16px;
-  }
-
-  .site-profile-link {
     padding-left: 16px;
   }
 

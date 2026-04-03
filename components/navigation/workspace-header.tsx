@@ -22,13 +22,7 @@ function buildQueueHref(view: QueueView) {
   return view === 'potential' ? '/dashboard' : `/dashboard?view=${view}`
 }
 
-export function WorkspaceHeader({
-  counts,
-  operatorLabel,
-}: {
-  counts?: Partial<Record<QueueView, number>>
-  operatorLabel: string
-}) {
+export function WorkspaceHeader({ counts }: { counts?: Partial<Record<QueueView, number>> }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const activeView = pathname === '/dashboard' ? getQueueView(searchParams.get('view')) : null
@@ -37,6 +31,7 @@ export function WorkspaceHeader({
     <header className="site-header">
       <Link className="site-brand" href="/dashboard">
         <strong>Doom Scrolling Jobs</strong>
+        <span aria-hidden="true" className="site-profile-mark" />
       </Link>
 
       <nav className="site-workflow-nav" aria-label="Queue views">
@@ -54,11 +49,6 @@ export function WorkspaceHeader({
           </Link>
         ))}
       </nav>
-
-      <Link className="site-profile-link" href="/profile">
-        <span className="site-profile-label">{operatorLabel}</span>
-        <span aria-hidden="true" className="site-profile-mark" />
-      </Link>
     </header>
   )
 }

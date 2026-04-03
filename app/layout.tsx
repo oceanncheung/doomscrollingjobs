@@ -19,17 +19,12 @@ export const metadata: Metadata = {
   description: site.description,
 }
 
-function HeaderFallback({
-  counts,
-  operatorLabel,
-}: {
-  counts?: Partial<Record<QueueView, number>>
-  operatorLabel: string
-}) {
+function HeaderFallback({ counts }: { counts?: Partial<Record<QueueView, number>> }) {
   return (
     <header className="site-header">
       <Link className="site-brand" href="/dashboard">
         <strong>Doom Scrolling Jobs</strong>
+        <span aria-hidden="true" className="site-profile-mark" />
       </Link>
 
       <nav className="site-workflow-nav" aria-label="Queue views">
@@ -64,11 +59,6 @@ function HeaderFallback({
           ) : null}
         </Link>
       </nav>
-
-      <Link className="site-profile-link" href="/profile">
-        <span className="site-profile-label">{operatorLabel}</span>
-        <span aria-hidden="true" className="site-profile-mark" />
-      </Link>
     </header>
   )
 }
@@ -78,18 +68,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const counts = session.activeOperator
     ? getDashboardQueues((await getRankedJobs()).jobs).counts
     : undefined
-  const operatorLabel = session.activeOperator
-    ? session.activeOperator.displayName
-    : session.needsSetup
-      ? 'Create Operator'
-      : 'Choose Operator'
 
   return (
     <html lang="en">
       <body>
         <div className="workspace-shell">
-          <Suspense fallback={<HeaderFallback counts={counts} operatorLabel={operatorLabel || site.name} />}>
-            <WorkspaceHeader counts={counts} operatorLabel={operatorLabel || site.name} />
+          <Suspense fallback={<HeaderFallback counts={counts} />}>
+            <WorkspaceHeader counts={counts} />
           </Suspense>
 
           <div className="workspace-main">{children}</div>
