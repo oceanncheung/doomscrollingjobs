@@ -46,8 +46,8 @@ export function OperatorAccessForm({
       ) : null}
 
       <section className="panel operator-setup-panel">
-        <p className="panel-label">{hasOperators ? 'Add operator' : 'First operator'}</p>
-        <h2>{hasOperators ? 'Create another internal operator' : 'Create the first operator'}</h2>
+        <p className="panel-label">{hasOperators ? 'Add account' : 'First account'}</p>
+        <h2>{hasOperators ? 'Create another internal account' : 'Create the first account'}</h2>
 
         <form action={formAction} className="operator-setup-form">
           <label className="field">
@@ -61,7 +61,7 @@ export function OperatorAccessForm({
           </label>
 
           <button className="button button-primary" disabled={isPending} type="submit">
-            {isPending ? 'Saving...' : hasOperators ? 'Add Operator' : 'Create Operator'}
+            {isPending ? 'Saving...' : hasOperators ? 'Add Account' : 'Create Account'}
           </button>
 
           {state.message ? (

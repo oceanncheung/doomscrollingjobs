@@ -4,15 +4,16 @@ import { notFound } from 'next/navigation'
 import { JobStageActionButton } from '@/components/jobs/job-stage-action-button'
 import { getRankedJob } from '@/lib/data/jobs'
 import { requireActiveOperatorSelection } from '@/lib/data/operators'
+import { getOperatorProfile } from '@/lib/data/operator-profile'
 import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
 import {
   formatDateLabel,
   formatQueueSegmentLabel,
   formatRemoteLabel,
-  formatSalaryRange,
   formatScore,
   formatWorkflowLabel,
 } from '@/lib/jobs/presentation'
+import { getEffectiveSalaryInsight } from '@/lib/jobs/salary-estimation'
 
 export const dynamic = 'force-dynamic'
 
@@ -57,12 +58,8 @@ function getLocationDisplay(job: QualifiedJobRecord) {
   return `${remoteLabel} · ${locationLabel}`
 }
 
-function getSalarySignal(job: QualifiedJobRecord) {
-  if (job.salaryCurrency && (job.salaryMin || job.salaryMax)) {
-    return formatSalaryRange(job)
-  }
-
-  return 'Estimated market range pending'
+function getSalarySignal(job: QualifiedJobRecord, profile: Awaited<ReturnType<typeof getOperatorProfile>>['workspace']['profile']) {
+  return getEffectiveSalaryInsight(job, profile).value
 }
 
 function toPlainDescription(value: string) {
@@ -199,6 +196,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
   await requireActiveOperatorSelection()
   const { jobId } = await params
   const { job, source } = await getRankedJob(jobId)
+  const { workspace } = await getOperatorProfile()
 
   if (!job) {
     notFound()
@@ -240,7 +238,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
           </div>
           <div className="stage-summary-item">
             <span className="panel-label">Salary</span>
-            <strong>{getSalarySignal(job)}</strong>
+            <strong>{getSalarySignal(job, workspace.profile)}</strong>
           </div>
           <div className="stage-summary-item">
             <span className="panel-label">Posted</span>

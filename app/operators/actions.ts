@@ -89,6 +89,21 @@ export async function selectOperator(formData: FormData) {
   redirect('/dashboard')
 }
 
+export async function clearActiveOperatorSelection() {
+  const cookieStore = await cookies()
+
+  cookieStore.set(activeOperatorCookieName, '', {
+    expires: new Date(0),
+    httpOnly: false,
+    path: '/',
+    sameSite: 'lax',
+  })
+
+  revalidatePath('/')
+  revalidatePath('/operators')
+  redirect('/operators')
+}
+
 export async function createOperator(
   _previousState: OperatorSetupActionState,
   formData: FormData,

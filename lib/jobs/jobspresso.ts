@@ -7,10 +7,61 @@ import type { ImportedSourceBatch } from './greenhouse'
 
 const jobspressoSourceKey = 'jobspresso'
 const jobspressoSourceName = 'Jobspresso'
-const jobspressoListingsUrl = 'https://jobspresso.co/jm-ajax/get_listings/?filter_job_type%5B%5D=designer'
-const maxJobspressoPages = 6
-const maxJobspressoListings = 60
+const jobspressoListingsEndpoint = 'https://jobspresso.co/jm-ajax/get_listings/'
+const maxJobspressoPagesPerQuery = 2
+const maxJobspressoListings = 90
 const browserUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'
+
+const jobspressoQueries = [
+  {
+    label: 'designer job type',
+    params: new URLSearchParams({
+      'filter_job_type[]': 'designer',
+    }),
+  },
+  {
+    label: 'brand designer search',
+    params: new URLSearchParams({
+      search_keywords: 'brand designer',
+    }),
+  },
+  {
+    label: 'graphic designer search',
+    params: new URLSearchParams({
+      search_keywords: 'graphic designer',
+    }),
+  },
+  {
+    label: 'visual designer search',
+    params: new URLSearchParams({
+      search_keywords: 'visual designer',
+    }),
+  },
+  {
+    label: 'marketing designer search',
+    params: new URLSearchParams({
+      search_keywords: 'marketing designer',
+    }),
+  },
+  {
+    label: 'web designer search',
+    params: new URLSearchParams({
+      search_keywords: 'web designer',
+    }),
+  },
+  {
+    label: 'creative designer search',
+    params: new URLSearchParams({
+      search_keywords: 'creative designer',
+    }),
+  },
+  {
+    label: 'presentation designer search',
+    params: new URLSearchParams({
+      search_keywords: 'presentation designer',
+    }),
+  },
+] as const
 
 interface JobspressoListingsPayload {
   found_jobs?: boolean
@@ -196,45 +247,53 @@ async function fetchJobspressoDetail(url: string, capturedAt: string): Promise<R
 export async function fetchJobspressoJobs(): Promise<ImportedSourceBatch> {
   try {
     const listingUrls = new Set<string>()
-    let totalPages = 1
+    let rowsSeen = 0
+    const issues: string[] = []
 
-    for (let page = 1; page <= totalPages && page <= maxJobspressoPages; page += 1) {
-      const response = await fetch(`${jobspressoListingsUrl}&page=${page}`, {
-        cache: 'no-store',
-        headers: {
-          Accept: 'application/json',
-          'User-Agent': browserUserAgent,
-        },
-      })
+    for (const query of jobspressoQueries) {
+      let totalPages = 1
 
-      if (!response.ok) {
-        return {
-          issue: `Jobspresso returned ${response.status}.`,
-          provider: 'jobspresso',
-          rawJobs: [],
-          rowsSeen: 0,
-          sourceKey: jobspressoSourceKey,
-          sourceKind: 'remote_board',
-          sourceName: jobspressoSourceName,
-        }
-      }
+      for (
+        let page = 1;
+        page <= totalPages && page <= maxJobspressoPagesPerQuery && listingUrls.size < maxJobspressoListings;
+        page += 1
+      ) {
+        const params = new URLSearchParams(query.params)
+        params.set('page', String(page))
 
-      const payload = normalizeListingsPayload(await response.json())
+        const response = await fetch(`${jobspressoListingsEndpoint}?${params.toString()}`, {
+          cache: 'no-store',
+          headers: {
+            Accept: 'application/json',
+            'User-Agent': browserUserAgent,
+          },
+        })
 
-      if (page === 1) {
-        totalPages = Math.min(payload.max_num_pages ?? 1, maxJobspressoPages)
-      }
-
-      for (const url of extractListingUrls(asString(payload.html))) {
-        listingUrls.add(url)
-
-        if (listingUrls.size >= maxJobspressoListings) {
+        if (!response.ok) {
+          issues.push(`${query.label}: Jobspresso returned ${response.status}.`)
           break
         }
-      }
 
-      if (listingUrls.size >= maxJobspressoListings || payload.found_jobs === false) {
-        break
+        const payload = normalizeListingsPayload(await response.json())
+
+        if (page === 1) {
+          totalPages = Math.min(payload.max_num_pages ?? 1, maxJobspressoPagesPerQuery)
+        }
+
+        const urls = extractListingUrls(asString(payload.html))
+        rowsSeen += urls.length
+
+        for (const url of urls) {
+          listingUrls.add(url)
+
+          if (listingUrls.size >= maxJobspressoListings) {
+            break
+          }
+        }
+
+        if (payload.found_jobs === false) {
+          break
+        }
       }
     }
 
@@ -245,10 +304,12 @@ export async function fetchJobspressoJobs(): Promise<ImportedSourceBatch> {
 
     if (listingUrls.size > 0 && rawJobs.length === 0) {
       return {
-        issue: 'Jobspresso listings were discovered, but none could be normalized from detail pages.',
+        issue:
+          issues.join(' · ') ||
+          'Jobspresso listings were discovered, but none could be normalized from detail pages.',
         provider: 'jobspresso',
         rawJobs: [],
-        rowsSeen: listingUrls.size,
+        rowsSeen: Math.max(rowsSeen, listingUrls.size),
         sourceKey: jobspressoSourceKey,
         sourceKind: 'remote_board',
         sourceName: jobspressoSourceName,
@@ -256,9 +317,10 @@ export async function fetchJobspressoJobs(): Promise<ImportedSourceBatch> {
     }
 
     return {
+      issue: issues.length > 0 ? issues.join(' · ') : undefined,
       provider: 'jobspresso',
       rawJobs,
-      rowsSeen: listingUrls.size,
+      rowsSeen: Math.max(rowsSeen, listingUrls.size),
       sourceKey: jobspressoSourceKey,
       sourceKind: 'remote_board',
       sourceName: jobspressoSourceName,

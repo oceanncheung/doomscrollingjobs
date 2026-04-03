@@ -2,6 +2,9 @@ import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
 
 const screeningBatchSize = 8
 const minimumStrictScreeningBatch = 5
+const maximumJobsPerRegion = 3
+const maximumJobsPerSource = 3
+const maximumJobsPerSubtype = 2
 
 const genericMatchReasonPatterns = [
   'remote requirement still passes',
@@ -78,7 +81,12 @@ function sortStageJobs(jobs: QualifiedJobRecord[]) {
 }
 
 function isActiveScreeningJob(job: QualifiedJobRecord) {
-  return (job.workflowStatus === 'new' || job.workflowStatus === 'ranked') && job.queueSegment !== 'hidden'
+  return (
+    (job.workflowStatus === 'new' || job.workflowStatus === 'ranked') &&
+    job.queueSegment !== 'hidden' &&
+    !job.stale &&
+    job.listingStatus !== 'stale'
+  )
 }
 
 function isStrictScreeningCandidate(job: QualifiedJobRecord) {
@@ -115,9 +123,11 @@ function buildScreeningPool(jobs: QualifiedJobRecord[]) {
 function buildPotentialQueue(jobs: QualifiedJobRecord[]) {
   const selected: QualifiedJobRecord[] = []
   const seenCompanies = new Set<string>()
-  const seenRolePatterns = new Set<string>()
+  const sourceCounts = new Map<string, number>()
+  const regionCounts = new Map<string, number>()
+  const subtypeCounts = new Map<string, number>()
 
-  const getRolePattern = (job: QualifiedJobRecord) => {
+  const getSubtypeKey = (job: QualifiedJobRecord) => {
     const tokens = job.title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, ' ')
@@ -127,20 +137,43 @@ function buildPotentialQueue(jobs: QualifiedJobRecord[]) {
     return tokens.slice(0, 2).join(' ') || job.title.toLowerCase()
   }
 
+  const getRegionKey = (job: QualifiedJobRecord) =>
+    job.remoteRegions[0]?.toLowerCase() || job.locationLabel?.toLowerCase() || 'remote'
+
+  const canAddWithDiversity = (job: QualifiedJobRecord) => {
+    const sourceCount = sourceCounts.get(job.sourceName) ?? 0
+    const regionCount = regionCounts.get(getRegionKey(job)) ?? 0
+    const subtypeCount = subtypeCounts.get(getSubtypeKey(job)) ?? 0
+
+    return (
+      sourceCount < maximumJobsPerSource &&
+      regionCount < maximumJobsPerRegion &&
+      subtypeCount < maximumJobsPerSubtype
+    )
+  }
+
+  const rememberDiversity = (job: QualifiedJobRecord) => {
+    const regionKey = getRegionKey(job)
+    const subtypeKey = getSubtypeKey(job)
+
+    sourceCounts.set(job.sourceName, (sourceCounts.get(job.sourceName) ?? 0) + 1)
+    regionCounts.set(regionKey, (regionCounts.get(regionKey) ?? 0) + 1)
+    subtypeCounts.set(subtypeKey, (subtypeCounts.get(subtypeKey) ?? 0) + 1)
+  }
+
   for (const job of jobs) {
     if (selected.length >= screeningBatchSize) {
       break
     }
 
     const companyKey = job.companyName.toLowerCase()
-    const rolePattern = getRolePattern(job)
 
-    if (seenCompanies.has(companyKey) || seenRolePatterns.has(rolePattern)) {
+    if (seenCompanies.has(companyKey) || !canAddWithDiversity(job)) {
       continue
     }
 
     seenCompanies.add(companyKey)
-    seenRolePatterns.add(rolePattern)
+    rememberDiversity(job)
     selected.push(job)
   }
 

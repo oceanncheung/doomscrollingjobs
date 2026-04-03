@@ -65,6 +65,16 @@ const defaultSourceRegistry: SourceRegistryEntry[] = [
     sourceKind: 'remote_board',
   },
   {
+    baseUrl: 'https://weworkremotely.com/categories/remote-design-jobs.rss',
+    displayName: 'We Work Remotely',
+    metadata: {
+      format: 'rss',
+    },
+    provider: 'weworkremotely',
+    slug: 'we-work-remotely',
+    sourceKind: 'remote_board',
+  },
+  {
     baseUrl: 'https://authenticjobs.com/?feed=job_feed',
     displayName: 'Authentic Jobs',
     metadata: {
@@ -72,6 +82,16 @@ const defaultSourceRegistry: SourceRegistryEntry[] = [
     },
     provider: 'authenticjobs',
     slug: 'authentic-jobs',
+    sourceKind: 'remote_board',
+  },
+  {
+    baseUrl: 'https://www.remotesource.com/remote-jobs/design',
+    displayName: 'Remote Source',
+    metadata: {
+      category: 'design',
+    },
+    provider: 'remotesource',
+    slug: 'remote-source',
     sourceKind: 'remote_board',
   },
   {
@@ -365,9 +385,39 @@ export function getImportedSourceNames(
   ])
 }
 
+async function getSourceDescriptorBySourceName() {
+  const [registry, watchlist] = await Promise.all([getSourceRegistry(), getCompanyWatchlist()])
+  const descriptors = new Map<
+    string,
+    Pick<SourceDiagnostics, 'provider' | 'sourceKey' | 'sourceKind' | 'sourceName'>
+  >()
+
+  for (const entry of registry) {
+    descriptors.set(entry.displayName, {
+      provider: entry.provider,
+      sourceKey: entry.slug,
+      sourceKind: entry.sourceKind,
+      sourceName: entry.displayName,
+    })
+  }
+
+  for (const entry of watchlist) {
+    const registryEntry = registry.find((item) => item.slug === entry.sourceRegistrySlug)
+
+    descriptors.set(entry.sourceName, {
+      provider: registryEntry?.provider ?? entry.sourceRegistrySlug,
+      sourceKey: entry.sourceKey,
+      sourceKind: registryEntry?.sourceKind ?? 'company_career_page',
+      sourceName: entry.sourceName,
+    })
+  }
+
+  return descriptors
+}
+
 export async function saveSourceDiagnostics(diagnostics: SourceDiagnostics[]) {
   if (diagnostics.length === 0) {
-    return
+    return undefined
   }
 
   try {
@@ -380,8 +430,11 @@ export async function saveSourceDiagnostics(diagnostics: SourceDiagnostics[]) {
         rows_deduped: entry.rowsDeduped,
         rows_excluded: entry.rowsExcluded,
         rows_imported: entry.rowsImported,
+        rows_normalized: entry.rowsNormalized,
+        rows_qualified: entry.rowsQualified,
         rows_seen: entry.rowsSeen,
         rows_stale: entry.rowsStale,
+        rows_visible: entry.rowsVisible,
         source_key: entry.sourceKey,
         source_kind: entry.sourceKind,
         source_name: entry.sourceName,
@@ -395,8 +448,81 @@ export async function saveSourceDiagnostics(diagnostics: SourceDiagnostics[]) {
       },
     )
   } catch {
-    // Diagnostics persistence is optional until the new migration is applied.
+    return 'Source diagnostics could not be persisted.'
   }
+
+  return undefined
+}
+
+export async function saveSourceQueueCoverage(
+  qualifiedCounts: Map<string, number>,
+  visibleCounts: Map<string, number>,
+) {
+  const sourceNames = new Set([...qualifiedCounts.keys(), ...visibleCounts.keys()])
+
+  if (sourceNames.size === 0) {
+    return undefined
+  }
+
+  try {
+    const descriptorByName = await getSourceDescriptorBySourceName()
+    const supabase = createClient()
+    const sourceKeys = [...sourceNames]
+      .map((sourceName) => descriptorByName.get(sourceName)?.sourceKey ?? '')
+      .filter(Boolean)
+    const { data: existingRows } = sourceKeys.length
+      ? await supabase
+          .from('source_sync_diagnostics')
+          .select(
+            'source_key, rows_seen, rows_candidate, rows_excluded, rows_deduped, rows_imported, rows_stale, rows_normalized',
+          )
+          .in('source_key', sourceKeys)
+      : { data: [] }
+    const existingBySourceKey = new Map(
+      ((existingRows as Array<Record<string, unknown>> | null) ?? []).map((row) => [asString(row.source_key), row] as const),
+    )
+    await supabase.from('source_sync_diagnostics').upsert(
+      [...sourceNames]
+        .map((sourceName) => {
+          const descriptor = descriptorByName.get(sourceName)
+
+          if (!descriptor) {
+            return null
+          }
+
+          const existing = existingBySourceKey.get(descriptor.sourceKey)
+
+          return {
+            provider: descriptor.provider,
+            rows_candidate: asNumber(existing?.rows_candidate),
+            rows_deduped: asNumber(existing?.rows_deduped),
+            rows_excluded: asNumber(existing?.rows_excluded),
+            rows_imported: asNumber(existing?.rows_imported),
+            rows_normalized: asNumber(existing?.rows_normalized),
+            rows_qualified: qualifiedCounts.get(sourceName) ?? 0,
+            rows_seen: asNumber(existing?.rows_seen),
+            rows_stale: asNumber(existing?.rows_stale),
+            rows_visible: visibleCounts.get(sourceName) ?? 0,
+            source_key: descriptor.sourceKey,
+            source_kind: descriptor.sourceKind,
+            source_name: descriptor.sourceName,
+            sync_metadata: {
+              provider: descriptor.provider,
+            },
+            synced_at: new Date().toISOString(),
+          }
+        })
+        .filter((entry) => entry !== null),
+      {
+        ignoreDuplicates: false,
+        onConflict: 'source_key',
+      },
+    )
+  } catch {
+    return 'Source queue coverage could not be persisted.'
+  }
+
+  return undefined
 }
 
 export function summarizeSourceDiagnostics(diagnostics: SourceDiagnostics[]) {

@@ -200,12 +200,30 @@ values
   true
 ),
 (
+  'we-work-remotely',
+  'We Work Remotely',
+  'remote_board',
+  'weworkremotely',
+  'https://weworkremotely.com/categories/remote-design-jobs.rss',
+  '{"format":"rss"}'::jsonb,
+  true
+),
+(
   'authentic-jobs',
   'Authentic Jobs',
   'remote_board',
   'authenticjobs',
   'https://authenticjobs.com/?feed=job_feed',
   '{"format":"rss"}'::jsonb,
+  true
+),
+(
+  'remote-source',
+  'Remote Source',
+  'remote_board',
+  'remotesource',
+  'https://www.remotesource.com/remote-jobs/design',
+  '{"category":"design"}'::jsonb,
   true
 ),
 (
@@ -831,3 +849,7 @@ set
   red_flags = excluded.red_flags,
   scam_risk_level = excluded.scam_risk_level,
   scored_at = excluded.scored_at;
+
+-- Legacy internal account cleanup. Keep seed reruns from reintroducing it.
+delete from public.users
+where id = '11111111-1111-4111-8111-111111111111';

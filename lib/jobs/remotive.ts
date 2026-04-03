@@ -6,7 +6,66 @@ import type { ImportedSourceBatch } from './greenhouse'
 
 const remotiveSourceKey = 'remotive'
 const remotiveSourceName = 'Remotive'
-const remotiveSourceUrl = 'https://remotive.com/api/remote-jobs?category=design&limit=120'
+const remotiveBaseUrl = 'https://remotive.com/api/remote-jobs'
+
+const remotiveQueries = [
+  {
+    label: 'design category',
+    params: new URLSearchParams({
+      category: 'design',
+      limit: '120',
+    }),
+  },
+  {
+    label: 'designer search',
+    params: new URLSearchParams({
+      limit: '120',
+      search: 'designer',
+    }),
+  },
+  {
+    label: 'graphic designer search',
+    params: new URLSearchParams({
+      limit: '120',
+      search: 'graphic designer',
+    }),
+  },
+  {
+    label: 'brand designer search',
+    params: new URLSearchParams({
+      limit: '120',
+      search: 'brand designer',
+    }),
+  },
+  {
+    label: 'visual designer search',
+    params: new URLSearchParams({
+      limit: '120',
+      search: 'visual designer',
+    }),
+  },
+  {
+    label: 'web designer search',
+    params: new URLSearchParams({
+      limit: '120',
+      search: 'web designer',
+    }),
+  },
+  {
+    label: 'creative designer search',
+    params: new URLSearchParams({
+      limit: '120',
+      search: 'creative designer',
+    }),
+  },
+  {
+    label: 'marketing designer search',
+    params: new URLSearchParams({
+      limit: '120',
+      search: 'marketing designer',
+    }),
+  },
+]
 
 interface RemotiveJobRecord {
   candidate_required_location?: string
@@ -131,46 +190,78 @@ function normalizeRemotiveRawJob(item: RemotiveJobRecord, capturedAt: string): R
       tags: asStringArray(item.tags),
     },
     postedAtRaw: asString(item.publication_date) || undefined,
+    sourceJobId,
     sourceKey: remotiveSourceKey,
     sourceKind: 'remote_board',
-    sourceJobId,
     sourceName: remotiveSourceName,
     sourceUrl,
     titleRaw,
   }
 }
 
+async function fetchRemotivePayload(query: URLSearchParams) {
+  const response = await fetch(`${remotiveBaseUrl}?${query.toString()}`, {
+    cache: 'no-store',
+    headers: {
+      Accept: 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Remotive returned ${response.status}.`)
+  }
+
+  return normalizePayload(await response.json())
+}
+
 export async function fetchRemotiveJobs(): Promise<ImportedSourceBatch> {
   try {
-    const response = await fetch(remotiveSourceUrl, {
-      cache: 'no-store',
-      headers: {
-        Accept: 'application/json',
-      },
-    })
+    const payloads = await Promise.allSettled(remotiveQueries.map((query) => fetchRemotivePayload(query.params)))
+    const issues = payloads
+      .flatMap((result, index) =>
+        result.status === 'rejected'
+          ? [`${remotiveQueries[index]?.label ?? 'query'}: ${result.reason instanceof Error ? result.reason.message : 'request failed'}`]
+          : [],
+      )
+    const capturedAt = new Date().toISOString()
+    const rawJobsById = new Map<string, RawJobIntakeRecord>()
+    let rowsSeen = 0
 
-    if (!response.ok) {
+    for (const result of payloads) {
+      if (result.status !== 'fulfilled') {
+        continue
+      }
+
+      rowsSeen += result.value['job-count'] ?? result.value.jobs?.length ?? 0
+
+      for (const item of result.value.jobs ?? []) {
+        const normalized = normalizeRemotiveRawJob(item, capturedAt)
+
+        if (!normalized) {
+          continue
+        }
+
+        rawJobsById.set(normalized.sourceJobId ?? normalized.sourceUrl, normalized)
+      }
+    }
+
+    if (rawJobsById.size === 0) {
       return {
-        issue: `Remotive returned ${response.status}.`,
+        issue: issues.join(' · ') || undefined,
         provider: 'remotive',
         rawJobs: [],
-        rowsSeen: 0,
+        rowsSeen,
         sourceKey: remotiveSourceKey,
         sourceKind: 'remote_board',
         sourceName: remotiveSourceName,
       }
     }
 
-    const payload = normalizePayload(await response.json())
-    const capturedAt = new Date().toISOString()
-    const rawJobs = (payload.jobs ?? [])
-      .map((item) => normalizeRemotiveRawJob(item, capturedAt))
-      .filter((item): item is RawJobIntakeRecord => item !== null)
-
     return {
+      issue: issues.length > 0 ? issues.join(' · ') : undefined,
       provider: 'remotive',
-      rawJobs,
-      rowsSeen: payload['job-count'] ?? rawJobs.length,
+      rawJobs: [...rawJobsById.values()],
+      rowsSeen: Math.max(rowsSeen, rawJobsById.size),
       sourceKey: remotiveSourceKey,
       sourceKind: 'remote_board',
       sourceName: remotiveSourceName,

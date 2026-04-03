@@ -5,12 +5,13 @@ import { JobStageActionButton } from '@/components/jobs/job-stage-action-button'
 import { ApplicationPacketForm } from '@/components/jobs/application-packet-form'
 import { getApplicationPacketReview } from '@/lib/data/application-packets'
 import { requireActiveOperatorSelection } from '@/lib/data/operators'
+import { getOperatorProfile } from '@/lib/data/operator-profile'
 import {
   formatDateLabel,
   formatRemoteLabel,
-  formatSalaryRange,
   formatWorkflowLabel,
 } from '@/lib/jobs/presentation'
+import { getEffectiveSalaryInsight } from '@/lib/jobs/salary-estimation'
 
 export const dynamic = 'force-dynamic'
 
@@ -78,6 +79,7 @@ export default async function PacketReviewPage({ params }: PacketReviewPageProps
   await requireActiveOperatorSelection()
   const { jobId } = await params
   const { canSave, issue, job, packet } = await getApplicationPacketReview(jobId)
+  const { workspace } = await getOperatorProfile()
 
   if (!job || !packet) {
     notFound()
@@ -98,7 +100,7 @@ export default async function PacketReviewPage({ params }: PacketReviewPageProps
           </div>
           <div>
             <span className="panel-label">Salary</span>
-            <strong>{formatSalaryRange(job)}</strong>
+            <strong>{getEffectiveSalaryInsight(job, workspace.profile).value}</strong>
           </div>
           <div>
             <span className="panel-label">Workflow</span>

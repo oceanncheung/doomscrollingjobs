@@ -266,7 +266,87 @@ main {
   padding-left: 0;
   padding-right: 0;
   padding-top: 0;
+  padding-bottom: 0;
   max-width: none;
+}
+
+html.jobs-marquee-open .workspace-main > main.jobs-index {
+  padding-bottom: 2.75rem;
+}
+
+@keyframes jobs-marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.jobs-marquee-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 90;
+  display: flex;
+  align-items: stretch;
+  height: 2.75rem;
+  background: #000;
+  color: #fff;
+  overflow: hidden;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.jobs-marquee-inner {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.jobs-marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 4rem;
+  animation: jobs-marquee-scroll 16s linear infinite;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.jobs-marquee-segment {
+  flex-shrink: 0;
+}
+
+.jobs-marquee-close {
+  flex: 0 0 2.75rem;
+  width: 2.75rem;
+  border: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.28);
+  background: #000;
+  color: #fff;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.jobs-marquee-close:hover {
+  background: #1a1a1a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jobs-marquee-track {
+    animation: none;
+  }
 }
 
 .page-stack {
@@ -293,6 +373,12 @@ main {
   display: grid;
   gap: 24px;
   align-content: start;
+}
+
+.page-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .page-heading h1 {
@@ -658,6 +744,10 @@ main.jobs-index .queue-list .screening-row::after {
   padding-top: 0;
 }
 
+main.jobs-index .queue-list .screening-disclosure {
+  margin: 0;
+}
+
 .screening-disclosure summary {
   list-style: none;
   cursor: pointer;
@@ -770,9 +860,9 @@ main.jobs-index .queue-list .screening-row::after {
     minmax(8rem, 0.9fr)
     minmax(8rem, 0.9fr);
   gap: 16px;
-  align-items: center;
-  margin-top: 0;
-  margin-left: 0;
+  align-items: stretch;
+  margin: 0;
+  padding: 0;
   width: 100%;
   max-width: none;
   box-sizing: border-box;
@@ -781,17 +871,25 @@ main.jobs-index .queue-list .screening-row::after {
 }
 
 .screening-actions-cluster {
-  grid-column: 4;
+  grid-column: 4 / -1;
   display: flex;
   align-items: stretch;
   gap: 0;
-  justify-self: start;
+  justify-self: stretch;
+  width: 100%;
+  min-width: 0;
 }
 
 .screening-action-slot {
-  display: inline-flex;
+  display: flex;
   align-items: stretch;
   min-height: auto;
+  min-width: 0;
+}
+
+.screening-action-slot:last-child {
+  flex: 1;
+  min-width: 0;
 }
 
 .screening-action-slot:first-child {
@@ -799,11 +897,15 @@ main.jobs-index .queue-list .screening-row::after {
 }
 
 .screening-actions-bar .stage-action-form {
-  display: inline-flex;
-  width: auto;
+  display: flex;
+  width: 100%;
   min-width: 0;
   margin: 0;
   gap: 0;
+}
+
+.screening-action-slot:first-child .stage-action-form {
+  width: auto;
 }
 
 .screening-actions-bar .button {
@@ -828,6 +930,13 @@ main.jobs-index .queue-list .screening-row::after {
 
 .screening-action-slot + .screening-action-slot .button {
   border-left: 0;
+}
+
+.screening-action-slot:last-child .stage-action-form,
+.screening-action-slot:last-child .button {
+  width: 100%;
+  flex: 1;
+  min-width: 0;
 }
 
 .screening-actions-bar .button:hover:not(:disabled) {
@@ -1494,13 +1603,15 @@ main.jobs-index .queue-list .screening-row::after {
 
   .screening-actions-bar {
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
     width: 100%;
     gap: 0;
   }
 
   .screening-actions-cluster {
     grid-column: auto;
+    width: 100%;
+    min-width: 0;
   }
 }
 

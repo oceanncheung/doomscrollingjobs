@@ -6,10 +6,15 @@ import { getActiveOperatorContext } from '@/lib/data/operators'
 import { getOperatorProfile } from '@/lib/data/operator-profile'
 import { hasSupabaseServerEnv } from '@/lib/env'
 import type { QualifiedJobRecord, RankedJobRecord } from '@/lib/jobs/contracts'
+import { getDashboardQueues } from '@/lib/jobs/dashboard-queue'
 import { applyWorkflowLearning } from '@/lib/jobs/learning'
 import { applyQualificationEngine } from '@/lib/jobs/qualification'
 import { ensurePrimaryImportedJobs } from '@/lib/jobs/real-feed'
-import { isImportedSourceName, summarizeSourceDiagnostics } from '@/lib/jobs/source-registry'
+import {
+  isImportedSourceName,
+  saveSourceQueueCoverage,
+  summarizeSourceDiagnostics,
+} from '@/lib/jobs/source-registry'
 import { createClient } from '@/lib/supabase/server'
 
 type JobsSource = 'seed' | 'database' | 'database-fallback'
@@ -492,6 +497,7 @@ export const getRankedJobs = cache(async function getRankedJobs(): Promise<Ranke
     )
     .eq('operator_id', operatorContext.operator.id)
     .eq('remote_gate_passed', true)
+    .neq('jobs.listing_status', 'stale')
     .order('total_score', { ascending: false })
 
   if (error || !data || data.length === 0) {
@@ -530,6 +536,20 @@ export const getRankedJobs = cache(async function getRankedJobs(): Promise<Ranke
 
   if (importedJobs.length > 0) {
     const learnedJobs = await applyWorkflowLearning(importedJobs, operatorContext.operator.id)
+    const qualifiedJobs = applyQualificationEngine(dedupeRankedJobs(learnedJobs), workspace.profile)
+    const queues = getDashboardQueues(qualifiedJobs)
+    const qualifiedCounts = new Map<string, number>()
+    const visibleCounts = new Map<string, number>()
+
+    for (const job of qualifiedJobs.filter((item) => item.queueSegment !== 'hidden')) {
+      qualifiedCounts.set(job.sourceName, (qualifiedCounts.get(job.sourceName) ?? 0) + 1)
+    }
+
+    for (const job of queues.potentialJobs) {
+      visibleCounts.set(job.sourceName, (visibleCounts.get(job.sourceName) ?? 0) + 1)
+    }
+
+    await saveSourceQueueCoverage(qualifiedCounts, visibleCounts)
     const diagnosticsSummary = summarizeSourceDiagnostics(importResult.sourceDiagnostics ?? [])
 
     return {
@@ -538,7 +558,7 @@ export const getRankedJobs = cache(async function getRankedJobs(): Promise<Ranke
         importResult.importedCount > 0
           ? `Imported ${importResult.importedCount} jobs into the primary ranked feed.${diagnosticsSummary ? ` ${diagnosticsSummary}.` : ''}`
           : undefined,
-      jobs: applyQualificationEngine(dedupeRankedJobs(learnedJobs), workspace.profile),
+      jobs: qualifiedJobs,
       source: 'database',
     }
   }

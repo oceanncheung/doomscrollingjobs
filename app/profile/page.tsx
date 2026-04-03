@@ -1,3 +1,4 @@
+import { clearActiveOperatorSelection } from '@/app/operators/actions'
 import { ProfileForm } from '@/components/profile/profile-form'
 import { requireActiveOperatorSelection } from '@/lib/data/operators'
 import { getOperatorProfile } from '@/lib/data/operator-profile'
@@ -16,6 +17,13 @@ export default async function ProfilePage() {
           <p className="panel-label">Operator settings</p>
           <h1>Settings</h1>
           <p>Keep source material current, then step into the deeper controls only when needed.</p>
+          <div className="page-heading-actions">
+            <form action={clearActiveOperatorSelection}>
+              <button className="button button-secondary button-small" type="submit">
+                Log out
+              </button>
+            </form>
+          </div>
         </div>
         <div className="flow-snapshot">
           <div>

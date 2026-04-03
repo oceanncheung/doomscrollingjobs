@@ -5,6 +5,7 @@ import type {
   QueueSegment,
   RankedJobRecord,
 } from '@/lib/jobs/contracts'
+import { getEffectiveSalaryBounds } from '@/lib/jobs/salary-estimation'
 
 interface MarketDefinition {
   key: string
@@ -540,15 +541,22 @@ function assessMarketFit(job: RankedJobRecord, scope: OperatorScope) {
 }
 
 function assessCompensationSignal(job: RankedJobRecord, scope: OperatorScope) {
-  const effectiveMin = job.salaryMin ?? job.salaryMax
-  const effectiveMax = job.salaryMax ?? job.salaryMin
+  const compensation = getEffectiveSalaryBounds(job)
+  const effectiveMin = compensation.min ?? compensation.max
+  const effectiveMax = compensation.max ?? compensation.min
 
   if (effectiveMin == null && effectiveMax == null) {
     return createDimension('mixed', -2, 'No salary is listed yet.')
   }
 
   if (scope.salaryFloor != null && effectiveMax != null && effectiveMax < scope.salaryFloor) {
-    return createDimension('weak', -8, 'Listed compensation falls below your salary floor.')
+    return createDimension(
+      'weak',
+      compensation.estimated ? -6 : -8,
+      compensation.estimated
+        ? 'Estimated market range falls below your salary floor.'
+        : 'Listed compensation falls below your salary floor.',
+    )
   }
 
   if (
@@ -557,18 +565,42 @@ function assessCompensationSignal(job: RankedJobRecord, scope: OperatorScope) {
     effectiveMax >= scope.salaryTargetMin &&
     (scope.salaryTargetMax == null || effectiveMin == null || effectiveMin <= scope.salaryTargetMax)
   ) {
-    return createDimension('strong', 8, 'Compensation lands in your current target range.')
+    return createDimension(
+      compensation.estimated ? 'good' : 'strong',
+      compensation.estimated ? 5 : 8,
+      compensation.estimated
+        ? 'Estimated market range lands near your current target range.'
+        : 'Compensation lands in your current target range.',
+    )
   }
 
   if (scope.salaryFloor != null && effectiveMin != null && effectiveMin >= scope.salaryFloor) {
-    return createDimension('good', 5, 'Compensation clears your current floor.')
+    return createDimension(
+      'good',
+      compensation.estimated ? 4 : 5,
+      compensation.estimated
+        ? 'Estimated market range clears your current floor.'
+        : 'Compensation clears your current floor.',
+    )
   }
 
   if (scope.salaryFloor != null && effectiveMax != null && effectiveMax >= scope.salaryFloor) {
-    return createDimension('mixed', 2, 'Compensation might clear your floor, but the range is still loose.')
+    return createDimension(
+      'mixed',
+      compensation.estimated ? 1 : 2,
+      compensation.estimated
+        ? 'Estimated market range might clear your floor, but confidence is still limited.'
+        : 'Compensation might clear your floor, but the range is still loose.',
+    )
   }
 
-  return createDimension('good', 3, 'Compensation is listed and still worth considering.')
+  return createDimension(
+    'good',
+    compensation.estimated ? 2 : 3,
+    compensation.estimated
+      ? 'Estimated market range is available and still worth considering.'
+      : 'Compensation is listed and still worth considering.',
+  )
 }
 
 function assessApplicationFriction(job: RankedJobRecord, scope: OperatorScope) {

@@ -10,9 +10,9 @@ export default async function OperatorsPage() {
     <main className="page-stack">
       <section className="page-header">
         <div className="page-heading">
-          <p className="panel-label">Operators</p>
-          <h1>Choose An Operator</h1>
-          <p>Select the active workspace, or create a new internal operator for this device.</p>
+          <p className="panel-label">Accounts</p>
+          <h1>Choose An Account</h1>
+          <p>Select the active workspace, or create a new internal account for this device.</p>
         </div>
       </section>
 

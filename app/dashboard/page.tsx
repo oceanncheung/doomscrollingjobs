@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 
+import { JobsMarqueeBanner } from '@/components/jobs/jobs-marquee-banner'
 import { JobStageActionButton } from '@/components/jobs/job-stage-action-button'
 import { getRankedJobs } from '@/lib/data/jobs'
 import { requireActiveOperatorSelection } from '@/lib/data/operators'
@@ -16,10 +17,10 @@ import {
 import {
   formatDateLabel,
   formatRemoteLabel,
-  formatSalaryRange,
   formatScore,
   formatWorkflowLabel,
 } from '@/lib/jobs/presentation'
+import { getEffectiveSalaryInsight } from '@/lib/jobs/salary-estimation'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +30,7 @@ interface DashboardPageProps {
 
 interface SalaryDisplay {
   label: string
+  note?: string
   value: string
 }
 
@@ -38,49 +40,13 @@ interface ResumeStatus {
   label: string
 }
 
-function asNumber(value: string) {
-  const parsed = Number.parseFloat(value)
-  return Number.isFinite(parsed) ? parsed : null
-}
-
-function formatEstimatedRange(profile: OperatorProfileRecord) {
-  const currency = profile.salaryFloorCurrency || 'USD'
-  const targetMin = asNumber(profile.salaryTargetMin)
-  const targetMax = asNumber(profile.salaryTargetMax)
-  const salaryFloor = asNumber(profile.salaryFloorAmount)
-
-  if (!targetMin && !targetMax && !salaryFloor) {
-    return 'Pending'
-  }
-
-  const formatter = new Intl.NumberFormat('en-US', {
-    currency,
-    maximumFractionDigits: 0,
-    style: 'currency',
-  })
-
-  if (targetMin && targetMax) {
-    return `${formatter.format(targetMin)} - ${formatter.format(targetMax)}`
-  }
-
-  if (targetMin) {
-    return `${formatter.format(targetMin)}+`
-  }
-
-  return `${formatter.format(salaryFloor ?? 0)}+`
-}
-
 function getSalaryDisplay(job: QualifiedJobRecord, profile: OperatorProfileRecord): SalaryDisplay {
-  if (job.salaryCurrency && (job.salaryMin || job.salaryMax)) {
-    return {
-      label: 'Salary',
-      value: formatSalaryRange(job),
-    }
-  }
+  const insight = getEffectiveSalaryInsight(job, profile)
 
   return {
-    label: 'Estimated salary',
-    value: formatEstimatedRange(profile),
+    label: insight.label,
+    note: insight.note,
+    value: insight.value,
   }
 }
 
@@ -869,6 +835,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           </section>
         </div>
       </section>
+      <JobsMarqueeBanner />
     </main>
   )
 }

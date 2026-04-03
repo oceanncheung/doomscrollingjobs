@@ -14,7 +14,9 @@ import type {
 import { fetchAuthenticJobs } from '@/lib/jobs/authentic-jobs'
 import { fetchGreenhouseCompanyJobs, type ImportedSourceBatch } from '@/lib/jobs/greenhouse'
 import { fetchJobspressoJobs } from '@/lib/jobs/jobspresso'
+import { fetchRemoteSourceJobs } from '@/lib/jobs/remote-source'
 import { fetchRemotiveJobs } from '@/lib/jobs/remotive'
+import { getEffectiveSalaryBounds } from '@/lib/jobs/salary-estimation'
 import {
   getCompanyWatchlist,
   getImportedSourceNames,
@@ -25,6 +27,7 @@ import {
   type SourceRegistryEntry,
 } from '@/lib/jobs/source-registry'
 import { fetchWellfoundJobs } from '@/lib/jobs/wellfound'
+import { fetchWeWorkRemotelyJobs } from '@/lib/jobs/we-work-remotely'
 import { createClient } from '@/lib/supabase/server'
 
 import { getOperatorProfile } from '../data/operator-profile'
@@ -124,6 +127,36 @@ const designerRoleFamilies: DesignerRoleFamily[] = [
       ['powerpoint', 'designer'],
     ],
   },
+  {
+    bucket: 'adjacent',
+    descriptionPhrases: ['digital design', 'email design', 'social creative'],
+    familyLabel: 'digital design',
+    titlePhrases: ['digital designer', 'digital design'],
+    titleTokenGroups: [['digital', 'designer'], ['digital', 'design']],
+  },
+  {
+    bucket: 'adjacent',
+    descriptionPhrases: ['motion design', 'motion graphics', 'animation design'],
+    familyLabel: 'motion design',
+    titlePhrases: ['motion designer', 'motion design', 'motion graphics designer'],
+    titleTokenGroups: [
+      ['motion', 'designer'],
+      ['motion', 'design'],
+      ['motion', 'graphics'],
+    ],
+  },
+  {
+    bucket: 'adjacent',
+    descriptionPhrases: ['art direction', 'creative direction', 'integrated design'],
+    familyLabel: 'art direction',
+    titlePhrases: ['art director', 'creative designer', 'creative lead', 'integrated designer'],
+    titleTokenGroups: [
+      ['art', 'director'],
+      ['creative', 'designer'],
+      ['creative', 'lead'],
+      ['integrated', 'designer'],
+    ],
+  },
 ]
 
 const genericDesignTitleTerms = ['designer', 'design']
@@ -177,6 +210,13 @@ const excludedTitlePhrases = [
   'interaction design',
   'industrial designer',
   'industrial design',
+  'instructional designer',
+  'instructional design',
+  'translator',
+  'localization',
+  'accessibility specialist',
+  'accessibility',
+  'architect',
 ]
 
 const remoteOkBoilerplatePatterns = [
@@ -420,6 +460,16 @@ function isDesignCandidate(title: string, descriptionText: string) {
   }
 
   return getDesignerRoleMatch(title, descriptionText) !== null
+}
+
+function buildDesignSignalText(job: Pick<NormalizedJobRecord, 'department' | 'descriptionText' | 'skillsKeywords' | 'title'>) {
+  return [
+    job.descriptionText,
+    job.department ?? '',
+    ...job.skillsKeywords,
+  ]
+    .filter(Boolean)
+    .join(' ')
 }
 
 function parseRemoteType(title: string, location: string, descriptionText: string): RemoteType {
@@ -810,8 +860,11 @@ function createSourceDiagnostics(
     rowsDeduped: 0,
     rowsExcluded: 0,
     rowsImported: 0,
+    rowsNormalized: 0,
+    rowsQualified: 0,
     rowsSeen: batch.rowsSeen,
     rowsStale: 0,
+    rowsVisible: 0,
     sourceKey: batch.sourceKey,
     sourceKind,
     sourceName: batch.sourceName,
@@ -832,18 +885,20 @@ function filterNormalizedSourceBatch(batch: ImportedSourceBatch): FilteredSource
 
   for (const rawJob of batch.rawJobs) {
     const normalizedJob = normalizeImportedJob(rawJob)
+    const designSignalText = buildDesignSignalText(normalizedJob)
 
     if (normalizedJob.remoteType !== 'remote') {
       diagnostics.rowsExcluded += 1
       continue
     }
 
-    if (!isDesignCandidate(normalizedJob.title, normalizedJob.descriptionText)) {
+    if (!isDesignCandidate(normalizedJob.title, designSignalText)) {
       diagnostics.rowsExcluded += 1
       continue
     }
 
     diagnostics.rowsCandidate += 1
+    diagnostics.rowsNormalized += 1
     jobs.push({
       normalizedJob,
       sourceKey: batch.sourceKey,
@@ -989,7 +1044,9 @@ function getSalaryScore(
   job: NormalizedJobRecord,
   profile: Awaited<ReturnType<typeof getOperatorProfile>>['workspace']['profile'],
 ) {
-  if (!job.salaryMin && !job.salaryMax) {
+  const salary = getEffectiveSalaryBounds(job, profile)
+
+  if (!salary.min && !salary.max) {
     return {
       note: 'Salary was not listed in the source feed.',
       score: 8,
@@ -997,33 +1054,41 @@ function getSalaryScore(
   }
 
   const salaryTarget = getProfileTargetAmount(profile)
-  const salaryFloor = job.salaryMin ?? job.salaryMax ?? 0
-  const salaryCeiling = job.salaryMax ?? job.salaryMin ?? 0
+  const salaryFloor = salary.min ?? salary.max ?? 0
+  const salaryCeiling = salary.max ?? salary.min ?? 0
 
   if (!salaryTarget) {
     return {
-      note: 'Salary is listed, even though no user floor is set yet.',
-      score: 15,
+      note: salary.estimated
+        ? 'Estimated compensation is available, even though no user floor is set yet.'
+        : 'Salary is listed, even though no user floor is set yet.',
+      score: salary.estimated ? 11 : 15,
     }
   }
 
   if (salaryFloor >= salaryTarget) {
     return {
-      note: 'Listed compensation clears the current salary target.',
-      score: 22,
+      note: salary.estimated
+        ? 'Estimated compensation clears the current salary target.'
+        : 'Listed compensation clears the current salary target.',
+      score: salary.estimated ? 16 : 22,
     }
   }
 
   if (salaryCeiling >= salaryTarget) {
     return {
-      note: 'Top-end compensation reaches the current salary target.',
-      score: 17,
+      note: salary.estimated
+        ? 'Estimated top-end compensation reaches the current salary target.'
+        : 'Top-end compensation reaches the current salary target.',
+      score: salary.estimated ? 12 : 17,
     }
   }
 
   return {
-    note: 'Listed compensation sits below the current salary target.',
-    score: 6,
+    note: salary.estimated
+      ? 'Estimated compensation sits below the current salary target.'
+      : 'Listed compensation sits below the current salary target.',
+    score: salary.estimated ? 4 : 6,
   }
 }
 
@@ -1174,8 +1239,9 @@ function buildBasicScore(
   profile: Awaited<ReturnType<typeof getOperatorProfile>>['workspace']['profile'],
 ): BasicScoreResult {
   const remoteGatePassed = !profile.remoteRequired || job.remoteType === 'remote'
-  const roleMatch = getRoleRelevanceScore(job.title, job.descriptionText, profile)
-  const designerRoleMatch = getDesignerRoleMatch(job.title, job.descriptionText)
+  const designSignalText = buildDesignSignalText(job)
+  const roleMatch = getRoleRelevanceScore(job.title, designSignalText, profile)
+  const designerRoleMatch = getDesignerRoleMatch(job.title, designSignalText)
   const salaryResult = getSalaryScore(job, profile)
   const qualityScore = getQualityScore(job)
   const seniorityScore = getSeniorityScore(job, profile)
@@ -1292,7 +1358,9 @@ async function fetchImportedSourceBatches() {
   const remotiveRegistryEntry = registry.find((entry) => entry.slug === 'remotive')
   const wellfoundRegistryEntry = registry.find((entry) => entry.slug === 'wellfound')
   const jobspressoRegistryEntry = registry.find((entry) => entry.slug === 'jobspresso')
+  const weWorkRemotelyRegistryEntry = registry.find((entry) => entry.slug === 'we-work-remotely')
   const authenticJobsRegistryEntry = registry.find((entry) => entry.slug === 'authentic-jobs')
+  const remoteSourceRegistryEntry = registry.find((entry) => entry.slug === 'remote-source')
   const greenhouseWatchlist = watchlist
     .filter((entry) => {
       const registryEntry = registryBySlug.get(entry.sourceRegistrySlug)
@@ -1305,14 +1373,18 @@ async function fetchImportedSourceBatches() {
     remotiveBatch,
     wellfoundBatch,
     jobspressoBatch,
+    weWorkRemotelyBatch,
     authenticJobsBatch,
+    remoteSourceBatch,
     greenhouseBatches,
   ] = await Promise.all([
     fetchRemoteOkBatch(remoteRegistryEntry),
     remotiveRegistryEntry ? fetchRemotiveJobs() : Promise.resolve(null),
     wellfoundRegistryEntry ? fetchWellfoundJobs() : Promise.resolve(null),
     jobspressoRegistryEntry ? fetchJobspressoJobs() : Promise.resolve(null),
+    weWorkRemotelyRegistryEntry ? fetchWeWorkRemotelyJobs() : Promise.resolve(null),
     authenticJobsRegistryEntry ? fetchAuthenticJobs() : Promise.resolve(null),
+    remoteSourceRegistryEntry ? fetchRemoteSourceJobs() : Promise.resolve(null),
     Promise.all(greenhouseWatchlist.map((entry) => fetchGreenhouseCompanyJobs(entry))),
   ])
   const batches = [
@@ -1320,7 +1392,9 @@ async function fetchImportedSourceBatches() {
     remotiveBatch,
     wellfoundBatch,
     jobspressoBatch,
+    weWorkRemotelyBatch,
     authenticJobsBatch,
+    remoteSourceBatch,
     ...greenhouseBatches,
   ].filter((batch): batch is ImportedSourceBatch => batch !== null)
   const successfulSourceNames = new Set(
@@ -1400,16 +1474,18 @@ async function persistRawImports(batches: ImportedSourceBatch[]) {
   )
 
   if (rows.length === 0) {
-    return
+    return undefined
   }
 
   try {
     const supabase = createClient()
-    await supabase.from('raw_job_imports').upsert(rows, {
+    const { error } = await supabase.from('raw_job_imports').upsert(rows, {
       onConflict: 'source_identity_key',
     })
+
+    return error?.message
   } catch {
-    // Raw intake persistence is optional until the candidate-pool migration is applied.
+    return 'Raw job intake rows could not be persisted.'
   }
 }
 
@@ -1518,7 +1594,7 @@ export async function ensurePrimaryImportedJobs(
     }
 
     const { workspace } = await getOperatorProfile()
-    await persistRawImports(batches)
+    const rawImportIssue = await persistRawImports(batches)
     const filteredBatches = batches.map((batch) => filterNormalizedSourceBatch(batch))
     const diagnosticsBySourceKey = new Map(
       filteredBatches.map((batch) => [batch.diagnostics.sourceKey, batch.diagnostics] as const),
@@ -1703,6 +1779,7 @@ export async function ensurePrimaryImportedJobs(
       )
       .in('source_name', poolSourceNames)
       .neq('listing_status', 'closed')
+      .neq('listing_status', 'stale')
 
     if (persistedJobsError || !persistedImportedJobs) {
       return {
@@ -1719,11 +1796,14 @@ export async function ensurePrimaryImportedJobs(
 
     if (persistedJobIds.length === 0) {
       const sourceDiagnostics = [...diagnosticsBySourceKey.values()]
-      await saveSourceDiagnostics(sourceDiagnostics)
+      const diagnosticsIssue = await saveSourceDiagnostics(sourceDiagnostics)
 
       return {
         importedCount: 0,
-        issue: 'No remote designer-first roles are available in the candidate pool yet.',
+        issue:
+          [rawImportIssue, diagnosticsIssue, 'No remote designer-first roles are available in the candidate pool yet.']
+            .filter(Boolean)
+            .join(' · '),
         sourceDiagnostics,
       }
     }
@@ -1811,11 +1891,11 @@ export async function ensurePrimaryImportedJobs(
     }
 
     const sourceDiagnostics = [...diagnosticsBySourceKey.values()]
-    await saveSourceDiagnostics(sourceDiagnostics)
+    const diagnosticsIssue = await saveSourceDiagnostics(sourceDiagnostics)
     const sourceIssues = sourceDiagnostics
       .filter((entry) => entry.issue)
       .map((entry) => `${entry.sourceName}: ${entry.issue}`)
-    const issue = [staleIssue, ...sourceIssues].filter(Boolean).join(' · ') || undefined
+    const issue = [rawImportIssue, diagnosticsIssue, staleIssue, ...sourceIssues].filter(Boolean).join(' · ') || undefined
 
     return {
       importedCount: scoreRows.length,

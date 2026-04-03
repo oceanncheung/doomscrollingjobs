@@ -94,8 +94,11 @@ export interface SourceDiagnostics {
   rowsDeduped: number
   rowsExcluded: number
   rowsImported: number
+  rowsNormalized: number
+  rowsQualified: number
   rowsSeen: number
   rowsStale: number
+  rowsVisible: number
   sourceKey: string
   sourceKind: JobSourceKind
   sourceName: string
