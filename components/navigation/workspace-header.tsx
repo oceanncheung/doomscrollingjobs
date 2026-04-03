@@ -29,10 +29,14 @@ export function WorkspaceHeader({ counts }: { counts?: Partial<Record<QueueView,
 
   return (
     <header className="site-header">
-      <Link className="site-brand" href="/dashboard">
-        <strong>Doom Scrolling Jobs</strong>
-        <span aria-hidden="true" className="site-profile-mark" />
-      </Link>
+      <div className="site-brand">
+        <Link href="/dashboard">
+          <strong>Doom Scrolling Jobs</strong>
+        </Link>
+        <Link aria-label="Profile settings" className="site-profile-avatar-link" href="/profile">
+          <span aria-hidden="true" className="site-profile-mark" />
+        </Link>
+      </div>
 
       <nav className="site-workflow-nav" aria-label="Queue views">
         {queueViews.map((view) => (
