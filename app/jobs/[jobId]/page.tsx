@@ -206,6 +206,19 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
 
   return (
     <main className="page-stack">
+      <div className="dashboard-workspace">
+        <aside className="today-rail">
+          <section className="today-block">
+            <div className="today-block-heading">
+              <p className="panel-label">Job</p>
+              <h2>Workspace</h2>
+            </div>
+            <Link className="button button-secondary" href="/dashboard">
+              Back to queue
+            </Link>
+          </section>
+        </aside>
+        <div className="queue-column">
       <section className="page-header flow-header">
         <div className="page-heading">
           <p className="panel-label">{job.companyName}</p>
@@ -382,6 +395,8 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
           ) : null}
         </div>
       </details>
+        </div>
+      </div>
     </main>
   )
 }

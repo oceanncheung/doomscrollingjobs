@@ -87,6 +87,22 @@ export default async function PacketReviewPage({ params }: PacketReviewPageProps
 
   return (
     <main className="page-stack">
+      <div className="dashboard-workspace">
+        <aside className="today-rail">
+          <section className="today-block">
+            <div className="today-block-heading">
+              <p className="panel-label">Packet</p>
+              <h2>Workspace</h2>
+            </div>
+            <Link className="button button-secondary" href="/dashboard">
+              Back to queue
+            </Link>
+            <Link className="button button-ghost button-small" href={`/jobs/${job.id}`}>
+              Job detail
+            </Link>
+          </section>
+        </aside>
+        <div className="queue-column">
       <section className="page-header flow-header">
         <div className="page-heading">
           <p className="panel-label">Application prep</p>
@@ -140,6 +156,8 @@ export default async function PacketReviewPage({ params }: PacketReviewPageProps
       <div className="inline-link-row">
         <Link href="/dashboard">Back to jobs</Link>
         <Link href={`/jobs/${job.id}`}>Back to detail</Link>
+      </div>
+        </div>
       </div>
     </main>
   )

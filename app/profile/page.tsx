@@ -8,39 +8,14 @@ export const dynamic = 'force-dynamic'
 export default async function ProfilePage() {
   await requireActiveOperatorSelection()
   const { workspace } = await getOperatorProfile()
-  const { portfolioItems, profile, resumeMaster } = workspace
 
   return (
     <main className="page-stack">
-      <section className="page-header flow-header">
-        <div className="page-heading">
-          <p className="panel-label">Operator settings</p>
-          <h1>Settings</h1>
-          <p>Keep source material current, then step into the deeper controls only when needed.</p>
-          <div className="page-heading-actions">
-            <form action={clearActiveOperatorSelection}>
-              <button className="button button-secondary button-small" type="submit">
-                Log out
-              </button>
-            </form>
-          </div>
-        </div>
-        <div className="flow-snapshot">
-          <div>
-            <span className="panel-label">Resume source</span>
-            <strong>{resumeMaster.summaryText ? 'Present' : 'Missing'}</strong>
-          </div>
-          <div>
-            <span className="panel-label">Portfolio</span>
-            <strong>{profile.portfolioPrimaryUrl ? 'Linked' : 'Needs link'}</strong>
-          </div>
-          <div>
-            <span className="panel-label">Library</span>
-            <strong>{portfolioItems.length} portfolio items</strong>
-          </div>
-        </div>
-      </section>
-
+      <form action={clearActiveOperatorSelection} className="settings-log-out-bar">
+        <button className="button button-secondary button-small" type="submit">
+          Log out
+        </button>
+      </form>
       <ProfileForm workspace={workspace} />
     </main>
   )

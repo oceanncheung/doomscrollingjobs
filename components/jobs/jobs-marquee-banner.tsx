@@ -58,21 +58,18 @@ export function JobsMarqueeBanner() {
   }
 
   return (
-    <div className="jobs-marquee-banner">
-      <div className="jobs-marquee-inner">
-        <div className="jobs-marquee-track">
-          <span className="jobs-marquee-segment">scfgc gayau! :3</span>
-          <span aria-hidden className="jobs-marquee-segment">
-            scfgc gayau! :3
+    <div className="ticker-stripe">
+      <div className="ticker-rail">
+        <div className="ticker-content-infinite">
+          <span>
+            scfgc gayau! :3&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;
+          </span>
+          <span aria-hidden>
+            scfgc gayau! :3&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;
           </span>
         </div>
       </div>
-      <button
-        aria-label="Close banner"
-        className="jobs-marquee-close"
-        onClick={close}
-        type="button"
-      >
+      <button aria-label="Dismiss ticker" className="ticker-close" onClick={close} type="button">
         ×
       </button>
     </div>

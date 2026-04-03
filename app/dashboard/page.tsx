@@ -698,7 +698,6 @@ function TodayRail({
 
       <section className="today-block">
         <div className="today-block-heading">
-          <p className="panel-label">Today</p>
           <h2>Snapshot</h2>
         </div>
         <dl className="today-stats">

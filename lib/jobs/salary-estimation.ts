@@ -310,7 +310,7 @@ export function getEffectiveSalaryInsight(
     estimated: true,
     label: 'Estimated salary',
     note: 'Estimated market range',
-    value: `Estimated ${formatRangeValue(estimate.min, estimate.max, estimate.currency)}`,
+    value: formatRangeValue(estimate.min, estimate.max, estimate.currency),
   }
 }
 

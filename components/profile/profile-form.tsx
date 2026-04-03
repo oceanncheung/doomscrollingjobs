@@ -12,6 +12,8 @@ import type {
 } from '@/lib/domain/types'
 
 import { saveOperatorProfile, type ProfileActionState } from '@/app/profile/actions'
+import { FileUploadSlot } from '@/components/settings/file-upload-slot'
+import { TagInput } from '@/components/ui/tag-input'
 
 const initialState: ProfileActionState = {
   message: '',
@@ -130,6 +132,11 @@ function DisclosureSection({
 
 export function ProfileForm({ workspace }: ProfileFormProps) {
   const [state, formAction, isPending] = useActionState(saveOperatorProfile, initialState)
+  const [targetRoleTags, setTargetRoleTags] = useState(() => [...workspace.profile.targetRoles])
+  const [adjacentRoleTags, setAdjacentRoleTags] = useState(() => [
+    ...workspace.profile.allowedAdjacentRoles,
+  ])
+  const [portfolioPdfName, setPortfolioPdfName] = useState<string | null>(null)
   const [experienceEntries, setExperienceEntries] = useState(
     workspace.resumeMaster.experienceEntries.length > 0
       ? workspace.resumeMaster.experienceEntries
@@ -148,78 +155,124 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
   const [portfolioItems, setPortfolioItems] = useState(workspace.portfolioItems)
 
   return (
-    <form action={formAction} className="profile-form">
-      <section className="panel settings-section" id="source-files">
-        <div className="settings-section-header">
-          <div>
-            <p className="panel-label">Source files</p>
-            <h2>Keep the core source material current.</h2>
-          </div>
-          <p className="settings-section-note">
-            Resume source and portfolio links stay visible here so the queue and prep workspace can
-            update without digging through the full form.
-          </p>
-        </div>
+    <form action={formAction} className="profile-form profile-form-workspace" id="profile-workspace-form">
+      <input name="targetRoles" type="hidden" value={targetRoleTags.join('\n')} />
+      <input name="allowedAdjacentRoles" type="hidden" value={adjacentRoleTags.join('\n')} />
+      <div className="dashboard-workspace">
+        <aside className="today-rail settings-profile">
+          <div className="profile-card">
+            <div className="today-block">
+              <div className="today-block-heading">
+                <p className="panel-label">Profile</p>
+                <h2>Your info</h2>
+              </div>
+              <p className="profile-note">Used to pre-fill applications. Keep it current.</p>
+            </div>
 
-        <div className="settings-source-grid">
-          <div className="settings-source-primary">
-            <label className="field">
-              <span>Resume source</span>
-              <textarea
-                defaultValue={workspace.resumeMaster.summaryText}
-                name="resumeSummaryText"
-                rows={8}
+            <div className="profile-fields">
+              <label className="field">
+                <span>Full name</span>
+                <input defaultValue={workspace.profile.displayName} name="displayName" type="text" />
+              </label>
+              <label className="field">
+                <span>Email</span>
+                <input defaultValue={workspace.profile.email} disabled readOnly type="email" />
+              </label>
+              <label className="field">
+                <span>Location</span>
+                <input defaultValue={workspace.profile.locationLabel} name="locationLabel" type="text" />
+              </label>
+              <label className="field">
+                <span>Current title</span>
+                <input defaultValue={workspace.profile.headline} name="headline" required type="text" />
+              </label>
+              <label className="field">
+                <span>LinkedIn URL</span>
+                <input defaultValue={workspace.profile.linkedinUrl} name="linkedinUrl" type="url" />
+              </label>
+              <label className="field">
+                <span>Portfolio URL</span>
+                <input
+                  defaultValue={workspace.profile.portfolioPrimaryUrl}
+                  name="portfolioPrimaryUrl"
+                  type="url"
+                />
+              </label>
+              <label className="field">
+                <span>Personal site URL</span>
+                <input
+                  defaultValue={workspace.profile.personalSiteUrl}
+                  name="personalSiteUrl"
+                  type="url"
+                />
+              </label>
+            </div>
+
+          </div>
+        </aside>
+
+        <div className="queue-column settings-main">
+          <div className="queue-meta">
+            <div className="queue-meta-heading">
+              <p className="panel-label">Operator settings</p>
+              <h1>Settings</h1>
+            </div>
+            <p>Source files, queue rules, and preferences.</p>
+          </div>
+
+          <section className="panel settings-section" id="source-files">
+            <div className="settings-section-header">
+              <div>
+                <p className="panel-label">Source files</p>
+                <h2>Upload your source documents.</h2>
+              </div>
+              <p className="settings-section-note">
+                PDF only. Queue and packet prep reference these directly.
+              </p>
+            </div>
+
+            <div className="upload-grid">
+              <div className="upload-slot">
+                <span className="upload-slot-label">Resume source</span>
+                <textarea
+                  defaultValue={workspace.resumeMaster.summaryText}
+                  name="resumeSummaryText"
+                  rows={8}
+                />
+                <small>Use this as the base summary the packet workspace tailors per role.</small>
+              </div>
+              <div className="upload-slot">
+                <span className="upload-slot-label">Cover letter</span>
+                <p className="profile-note">
+                  Cover letters stay inside packet prep. Open the prepared queue when you are ready to
+                  draft.
+                </p>
+                <a className="button button-secondary button-small" href="/dashboard?view=prepared">
+                  Open prepared queue
+                </a>
+              </div>
+              <FileUploadSlot
+                accept=".pdf"
+                fileName={portfolioPdfName}
+                label="Portfolio PDF"
+                onRemove={() => setPortfolioPdfName(null)}
+                onUpload={(file) => setPortfolioPdfName(file.name)}
               />
-              <small>Use this as the base summary the packet workspace tailors per role.</small>
-            </label>
-          </div>
+            </div>
+          </section>
 
-          <div className="settings-source-secondary">
-            <label className="field">
-              <span>Portfolio primary URL</span>
-              <input
-                defaultValue={workspace.profile.portfolioPrimaryUrl}
-                name="portfolioPrimaryUrl"
-                type="url"
-              />
-            </label>
-            <label className="field">
-              <span>LinkedIn URL</span>
-              <input defaultValue={workspace.profile.linkedinUrl} name="linkedinUrl" type="url" />
-            </label>
-            <label className="field">
-              <span>Personal site URL</span>
-              <input
-                defaultValue={workspace.profile.personalSiteUrl}
-                name="personalSiteUrl"
-                type="url"
-              />
-            </label>
-          </div>
+          <section className="panel settings-section">
+            <div className="settings-section-header">
+              <div>
+                <p className="panel-label">Queue rules</p>
+                <h2>Define what gets into your queue.</h2>
+              </div>
+              <p className="settings-section-note">
+                Target roles, salary, location, and hard no&apos;s. Be specific.
+              </p>
+            </div>
 
-          <div className="settings-source-note">
-            <p className="panel-label">Cover letter</p>
-            <h3>Prepared per job</h3>
-            <p>
-              Cover letters stay inside packet prep, so the settings page only needs the core
-              resume and portfolio source.
-            </p>
-            <a className="button button-secondary button-small" href="/dashboard?view=prepared">
-              Open prepared queue
-            </a>
-          </div>
-        </div>
-      </section>
-
-      <section className="panel settings-section">
-        <div className="settings-section-header">
-          <div>
-            <p className="panel-label">What I&apos;m looking for</p>
-            <h2>Shape the queue around the work you actually want.</h2>
-          </div>
-        </div>
-
-        <div className="settings-core-grid">
+            <div className="settings-core-grid">
           <label className="field settings-field-wide">
             <span>Queue brief</span>
             <textarea
@@ -227,24 +280,9 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
               name="searchBrief"
               rows={7}
             />
-            <small>
-              Write this like a direct note: target roles, salary, remote rules, industries, and
-              hard no&apos;s.
-            </small>
+            <small>The AI reads this to score and filter incoming roles.</small>
           </label>
 
-          <label className="field">
-            <span>Headline</span>
-            <input defaultValue={workspace.profile.headline} name="headline" required type="text" />
-          </label>
-          <label className="field">
-            <span>Location label</span>
-            <input
-              defaultValue={workspace.profile.locationLabel}
-              name="locationLabel"
-              type="text"
-            />
-          </label>
           <label className="field">
             <span>Primary market</span>
             <input
@@ -278,49 +316,49 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
             />
           </label>
 
-          <label className="field settings-field-wide">
-            <span>Target roles</span>
-            <textarea
-              defaultValue={toTextAreaValue(workspace.profile.targetRoles)}
-              name="targetRoles"
-              rows={5}
+          <div className="settings-tag-row field-grid field-grid-2">
+            <TagInput
+              helper="Press Enter after each title."
+              label="Target roles"
+              onChange={setTargetRoleTags}
+              placeholder="e.g. brand designer"
+              tags={targetRoleTags}
             />
-          </label>
-          <label className="field settings-field-wide">
-            <span>Allowed adjacent roles</span>
-            <textarea
-              defaultValue={toTextAreaValue(workspace.profile.allowedAdjacentRoles)}
-              name="allowedAdjacentRoles"
-              rows={5}
+            <TagInput
+              helper="Roles you'd consider if the fit is strong."
+              label="Allowed adjacent roles"
+              onChange={setAdjacentRoleTags}
+              placeholder="e.g. art director"
+              tags={adjacentRoleTags}
             />
-          </label>
+          </div>
         </div>
 
-        <div className="settings-toggle-row">
-          <label className="field checkbox-field">
-            <span>Remote required</span>
+            <div className="settings-toggle-row checkbox-row">
+          <label className="checkbox-field">
             <input
               defaultChecked={workspace.profile.remoteRequired}
               name="remoteRequired"
               type="checkbox"
             />
+            <span>Remote required</span>
           </label>
-          <label className="field checkbox-field">
-            <span>Open to relocation</span>
+          <label className="checkbox-field">
             <input
               defaultChecked={workspace.profile.relocationOpen}
               name="relocationOpen"
               type="checkbox"
             />
+            <span>Open to relocation</span>
           </label>
         </div>
       </section>
 
       <DisclosureSection
         defaultOpen={false}
-        label="Auto-derived signals"
-        meta="collapsed"
-        title="Review the source libraries when you need to."
+        label="Signals"
+        meta="Collapsed"
+        title="Auto-derived from your resume and brief."
       >
         <div className="field-grid field-grid-2">
           <label className="field">
@@ -1018,14 +1056,6 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
       >
         <div className="field-grid field-grid-2">
           <label className="field">
-            <span>Display name</span>
-            <input defaultValue={workspace.profile.displayName} name="displayName" type="text" />
-          </label>
-          <label className="field">
-            <span>Internal account</span>
-            <input defaultValue={workspace.profile.email} disabled readOnly type="email" />
-          </label>
-          <label className="field">
             <span>Timezone</span>
             <input defaultValue={workspace.profile.timezone} name="timezone" type="text" />
           </label>
@@ -1104,6 +1134,9 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
           />
         </label>
       </DisclosureSection>
+
+        </div>
+      </div>
 
       <div className="profile-form-footer">
         <div
