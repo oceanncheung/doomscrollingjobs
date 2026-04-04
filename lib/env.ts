@@ -15,6 +15,18 @@ function getRequiredEnv(key: PublicEnvKey | 'SUPABASE_SECRET_KEY' | 'SUPABASE_SE
   return value
 }
 
+function getRequiredOptionalEnv(
+  key: 'OPENAI_API_KEY' | 'OPENAI_MODEL_PACKET' | 'OPENAI_MODEL_SUMMARY',
+) {
+  const value = process.env[key]
+
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${key}`)
+  }
+
+  return value
+}
+
 export function hasSupabasePublicEnv() {
   return publicEnvKeys.every((key) => Boolean(process.env[key]))
 }
@@ -34,5 +46,17 @@ export function getSupabaseServerEnv() {
   return {
     serviceRoleKey: process.env.SUPABASE_SECRET_KEY || getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY'),
     url: getRequiredEnv('NEXT_PUBLIC_SUPABASE_URL'),
+  }
+}
+
+export function hasOpenAIEnv() {
+  return Boolean(process.env.OPENAI_API_KEY)
+}
+
+export function getOpenAIEnv() {
+  return {
+    apiKey: getRequiredOptionalEnv('OPENAI_API_KEY'),
+    packetModel: process.env.OPENAI_MODEL_PACKET || 'gpt-4.1-mini',
+    summaryModel: process.env.OPENAI_MODEL_SUMMARY || process.env.OPENAI_MODEL_PACKET || 'gpt-4.1-mini',
   }
 }

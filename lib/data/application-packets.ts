@@ -7,6 +7,7 @@ import type {
   ApplicationPacketRecord,
   OperatorPortfolioItemRecord,
   OperatorWorkspaceRecord,
+  PacketGenerationStatus,
   PacketCaseStudyRecord,
   PacketPortfolioRecommendationRecord,
   PacketStatus,
@@ -40,6 +41,10 @@ function asRecord(value: unknown) {
 
 function asString(value: unknown) {
   return typeof value === 'string' ? value : ''
+}
+
+function cleanLine(value: string) {
+  return value.replace(/\s+/g, ' ').trim()
 }
 
 function asNumber(value: unknown) {
@@ -291,9 +296,11 @@ function buildGeneratedResumeVersion(
   const highlightedSkills = describeJobSkillFocus(job)
 
   return {
+    changeSummaryText: `Re-centered the resume around ${job.title} by emphasizing the most relevant experience, requirements, and skills for this role.`,
     id: `seed-resume-${job.id}`,
     exportStatus: 'draft',
     experienceEntries,
+    headlineText: workspace.resumeMaster.baseTitle || workspace.profile.headline,
     highlightedRequirements: job.requirements.slice(0, 4),
     skillsSection: selectedSkills,
     summaryText: `${workspace.resumeMaster.summaryText} Best aligned here for ${job.title} work that emphasizes ${highlightedSkills}.`,
@@ -302,6 +309,38 @@ function buildGeneratedResumeVersion(
       .join(' and ')} because those entries best support this role's required mix of ${highlightedSkills}.`,
     versionLabel: `${job.companyName} packet resume`,
   }
+}
+
+function buildSeedJobSummary(job: RankedJobRecord) {
+  const description = cleanLine(job.descriptionText)
+
+  if (!description) {
+    return `${job.companyName} is hiring for ${job.title}.`
+  }
+
+  if (description.length <= 220) {
+    return description
+  }
+
+  return `${description.slice(0, 217).trimEnd()}...`
+}
+
+function buildSeedJobFocusSummary(job: RankedJobRecord) {
+  if (job.requirements.length > 0) {
+    return `The posting emphasizes ${job.requirements.slice(0, 2).join(' and ')}.`
+  }
+
+  return `The posting appears to center on ${job.title} work with a designer-first focus.`
+}
+
+function buildCoverLetterSummary(draft: string) {
+  const compact = cleanLine(draft)
+
+  if (!compact) {
+    return ''
+  }
+
+  return compact.length <= 180 ? compact : `${compact.slice(0, 177).trimEnd()}...`
 }
 
 function buildGeneratedPacket(
@@ -318,10 +357,14 @@ function buildGeneratedPacket(
     caseStudySelection,
     checklistItems: buildChecklist(job, caseStudySelection),
     coverLetterDraft: buildCoverLetterDraft(workspace, job, caseStudySelection),
+    coverLetterSummary: buildCoverLetterSummary(buildCoverLetterDraft(workspace, job, caseStudySelection)),
+    generationStatus: 'not_started',
     generatedAt: job.scoredAt,
     id: `seed-packet-${job.id}`,
     jobId: job.id,
     jobScoreId: job.jobScoreId,
+    jobFocusSummary: buildSeedJobFocusSummary(job),
+    jobSummary: buildSeedJobSummary(job),
     manualNotes: '',
     packetStatus: 'draft',
     portfolioRecommendation,
@@ -355,11 +398,13 @@ function normalizeResumeVersion(
   }
 
   return {
+    changeSummaryText: asString(record.change_summary_text) || fallback.changeSummaryText,
     id: asString(record.id) || fallback.id,
     exportStatus: (asString(record.export_status) || fallback.exportStatus) as ResumeVersionPacketRecord['exportStatus'],
     experienceEntries: Array.isArray(record.experience_entries)
       ? (record.experience_entries as unknown[]).map((item) => normalizeExperienceEntry(item))
       : fallback.experienceEntries,
+    headlineText: asString(record.headline_text) || fallback.headlineText,
     highlightedRequirements: asStringArray(record.highlighted_requirements).length > 0
       ? asStringArray(record.highlighted_requirements)
       : fallback.highlightedRequirements,
@@ -416,6 +461,44 @@ function normalizePacketStatus(value: unknown, fallback: PacketStatus): PacketSt
   const text = asString(value)
 
   return text === 'ready' || text === 'applied' || text === 'archived' ? text : fallback
+}
+
+function normalizeGenerationStatus(
+  value: unknown,
+  fallback: PacketGenerationStatus,
+): PacketGenerationStatus {
+  const text = asString(value)
+
+  if (
+    text === 'not_started' ||
+    text === 'running' ||
+    text === 'generated' ||
+    text === 'failed'
+  ) {
+    return text
+  }
+
+  return fallback
+}
+
+function inferLegacyGenerationStatus(record: Record<string, unknown> | null): PacketGenerationStatus {
+  if (!record) {
+    return 'not_started'
+  }
+
+  if (asString(record.generation_status)) {
+    return normalizeGenerationStatus(record.generation_status, 'not_started')
+  }
+
+  if (
+    asString(record.generated_at) ||
+    asString(record.cover_letter_draft) ||
+    asString(record.professional_summary)
+  ) {
+    return 'generated'
+  }
+
+  return 'not_started'
 }
 
 function normalizeAnswer(value: unknown): ApplicationAnswerRecord | null {
@@ -495,23 +578,7 @@ export async function getApplicationPacketReview(
   const supabase = createClient()
   const { data: packetRow, error: packetError } = await supabase
     .from('application_packets')
-    .select(
-      `
-        id,
-        job_id,
-        job_score_id,
-        resume_version_id,
-        packet_status,
-        professional_summary,
-        cover_letter_draft,
-        portfolio_recommendation,
-        case_study_selection,
-        application_checklist,
-        manual_notes,
-        generated_at,
-        last_reviewed_at
-      `,
-    )
+    .select('*')
     .eq('operator_id', operatorContext.operator.id)
     .eq('job_id', jobId)
     .maybeSingle()
@@ -543,18 +610,7 @@ export async function getApplicationPacketReview(
     packetRow.resume_version_id
       ? supabase
           .from('resume_versions')
-          .select(
-            `
-              id,
-              version_label,
-              summary_text,
-              experience_entries,
-              skills_section,
-              highlighted_requirements,
-              tailoring_notes,
-              export_status
-            `,
-          )
+          .select('*')
           .eq('id', packetRow.resume_version_id)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
@@ -595,10 +651,18 @@ export async function getApplicationPacketReview(
           ? asStringArray(packetRow.application_checklist)
           : generatedPacket.checklistItems,
       coverLetterDraft: asString(packetRow.cover_letter_draft) || generatedPacket.coverLetterDraft,
+      coverLetterSummary: asString(packetRow.cover_letter_summary) || generatedPacket.coverLetterSummary,
+      generationError: asString(packetRow.generation_error) || undefined,
+      generationModel: asString(packetRow.generation_model) || undefined,
+      generationPromptVersion: asString(packetRow.generation_prompt_version) || undefined,
+      generationProvider: asString(packetRow.generation_provider) || undefined,
+      generationStatus: inferLegacyGenerationStatus(packetRow),
       generatedAt: asString(packetRow.generated_at) || generatedPacket.generatedAt,
       id: asString(packetRow.id),
       jobId: asString(packetRow.job_id) || generatedPacket.jobId,
       jobScoreId: asString(packetRow.job_score_id) || generatedPacket.jobScoreId,
+      jobFocusSummary: asString(packetRow.job_focus_summary) || generatedPacket.jobFocusSummary,
+      jobSummary: asString(packetRow.job_summary) || generatedPacket.jobSummary,
       lastReviewedAt: asString(packetRow.last_reviewed_at) || undefined,
       manualNotes: asString(packetRow.manual_notes),
       packetStatus: normalizePacketStatus(packetRow.packet_status, generatedPacket.packetStatus),

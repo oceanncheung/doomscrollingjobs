@@ -17,6 +17,10 @@ export const packetStatuses = ['draft', 'ready', 'applied', 'archived'] as const
 
 export type PacketStatus = (typeof packetStatuses)[number]
 
+export const packetGenerationStatuses = ['not_started', 'running', 'generated', 'failed'] as const
+
+export type PacketGenerationStatus = (typeof packetGenerationStatuses)[number]
+
 export const answerReviewStatuses = ['draft', 'edited', 'approved'] as const
 
 export type AnswerReviewStatus = (typeof answerReviewStatuses)[number]
@@ -113,7 +117,9 @@ export interface ApplicationPacketSummary {
 }
 
 export interface ResumeVersionPacketRecord {
+  changeSummaryText: string
   id: string
+  headlineText: string
   versionLabel: string
   summaryText: string
   experienceEntries: ResumeExperienceRecord[]
@@ -153,10 +159,18 @@ export interface ApplicationPacketRecord {
   caseStudySelection: PacketCaseStudyRecord[]
   checklistItems: string[]
   coverLetterDraft: string
+  coverLetterSummary: string
+  generationError?: string
+  generationModel?: string
+  generationPromptVersion?: string
+  generationProvider?: string
+  generationStatus: PacketGenerationStatus
   generatedAt?: string
   id: string
   jobId: string
   jobScoreId: string
+  jobFocusSummary: string
+  jobSummary: string
   lastReviewedAt?: string
   manualNotes: string
   packetStatus: PacketStatus

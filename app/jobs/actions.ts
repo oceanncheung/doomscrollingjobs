@@ -2,6 +2,8 @@
 
 import { refresh, revalidatePath } from 'next/cache'
 
+import { generateApplicationPacketArtifacts } from '@/lib/ai/tasks/generate-application-packet'
+import { getApplicationPacketReview } from '@/lib/data/application-packets'
 import { getActiveOperatorContext } from '@/lib/data/operators'
 import {
   packetStatuses,
@@ -9,7 +11,7 @@ import {
   type PacketStatus,
   type WorkflowStatus,
 } from '@/lib/domain/types'
-import { hasSupabaseServerEnv } from '@/lib/env'
+import { getOpenAIEnv, hasOpenAIEnv, hasSupabaseServerEnv } from '@/lib/env'
 import { persistPreferenceSignal } from '@/lib/jobs/learning'
 import { createClient } from '@/lib/supabase/server'
 
@@ -19,6 +21,11 @@ export interface JobWorkflowActionState {
 }
 
 export interface ApplicationPacketActionState {
+  message: string
+  status: 'error' | 'idle' | 'success'
+}
+
+export interface PacketGenerationActionState {
   message: string
   status: 'error' | 'idle' | 'success'
 }
@@ -187,6 +194,37 @@ function getSuccessMessage(targetStatus: WorkflowStatus) {
   }
 }
 
+function getPacketGenerationMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Application content generation failed.'
+}
+
+function inferPacketGenerationStatus(record: Record<string, unknown> | null) {
+  if (!record) {
+    return 'not_started'
+  }
+
+  const explicitStatus = asTextValue((record.generation_status as string | undefined) ?? '')
+
+  if (
+    explicitStatus === 'not_started' ||
+    explicitStatus === 'running' ||
+    explicitStatus === 'generated' ||
+    explicitStatus === 'failed'
+  ) {
+    return explicitStatus
+  }
+
+  if (
+    asTextValue((record.generated_at as string | undefined) ?? '') ||
+    asTextValue((record.cover_letter_draft as string | undefined) ?? '') ||
+    asTextValue((record.professional_summary as string | undefined) ?? '')
+  ) {
+    return 'generated'
+  }
+
+  return 'not_started'
+}
+
 export async function updateJobWorkflow(
   _previousState: JobWorkflowActionState,
   formData: FormData,
@@ -321,6 +359,271 @@ export async function updateJobWorkflow(
   }
 }
 
+export async function generateApplicationPacket(
+  _previousState: PacketGenerationActionState,
+  formData: FormData,
+): Promise<PacketGenerationActionState> {
+  if (!hasSupabaseServerEnv()) {
+    return {
+      message: 'Add the Supabase server environment before generating application materials.',
+      status: 'error',
+    }
+  }
+
+  if (!hasOpenAIEnv()) {
+    return {
+      message: 'Add the OpenAI server environment before generating application materials.',
+      status: 'error',
+    }
+  }
+
+  const jobId = asTextValue(formData.get('jobId'))
+
+  if (!jobId) {
+    return {
+      message: 'This generation request is missing its job reference.',
+      status: 'error',
+    }
+  }
+
+  const operatorContext = await getActiveOperatorContext()
+
+  if (!operatorContext || !operatorContext.resumeMasterId) {
+    return {
+      message: 'Choose an operator before generating application materials.',
+      status: 'error',
+    }
+  }
+
+  const review = await getApplicationPacketReview(jobId)
+
+  if (!review.canSave || !review.job || !review.packet) {
+    return {
+      message: review.issue || 'The application packet could not be prepared for generation.',
+      status: 'error',
+    }
+  }
+
+  const supabase = createClient()
+  const { packetModel } = getOpenAIEnv()
+  const { data: existingPacket, error: existingPacketError } = await supabase
+    .from('application_packets')
+    .select('*')
+    .eq('operator_id', operatorContext.operator.id)
+    .eq('job_id', jobId)
+    .maybeSingle()
+
+  if (existingPacketError) {
+    return {
+      message: existingPacketError.message,
+      status: 'error',
+    }
+  }
+
+  const packetId = asPersistedId(existingPacket?.id ?? null) ?? crypto.randomUUID()
+  const resumeVersionId = asPersistedId(existingPacket?.resume_version_id ?? null) ?? crypto.randomUUID()
+  const now = new Date().toISOString()
+
+  const runningPacketResult = await supabase.from('application_packets').upsert(
+    {
+      generated_at: existingPacket ? review.packet.generatedAt ?? now : null,
+      generation_error: null,
+      generation_model: packetModel,
+      generation_prompt_version: 'packet-v1',
+      generation_provider: 'openai',
+      generation_status: 'running',
+      id: packetId,
+      job_id: review.packet.jobId,
+      job_score_id: review.packet.jobScoreId,
+      operator_id: operatorContext.operator.id,
+      packet_status: review.packet.packetStatus,
+      user_id: operatorContext.userId,
+    },
+    { onConflict: 'id' },
+  )
+
+  if (runningPacketResult.error) {
+    return {
+      message: runningPacketResult.error.message,
+      status: 'error',
+    }
+  }
+
+  try {
+    const generated = await generateApplicationPacketArtifacts({
+      job: review.job,
+      packet: review.packet,
+      workspace: review.workspace,
+    })
+
+    const resumeVersionResult = await supabase.from('resume_versions').upsert(
+      {
+        application_packet_id: packetId,
+        change_summary_text: generated.resumeVariant.changeSummaryForUser,
+        experience_entries: generated.resumeVariant.experienceEntries,
+        export_status: 'draft',
+        headline_text: generated.resumeVariant.headline,
+        highlighted_requirements: generated.resumeVariant.highlightedRequirements,
+        id: resumeVersionId,
+        job_id: jobId,
+        operator_id: operatorContext.operator.id,
+        resume_master_id: operatorContext.resumeMasterId,
+        skills_section: generated.resumeVariant.skillsSection,
+        summary_text: generated.resumeVariant.summary,
+        tailoring_notes: generated.resumeVariant.tailoringRationale,
+        user_id: operatorContext.userId,
+        version_label: `${review.job.companyName} packet resume`,
+      },
+      { onConflict: 'id' },
+    )
+
+    if (resumeVersionResult.error) {
+      throw new Error(resumeVersionResult.error.message)
+    }
+
+    const packetResult = await supabase.from('application_packets').upsert(
+      {
+        application_checklist: review.packet.checklistItems,
+        case_study_selection: review.packet.caseStudySelection,
+        cover_letter_draft: generated.coverLetter.draft,
+        cover_letter_summary: generated.coverLetter.summary,
+        generated_at: now,
+        generation_error: null,
+        generation_model: packetModel,
+        generation_prompt_version: 'packet-v1',
+        generation_provider: 'openai',
+        generation_status: 'generated',
+        id: packetId,
+        job_focus_summary: generated.jobSummary.focusSummary,
+        job_id: review.packet.jobId,
+        job_score_id: review.packet.jobScoreId,
+        job_summary: generated.jobSummary.editorialSummary,
+        last_reviewed_at: review.packet.lastReviewedAt ?? null,
+        manual_notes: review.packet.manualNotes,
+        operator_id: operatorContext.operator.id,
+        packet_status: 'draft',
+        portfolio_recommendation: review.packet.portfolioRecommendation,
+        professional_summary: generated.resumeVariant.summary,
+        resume_version_id: resumeVersionId,
+        user_id: operatorContext.userId,
+      },
+      { onConflict: 'id' },
+    )
+
+    if (packetResult.error) {
+      throw new Error(packetResult.error.message)
+    }
+
+    const deleteAnswersResult = await supabase
+      .from('application_answers')
+      .delete()
+      .eq('application_packet_id', packetId)
+
+    if (deleteAnswersResult.error) {
+      throw new Error(deleteAnswersResult.error.message)
+    }
+
+    if (review.packet.answers.length > 0) {
+      const generatedAnswersByKey = new Map(
+        generated.answers.map((answer) => [answer.questionKey, answer] as const),
+      )
+      const insertAnswersResult = await supabase.from('application_answers').insert(
+        review.packet.answers.map((answer) => {
+          const generatedAnswer = generatedAnswersByKey.get(answer.questionKey)
+
+          return {
+            answer_text: generatedAnswer?.answerText || answer.answerText || null,
+            answer_variant_short:
+              generatedAnswer?.answerVariantShort || answer.answerVariantShort || null,
+            application_packet_id: packetId,
+            character_limit: answer.characterLimit ?? null,
+            field_type: answer.fieldType,
+            id: asPersistedId(answer.id) ?? crypto.randomUUID(),
+            job_id: jobId,
+            operator_id: operatorContext.operator.id,
+            question_key: answer.questionKey,
+            question_text: answer.questionText,
+            review_status: answer.reviewStatus,
+            source_context: {},
+            user_id: operatorContext.userId,
+          }
+        }),
+      )
+
+      if (insertAnswersResult.error) {
+        throw new Error(insertAnswersResult.error.message)
+      }
+    }
+
+    if (
+      review.job.workflowStatus === 'new' ||
+      review.job.workflowStatus === 'ranked' ||
+      review.job.workflowStatus === 'shortlisted'
+    ) {
+      await supabase
+        .from('job_scores')
+        .update({
+          last_status_changed_at: now,
+          workflow_status: 'preparing',
+        })
+        .eq('operator_id', operatorContext.operator.id)
+        .eq('job_id', jobId)
+
+      await supabase.from('application_events').insert({
+        operator_id: operatorContext.operator.id,
+        user_id: operatorContext.userId,
+        job_id: jobId,
+        event_type: 'status_changed',
+        from_status: review.job.workflowStatus,
+        to_status: 'preparing',
+        event_payload: {
+          generationProvider: 'openai',
+          sourceContext: 'packet-generate',
+          targetStatus: 'preparing',
+        },
+        notes: 'Application materials generated from the prep workspace.',
+      })
+
+      await persistPreferenceSignal({
+        jobId,
+        operatorId: operatorContext.operator.id,
+        sourceContext: 'packet-generate',
+        targetStatus: 'preparing',
+        userId: operatorContext.userId,
+      })
+    }
+
+    revalidatePath('/dashboard')
+    revalidatePath(`/jobs/${jobId}`)
+    revalidatePath(`/jobs/${jobId}/packet`)
+    refresh()
+
+    return {
+      message: 'Application materials generated. Review the resume, cover letter, and answers below.',
+      status: 'success',
+    }
+  } catch (error) {
+    await supabase
+      .from('application_packets')
+      .update({
+        generation_error: getPacketGenerationMessage(error),
+        generation_model: packetModel,
+        generation_prompt_version: 'packet-v1',
+        generation_provider: 'openai',
+        generation_status: 'failed',
+      })
+      .eq('id', packetId)
+
+    revalidatePath(`/jobs/${jobId}/packet`)
+    refresh()
+
+    return {
+      message: getPacketGenerationMessage(error),
+      status: 'error',
+    }
+  }
+}
+
 export async function saveApplicationPacket(
   _previousState: ApplicationPacketActionState,
   formData: FormData,
@@ -334,7 +637,7 @@ export async function saveApplicationPacket(
   }
 
   const jobId = asTextValue(formData.get('jobId'))
-  const submitIntent = asTextValue(formData.get('submitIntent')) || 'save-draft'
+  const submitIntent = asTextValue(formData.get('submitIntent')) || 'save-review'
   const packetId = asPersistedId(formData.get('packetId')) ?? crypto.randomUUID()
   const resumeVersionId = asPersistedId(formData.get('resumeVersionId')) ?? crypto.randomUUID()
   const suppliedJobScoreId = asPersistedId(formData.get('jobScoreId'))
@@ -381,7 +684,7 @@ export async function saveApplicationPacket(
 
   const { data: existingPacket, error: existingPacketError } = await supabase
     .from('application_packets')
-    .select('id, resume_version_id, generated_at')
+    .select('*')
     .eq('operator_id', operatorContext.operator.id)
     .eq('job_id', jobId)
     .maybeSingle()
@@ -395,6 +698,9 @@ export async function saveApplicationPacket(
 
   const persistedPacketId = existingPacket?.id ?? packetId
   const persistedResumeVersionId = existingPacket?.resume_version_id ?? resumeVersionId
+  const persistedGenerationStatus = inferPacketGenerationStatus(
+    (existingPacket as Record<string, unknown> | null) ?? null,
+  )
   const now = new Date().toISOString()
   const nextPacketStatus =
     submitIntent === 'mark-ready'
@@ -407,29 +713,26 @@ export async function saveApplicationPacket(
   const applicationAnswers = parseApplicationAnswers(formData)
 
   if (!existingPacket) {
-    const scaffoldResult = await supabase.from('application_packets').insert({
-      id: persistedPacketId,
-      generated_at: now,
-      job_id: jobId,
-      job_score_id: jobScoreId,
-      operator_id: operatorContext.operator.id,
-      packet_status: nextPacketStatus,
-      user_id: operatorContext.userId,
-    })
+    return {
+      message: 'Generate content first before marking this application ready.',
+      status: 'error',
+    }
+  }
 
-    if (scaffoldResult.error) {
-      return {
-        message: scaffoldResult.error.message,
-        status: 'error',
-      }
+  if (submitIntent === 'mark-ready' && persistedGenerationStatus !== 'generated') {
+    return {
+      message: 'Generate the resume, cover letter, and answers before marking this application ready.',
+      status: 'error',
     }
   }
 
   const resumeVersionResult = await supabase.from('resume_versions').upsert(
     {
       application_packet_id: persistedPacketId,
+      change_summary_text: asOptionalText(formData.get('resumeChangeSummaryText')),
       experience_entries: experienceEntries,
       export_status: 'draft',
+      headline_text: asOptionalText(formData.get('resumeHeadlineText')),
       highlighted_requirements: asList(formData.get('highlightedRequirements')),
       id: persistedResumeVersionId,
       job_id: jobId,
@@ -456,10 +759,18 @@ export async function saveApplicationPacket(
       application_checklist: asList(formData.get('checklistItems')),
       case_study_selection: caseStudySelection,
       cover_letter_draft: asOptionalText(formData.get('coverLetterDraft')),
+      cover_letter_summary: asOptionalText(formData.get('coverLetterSummary')),
       generated_at: existingPacket?.generated_at ?? now,
+      generation_error: existingPacket.generation_error,
+      generation_model: existingPacket.generation_model,
+      generation_prompt_version: existingPacket.generation_prompt_version,
+      generation_provider: existingPacket.generation_provider,
+      generation_status: persistedGenerationStatus,
       id: persistedPacketId,
+      job_focus_summary: asOptionalText(formData.get('jobFocusSummary')),
       job_id: jobId,
       job_score_id: jobScoreId,
+      job_summary: asOptionalText(formData.get('jobSummary')),
       last_reviewed_at: now,
       manual_notes: asOptionalText(formData.get('manualNotes')),
       operator_id: operatorContext.operator.id,
@@ -599,8 +910,8 @@ export async function saveApplicationPacket(
     message:
       submitIntent === 'mark-ready'
         ? 'Draft saved and marked ready to apply.'
-        : submitIntent === 'generate-draft'
-          ? 'Draft generated from the current packet data.'
+        : submitIntent === 'apply'
+          ? 'Application materials saved and marked applied.'
           : `Draft saved with ${applicationAnswers.length} structured answers.`,
     status: 'success',
   }

@@ -3,6 +3,10 @@
 import { useActionState } from 'react'
 
 import { saveApplicationPacket, type ApplicationPacketActionState } from '@/app/jobs/actions'
+import { PacketFormFooterMessage } from '@/components/jobs/packet-form-footer-message'
+import { PacketMaterialsSection } from '@/components/jobs/packet-materials-section'
+import { PacketPreGenerationSection } from '@/components/jobs/packet-pre-generation-section'
+import { PacketQuestionsSection } from '@/components/jobs/packet-questions-section'
 import { type ApplicationPacketRecord } from '@/lib/domain/types'
 import type { RankedJobRecord } from '@/lib/jobs/contracts'
 
@@ -66,9 +70,15 @@ export function ApplicationPacketForm({
     'A tailored resume summary will appear here once the application materials are generated.',
   )
   const coverLetterSummary = getPreviewText(
-    coverLetterSource,
+    packet.coverLetterSummary || coverLetterSource,
     'A role-specific cover letter will appear here once the application materials are generated.',
   )
+  const resumeChangeSummary = getPreviewText(
+    packet.resumeVersion.changeSummaryText,
+    'A short explanation of how the resume changed will appear here once the application materials are generated.',
+  )
+  const isRunning = packet.generationStatus === 'running'
+  const isFailed = packet.generationStatus === 'failed'
 
   return (
     <form action={formAction} className="packet-form" id="packet-form">
@@ -89,6 +99,8 @@ export function ApplicationPacketForm({
         value={JSON.stringify(packet.caseStudySelection)}
       />
 
+      <input name="resumeHeadlineText" type="hidden" value={packet.resumeVersion.headlineText} />
+      <textarea hidden name="resumeChangeSummaryText" readOnly value={packet.resumeVersion.changeSummaryText} />
       <textarea hidden name="resumeSummaryText" readOnly value={packet.resumeVersion.summaryText} />
       <textarea
         hidden
@@ -104,7 +116,10 @@ export function ApplicationPacketForm({
       />
       <textarea hidden name="tailoringNotes" readOnly value={packet.resumeVersion.tailoringNotes} />
       <textarea hidden name="coverLetterDraft" readOnly value={packet.coverLetterDraft} />
+      <textarea hidden name="coverLetterSummary" readOnly value={packet.coverLetterSummary} />
       <textarea hidden name="professionalSummary" readOnly value={packet.professionalSummary} />
+      <textarea hidden name="jobSummary" readOnly value={packet.jobSummary} />
+      <textarea hidden name="jobFocusSummary" readOnly value={packet.jobFocusSummary} />
       <input name="portfolioPrimaryLabel" type="hidden" value={packet.portfolioRecommendation.primaryLabel} />
       <input name="portfolioPrimaryUrl" type="hidden" value={packet.portfolioRecommendation.primaryUrl} />
       <textarea hidden name="portfolioRationale" readOnly value={packet.portfolioRecommendation.rationale} />
@@ -130,165 +145,24 @@ export function ApplicationPacketForm({
 
       {showGeneratedContent ? (
         <>
-          <section className="packet-section">
-            <div className="packet-section-inner">
-              <div className="settings-section-header packet-section-heading">
-                <div className="settings-section-title-stack">
-                  <p className="panel-label">Application materials</p>
-                  <h2>Review what will be sent.</h2>
-                  <p className="settings-section-note">
-                    Short summaries of the AI-tailored resume and cover letter are below. Use the source listing on this page if you need the full job text or posting.
-                  </p>
-                </div>
-              </div>
-
-              <div className="packet-material-grid">
-                <article className="packet-material-block">
-                  <div className="packet-material-heading">
-                    <p className="upload-slot-label">Resume summary</p>
-                  </div>
-                  <p className="packet-material-copy">{resumeSummary}</p>
-                  <p className="packet-material-status" role="status">
-                    <span
-                      aria-hidden="true"
-                      className={
-                        resumeReady ? 'packet-material-status-dot packet-material-status-dot--ready' : 'packet-material-status-dot packet-material-status-dot--pending'
-                      }
-                    />
-                    {resumeReady ? 'Ready' : 'Pending'}
-                  </p>
-                </article>
-
-                <article className="packet-material-block">
-                  <div className="packet-material-heading">
-                    <p className="upload-slot-label">Cover letter summary</p>
-                  </div>
-                  <p className="packet-material-copy">{coverLetterSummary}</p>
-                  <p className="packet-material-status" role="status">
-                    <span
-                      aria-hidden="true"
-                      className={
-                        coverLetterReady
-                          ? 'packet-material-status-dot packet-material-status-dot--ready'
-                          : 'packet-material-status-dot packet-material-status-dot--pending'
-                      }
-                    />
-                    {coverLetterReady ? 'Ready' : 'Pending'}
-                  </p>
-                </article>
-              </div>
-            </div>
-          </section>
-
-          <section className="packet-section">
-            <div className="packet-section-inner">
-              <div className="settings-section-header packet-section-heading">
-                <div className="settings-section-title-stack">
-                  <p className="panel-label">Application questions</p>
-                  <h2>Check the generated answers.</h2>
-                  <p className="settings-section-note">
-                    {packet.answers.length > 0
-                      ? `${readyAnswerCount} of ${packet.answers.length} recognized questions already have prepared answers.`
-                      : 'Questions will appear here when the application asks for them.'}
-                  </p>
-                </div>
-              </div>
-
-              {packet.answers.length > 0 ? (
-                <div className="packet-question-list">
-                  {packet.answers.map((answer, index) => {
-                    const answerReady = Boolean(answer.answerText.trim() || answer.answerVariantShort.trim())
-
-                    return (
-                      <details className="disclosure packet-question-card" key={`${answer.questionKey}-${index}`}>
-                        <summary className="disclosure-summary packet-question-summary">
-                          <div className="packet-question-main">
-                            <p className="upload-slot-label">Question {index + 1}</p>
-                            <h3>{answer.questionText}</h3>
-                          </div>
-                          <div className="packet-question-status-slot">
-                            <span className="packet-material-status" role="status">
-                              <span
-                                aria-hidden="true"
-                                className={
-                                  answerReady
-                                    ? 'packet-material-status-dot packet-material-status-dot--ready'
-                                    : 'packet-material-status-dot packet-material-status-dot--pending'
-                                }
-                              />
-                              {answerReady ? 'Ready' : 'Pending'}
-                            </span>
-                          </div>
-                          <div className="disclosure-controls packet-question-controls">
-                            <span className="disclosure-caret" aria-hidden="true">
-                              <svg fill="none" height="14" viewBox="0 0 16 16" width="14">
-                                <path d="M4 6l4 4 4-4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.25" />
-                              </svg>
-                            </span>
-                          </div>
-                        </summary>
-                        <div className="disclosure-body packet-disclosure-body">
-                          <div className="packet-preview-block">
-                            <p>
-                              {answer.answerText.trim() ||
-                                'A prepared answer will appear here once this question is generated.'}
-                            </p>
-                            {answer.answerVariantShort.trim() ? (
-                              <p className="packet-preview-secondary">
-                                <strong>Short answer.</strong> {answer.answerVariantShort}
-                              </p>
-                            ) : null}
-                          </div>
-                        </div>
-                      </details>
-                    )
-                  })}
-                </div>
-              ) : (
-                <div className="packet-inline-note">
-                  <p>No extra questions have been detected for this application yet.</p>
-                </div>
-              )}
-            </div>
-          </section>
+          <PacketMaterialsSection
+            coverLetterReady={coverLetterReady}
+            coverLetterSummary={coverLetterSummary}
+            resumeChangeSummary={resumeChangeSummary}
+            resumeReady={resumeReady}
+            resumeSummary={resumeSummary}
+          />
+          <PacketQuestionsSection answers={packet.answers} readyAnswerCount={readyAnswerCount} />
         </>
       ) : (
-        <section className="packet-section">
-          <div className="packet-section-inner">
-            <div className="settings-section-header packet-section-heading">
-              <div className="settings-section-title-stack">
-                <p className="panel-label">Generate content</p>
-                <h2>Create the resume and cover letter for this role.</h2>
-                <p className="settings-section-note">
-                  Resume, cover letter, and any recognized application answers will appear here after you generate them.
-                </p>
-              </div>
-            </div>
-
-            <div className="packet-inline-note">
-              <p>Nothing is shown yet so this step stays focused. Generate the content first, then review it here.</p>
-            </div>
-          </div>
-        </section>
+        <PacketPreGenerationSection
+          generationError={packet.generationError}
+          isFailed={isFailed}
+          isRunning={isRunning}
+        />
       )}
 
-      {state.message ? (
-        <div className="profile-form-footer packet-form-footer">
-          <div className="packet-form-footer-inner">
-            <p
-              className={`form-message ${
-                state.status === 'success'
-                  ? 'form-message-success'
-                  : state.status === 'error'
-                    ? 'form-message-error'
-                    : ''
-              }`}
-            >
-              {state.message}
-            </p>
-          </div>
-        </div>
-      ) : null}
+      <PacketFormFooterMessage message={state.message} status={state.status} />
     </form>
   )
 }

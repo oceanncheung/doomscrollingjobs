@@ -1,0 +1,213 @@
+import Link from 'next/link'
+
+import { GeneratePacketButton } from '@/components/jobs/generate-packet-button'
+import { JobStageActionButton } from '@/components/jobs/job-stage-action-button'
+import type { ApplicationPacketRecord } from '@/lib/domain/types'
+import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
+
+function PrepSubmitButton({
+  canSave,
+  disabledReason,
+  hasDraft,
+}: {
+  canSave: boolean
+  disabledReason?: string
+  hasDraft: boolean
+}) {
+  return (
+    <button
+      className="button button-primary button-small"
+      disabled={!canSave}
+      form="packet-form"
+      name="submitIntent"
+      title={!canSave ? disabledReason : undefined}
+      type="submit"
+      value={hasDraft ? 'mark-ready' : 'save-review'}
+    >
+      {hasDraft ? 'Mark Ready to Apply' : 'Save Review'}
+    </button>
+  )
+}
+
+interface JobOverviewActionsProps {
+  canGenerate: boolean
+  canSave: boolean
+  generationDisabledReason?: string
+  job: QualifiedJobRecord
+  packet: ApplicationPacketRecord
+  prepOpen: boolean
+  saveDisabledReason?: string
+}
+
+export function JobOverviewActions({
+  canGenerate,
+  canSave,
+  generationDisabledReason,
+  job,
+  packet,
+  prepOpen,
+  saveDisabledReason,
+}: JobOverviewActionsProps) {
+  const hasGeneratedContent = packet.generationStatus === 'generated'
+
+  if (prepOpen) {
+    if (job.workflowStatus === 'ready_to_apply') {
+      return (
+        <div
+          aria-label="Job overview actions"
+          className="screening-actions-bar job-overview-actions job-overview-actions--pair-right"
+          role="group"
+        >
+          <div className="screening-actions-cluster">
+            <div className="screening-action-slot">
+              <a
+                className="button button-primary button-small"
+                href={job.applicationUrl ?? job.sourceUrl}
+                rel="noreferrer"
+                target="_blank"
+              >
+                Apply
+              </a>
+            </div>
+            <div className="screening-action-slot">
+              <JobStageActionButton
+                canEdit={canSave}
+                disabledReason={saveDisabledReason || 'Switch back to the database-backed queue to mark jobs applied.'}
+                jobId={job.id}
+                label="Mark Applied"
+                sourceContext="job-flow"
+                variant="secondary"
+                workflowStatus="applied"
+              />
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div
+        aria-label="Job overview actions"
+        className="screening-actions-bar job-overview-actions job-overview-actions--single-right"
+        role="group"
+      >
+        <div className="screening-actions-cluster">
+          <div className="screening-action-slot">
+            {hasGeneratedContent ? (
+              <PrepSubmitButton canSave={canSave} disabledReason={saveDisabledReason} hasDraft />
+            ) : (
+              <GeneratePacketButton canEdit={canGenerate} disabledReason={generationDisabledReason} jobId={job.id} />
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (job.workflowStatus !== 'new' && job.workflowStatus !== 'ranked') {
+    if (job.workflowStatus === 'shortlisted') {
+      return (
+        <div
+          aria-label="Job overview actions"
+          className="screening-actions-bar job-overview-actions job-overview-actions--prepare-left"
+          role="group"
+        >
+          <div className="screening-actions-cluster">
+            <div className="screening-action-slot">
+              <Link className="button button-primary button-small" href={`/jobs/${job.id}/packet`}>
+                Prepare Application
+              </Link>
+            </div>
+            <div className="screening-action-slot">
+              <JobStageActionButton
+                canEdit={canSave}
+                disabledReason={saveDisabledReason || 'Switch back to the database-backed queue to remove saved jobs.'}
+                intent="dismiss"
+                jobId={job.id}
+                label="Remove"
+                sourceContext="job-flow"
+                variant="secondary"
+              />
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    if (job.workflowStatus === 'preparing') {
+      return (
+        <div
+          aria-label="Job overview actions"
+          className="screening-actions-bar job-overview-actions job-overview-actions--single-right"
+          role="group"
+        >
+          <div className="screening-actions-cluster">
+            <div className="screening-action-slot">
+              <Link className="button button-primary button-small" href={`/jobs/${job.id}/packet`}>
+                Continue Preparation
+              </Link>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    if (job.workflowStatus === 'ready_to_apply') {
+      return (
+        <div
+          aria-label="Job overview actions"
+          className="screening-actions-bar job-overview-actions job-overview-actions--single-right"
+          role="group"
+        >
+          <div className="screening-actions-cluster">
+            <div className="screening-action-slot">
+              <a
+                className="button button-primary button-small"
+                href={job.applicationUrl ?? job.sourceUrl}
+                rel="noreferrer"
+                target="_blank"
+              >
+                Apply
+              </a>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    return null
+  }
+
+  return (
+    <div
+      aria-label="Job overview actions"
+      className="screening-actions-bar job-overview-actions job-overview-actions--pair-right"
+      role="group"
+    >
+      <div className="screening-actions-cluster">
+        <div className="screening-action-slot">
+          <JobStageActionButton
+            canEdit={canSave}
+            disabledReason={saveDisabledReason || 'Switch back to the database-backed queue to save jobs.'}
+            intent="shortlist"
+            jobId={job.id}
+            label="Save"
+            sourceContext="job-flow"
+            variant="primary"
+          />
+        </div>
+        <div className="screening-action-slot">
+          <JobStageActionButton
+            canEdit={canSave}
+            disabledReason={saveDisabledReason || 'Switch back to the database-backed queue to skip jobs.'}
+            intent="dismiss"
+            jobId={job.id}
+            label="Skip"
+            sourceContext="job-flow"
+            variant="secondary"
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
