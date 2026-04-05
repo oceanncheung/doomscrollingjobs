@@ -64,13 +64,12 @@ export function JobOverviewActions({
             </div>
             <div className="screening-action-slot">
               <JobStageActionButton
+                actionKind="mark-applied"
                 canEdit={canSave}
                 disabledReason={saveDisabledReason || 'Switch back to the database-backed queue to mark jobs applied.'}
                 jobId={job.id}
-                label="Mark Applied"
                 sourceContext="job-flow"
                 variant="secondary"
-                workflowStatus="applied"
               />
             </div>
           </div>
@@ -103,11 +102,10 @@ export function JobOverviewActions({
           {actionModel.showShortlistArchive ? (
             <div className="screening-action-slot">
               <JobStageActionButton
+                actionKind="archive"
                 canEdit={canSave}
                 disabledReason={saveDisabledReason || 'Switch back to the database-backed queue to archive saved jobs.'}
-                intent="dismiss"
                 jobId={job.id}
-                label="Archive"
                 sourceContext="job-flow"
                 variant="secondary"
               />
@@ -127,22 +125,20 @@ export function JobOverviewActions({
       <div className="screening-actions-cluster">
         <div className="screening-action-slot">
           <JobStageActionButton
+            actionKind="save"
             canEdit={canSave}
             disabledReason={saveDisabledReason || 'Switch back to the database-backed queue to save jobs.'}
-            intent="shortlist"
             jobId={job.id}
-            label="Save"
             sourceContext="job-flow"
             variant="primary"
           />
         </div>
         <div className="screening-action-slot">
           <JobStageActionButton
+            actionKind="skip"
             canEdit={canSave}
             disabledReason={saveDisabledReason || 'Switch back to the database-backed queue to skip jobs.'}
-            intent="dismiss"
             jobId={job.id}
-            label="Skip"
             sourceContext="job-flow"
             variant="secondary"
           />

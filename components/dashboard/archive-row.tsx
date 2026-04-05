@@ -29,13 +29,12 @@ export function ArchiveRow({
         <div className="stage-actions">
           <div className="stage-action-slot stage-action-slot--fit">
             <JobStageActionButton
+              actionKind="restore"
               canEdit={actionsEnabled}
               disabledReason="Switch back to the database-backed queue to return jobs to Potential."
               jobId={job.id}
-              label="Back to Potential"
               sourceContext="archive-restore"
               variant="secondary"
-              workflowStatus="ranked"
             />
           </div>
           <div className="stage-action-slot stage-action-slot--status">

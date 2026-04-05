@@ -93,22 +93,20 @@ export function PotentialRow({
         <div className="screening-actions-cluster">
           <div className="screening-action-slot">
             <JobStageActionButton
+              actionKind="save"
               canEdit={actionsEnabled}
               disabledReason="Switch back to the database-backed queue to save jobs."
-              intent="shortlist"
               jobId={job.id}
-              label="Save"
               sourceContext="potential-jobs"
               variant="primary"
             />
           </div>
           <div className="screening-action-slot">
             <JobStageActionButton
+              actionKind="skip"
               canEdit={actionsEnabled}
               disabledReason="Switch back to the database-backed queue to skip jobs."
-              intent="dismiss"
               jobId={job.id}
-              label="Skip"
               sourceContext="potential-jobs"
               variant="secondary"
             />

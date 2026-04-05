@@ -6,9 +6,9 @@ import { updateJobWorkflow, type JobWorkflowActionState } from '@/app/jobs/actio
 import { workflowStatuses, type WorkflowStatus } from '@/lib/domain/types'
 import { formatWorkflowLabel } from '@/lib/jobs/presentation'
 import {
-  isArchivedWorkflowStatus,
-  isSavedWorkflowStatus,
-} from '@/lib/jobs/workflow-state'
+  getJobWorkflowQuickAction,
+  isJobWorkflowQuickActionDisabled,
+} from '@/lib/jobs/workflow-actions'
 
 const initialState: JobWorkflowActionState = {
   message: '',
@@ -35,6 +35,8 @@ export function JobWorkflowControls({
   sourceContext,
 }: JobWorkflowControlsProps) {
   const [state, formAction, isPending] = useActionState(updateJobWorkflow, initialState)
+  const saveAction = getJobWorkflowQuickAction('save')
+  const archiveAction = getJobWorkflowQuickAction('archive')
 
   return (
     <form
@@ -54,19 +56,19 @@ export function JobWorkflowControls({
       <div className="workflow-quick-actions">
         <button
           className="button button-secondary button-small"
-          disabled={!canEdit || isPending || isSavedWorkflowStatus(currentStatus)}
-          name="intent"
+          disabled={!canEdit || isPending || isJobWorkflowQuickActionDisabled(currentStatus, saveAction.kind)}
+          name="actionKind"
           type="submit"
-          value="shortlist"
+          value={saveAction.kind}
         >
-          {isPending ? 'Saving...' : 'Save'}
+          {isPending ? 'Saving...' : saveAction.defaultLabel}
         </button>
         <button
           className="button button-ghost button-small"
-          disabled={!canEdit || isPending || isArchivedWorkflowStatus(currentStatus)}
-          name="intent"
+          disabled={!canEdit || isPending || isJobWorkflowQuickActionDisabled(currentStatus, archiveAction.kind)}
+          name="actionKind"
           type="submit"
-          value="dismiss"
+          value={archiveAction.kind}
         >
           {isPending ? 'Saving...' : 'Dismiss'}
         </button>

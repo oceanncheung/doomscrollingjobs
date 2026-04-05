@@ -14,6 +14,13 @@ import { hasSupabaseServerEnv } from '@/lib/env'
 import { generateAndPersistApplicationPacket } from '@/lib/jobs/application-packet-generation'
 import { persistPreferenceSignal } from '@/lib/jobs/learning'
 import {
+  asJobWorkflowQuickActionKind,
+  getJobWorkflowTargetStatusForQuickAction,
+  getWorkflowEventType,
+  getWorkflowSuccessMessage,
+  getWorkflowTransitionNote,
+} from '@/lib/jobs/workflow-actions'
+import {
   isAppliedWorkflowStatus,
   isArchivedWorkflowStatus,
   isReadyWorkflowStatus,
@@ -151,6 +158,12 @@ function parseApplicationAnswers(formData: FormData) {
 }
 
 function resolveTargetStatus(formData: FormData) {
+  const actionKind = asJobWorkflowQuickActionKind(asTextValue(formData.get('actionKind')))
+
+  if (actionKind) {
+    return getJobWorkflowTargetStatusForQuickAction(actionKind)
+  }
+
   const intent = asTextValue(formData.get('intent'))
 
   if (intent === 'shortlist') {
@@ -162,43 +175,6 @@ function resolveTargetStatus(formData: FormData) {
   }
 
   return asWorkflowStatus(asTextValue(formData.get('workflowStatus')))
-}
-
-function getEventType(targetStatus: WorkflowStatus) {
-  if (targetStatus === 'applied') {
-    return 'applied' as const
-  }
-
-  if (targetStatus === 'follow_up_due') {
-    return 'follow_up_due' as const
-  }
-
-  return 'status_changed' as const
-}
-
-function getSuccessMessage(targetStatus: WorkflowStatus) {
-  switch (targetStatus) {
-    case 'ranked':
-      return 'Job returned to the Potential queue.'
-    case 'shortlisted':
-      return 'Job saved to the queue.'
-    case 'archived':
-      return 'Job dismissed from the active queue.'
-    case 'preparing':
-      return 'Job moved into packet preparation.'
-    case 'ready_to_apply':
-      return 'Job marked ready.'
-    case 'applied':
-      return 'Job marked as applied.'
-    case 'follow_up_due':
-      return 'Follow-up is now due for this job.'
-    case 'interview':
-      return 'Job moved into interview stage.'
-    case 'rejected':
-      return 'Job marked as rejected.'
-    default:
-      return 'Job workflow status saved.'
-  }
 }
 
 function inferPacketGenerationStatus(record: Record<string, unknown> | null) {
@@ -233,7 +209,8 @@ export async function updateJobWorkflow(
   formData: FormData,
 ): Promise<JobWorkflowActionState> {
   const jobId = asTextValue(formData.get('jobId'))
-  const intent = asTextValue(formData.get('intent')) || 'save'
+  const actionKind = asJobWorkflowQuickActionKind(asTextValue(formData.get('actionKind')))
+  const intent = asTextValue(formData.get('intent')) || actionKind || 'save'
   const sourceContext = asTextValue(formData.get('sourceContext')) || 'workflow-controls'
 
   if (!jobId) {
@@ -321,20 +298,19 @@ export async function updateJobWorkflow(
     operator_id: operatorContext.operator.id,
     user_id: operatorContext.userId,
     job_id: jobId,
-    event_type: getEventType(targetStatus),
+    event_type: getWorkflowEventType(targetStatus),
     from_status: currentStatus,
     to_status: targetStatus,
     event_payload: {
+      actionKind,
       intent,
       sourceContext,
       targetStatus,
     },
-    notes:
-      intent === 'dismiss'
-        ? 'Dismissed from the ranked queue.'
-        : intent === 'shortlist'
-          ? 'Moved into the shortlist.'
-          : `Workflow status updated to ${targetStatus.replaceAll('_', ' ')}.`,
+    notes: getWorkflowTransitionNote({
+      actionKind,
+      targetStatus,
+    }),
   })
 
   await persistPreferenceSignal({
@@ -359,13 +335,13 @@ export async function updateJobWorkflow(
 
   if (eventResult.error) {
     return {
-      message: `${getSuccessMessage(targetStatus)} Activity history could not be written: ${eventResult.error.message}`,
+      message: `${getWorkflowSuccessMessage(targetStatus)} Activity history could not be written: ${eventResult.error.message}`,
       status: 'success',
     }
   }
 
   return {
-    message: getSuccessMessage(targetStatus),
+    message: getWorkflowSuccessMessage(targetStatus),
     status: 'success',
   }
 }

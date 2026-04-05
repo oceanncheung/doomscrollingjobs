@@ -67,11 +67,10 @@ export function WorkspaceTodayRail({
               )}
 
               <JobStageActionButton
+                actionKind="skip"
                 canEdit={actionsEnabled}
                 disabledReason="Switch back to the database-backed queue to skip jobs."
-                intent="dismiss"
                 jobId={applyNextJob.id}
-                label="Skip"
                 sourceContext="today-rail"
                 variant="secondary"
               />

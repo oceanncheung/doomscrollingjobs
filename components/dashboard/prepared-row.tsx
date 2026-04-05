@@ -38,13 +38,12 @@ export function PreparedRow({
           </div>
           <div className="stage-action-slot stage-action-slot--fit">
             <JobStageActionButton
+              actionKind="mark-applied"
               canEdit={actionsEnabled}
               disabledReason="Switch back to the database-backed queue to mark jobs as applied."
               jobId={job.id}
-              label="Mark Applied"
               sourceContext="prepared-apply"
               variant="secondary"
-              workflowStatus="applied"
             />
           </div>
           <div className="stage-action-slot stage-action-slot--status">

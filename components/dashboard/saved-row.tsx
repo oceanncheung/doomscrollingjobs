@@ -36,22 +36,20 @@ export function SavedRow({
           </div>
           <div className="stage-action-slot stage-action-slot--fit">
             <JobStageActionButton
+              actionKind="restore"
               canEdit={actionsEnabled}
               disabledReason="Switch back to the database-backed queue to return jobs to Potential."
               jobId={job.id}
-              label="Back to Potential"
               sourceContext="saved-review"
               variant="secondary"
-              workflowStatus="ranked"
             />
           </div>
           <div className="stage-action-slot stage-action-slot--status">
             <JobStageActionButton
+              actionKind="archive"
               canEdit={actionsEnabled}
               disabledReason="Switch back to the database-backed queue to archive saved jobs."
-              intent="dismiss"
               jobId={job.id}
-              label="Archive"
               sourceContext="saved-review"
               variant="secondary"
             />
