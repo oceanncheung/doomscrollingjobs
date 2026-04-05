@@ -1,5 +1,9 @@
 import Link from 'next/link'
 
+import {
+  StageDetailGrid,
+  StageDetailItem,
+} from '@/components/dashboard/stage-primitives'
 import { StageRow } from '@/components/dashboard/stage-row'
 import { getRiskReason } from '@/components/dashboard/formatters'
 import { JobStageActionButton } from '@/components/jobs/job-stage-action-button'
@@ -55,24 +59,21 @@ export function PreparedRow({
       profile={profile}
       showActions={showActions}
     >
-      <div className="detail-pair-grid detail-pair-grid-stack">
-        <div>
-          <p className="panel-label">Ready now</p>
+      <StageDetailGrid stack>
+        <StageDetailItem label="Ready now">
           <ul className="readiness-list">
             <li>Resume prepared</li>
             <li>Cover letter prepared</li>
             <li>Answers recognized</li>
           </ul>
-        </div>
-        <div>
-          <p className="panel-label">Next step</p>
+        </StageDetailItem>
+        <StageDetailItem label="Next step">
           <p>Open the packet if you want one last review, or apply directly from here.</p>
-        </div>
-        <div>
-          <p className="panel-label">Before applying</p>
+        </StageDetailItem>
+        <StageDetailItem label="Before applying">
           <p>{getRiskReason(job)}</p>
-        </div>
-      </div>
+        </StageDetailItem>
+      </StageDetailGrid>
     </StageRow>
   )
 }

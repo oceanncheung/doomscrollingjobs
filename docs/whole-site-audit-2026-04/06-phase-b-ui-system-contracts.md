@@ -109,7 +109,17 @@ Contract:
 - Packet surface refactors should preserve the existing packet class names so the visual system remains unchanged.
 - Packet-specific shared blocks belong in packet primitives, not in generic UI primitives, unless they become truly cross-surface.
 
-### 5. Upload controls
+### 6. Dashboard row primitives
+
+Owned by:
+- `components/dashboard/stage-primitives.tsx`
+
+Contract:
+- Dashboard row detail sections should reuse shared detail-grid, detail-item, and inline-link wrappers instead of hand-rolling `panel-label + copy + link row` markup in each stage row.
+- Preserve the existing `detail-pair-grid`, `detail-pair-grid-stack`, and `inline-link-row` classes so the queue visuals do not change.
+- Route-specific row copy still belongs in the row component; the primitive only owns repeated shell structure.
+
+### 7. Upload controls
 
 Owned by:
 - `components/settings/file-upload-slot.tsx`

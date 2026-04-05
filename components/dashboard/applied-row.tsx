@@ -1,5 +1,9 @@
 import Link from 'next/link'
 
+import {
+  StageDetailGrid,
+  StageDetailItem,
+} from '@/components/dashboard/stage-primitives'
 import { StageRow } from '@/components/dashboard/stage-row'
 import { formatSourceLinkLabel, getMatchReason, getRiskReason } from '@/components/dashboard/formatters'
 import type { OperatorProfileRecord } from '@/lib/domain/types'
@@ -42,20 +46,17 @@ export function AppliedRow({
       profile={profile}
       showActions={showActions}
     >
-      <div className="detail-pair-grid detail-pair-grid-stack">
-        <div>
-          <p className="panel-label">Status</p>
+      <StageDetailGrid stack>
+        <StageDetailItem label="Status">
           <p>{formatWorkflowLabel(job.workflowStatus)}</p>
-        </div>
-        <div>
-          <p className="panel-label">Why it made the cut</p>
+        </StageDetailItem>
+        <StageDetailItem label="Why it made the cut">
           <p>{getMatchReason(job)}</p>
-        </div>
-        <div>
-          <p className="panel-label">Watchout</p>
+        </StageDetailItem>
+        <StageDetailItem label="Watchout">
           <p>{getRiskReason(job)}</p>
-        </div>
-      </div>
+        </StageDetailItem>
+      </StageDetailGrid>
     </StageRow>
   )
 }

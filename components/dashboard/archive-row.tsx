@@ -1,10 +1,15 @@
 import Link from 'next/link'
 
+import {
+  StageDetailGrid,
+  StageDetailItem,
+} from '@/components/dashboard/stage-primitives'
 import { StageRow } from '@/components/dashboard/stage-row'
 import { getMatchReason } from '@/components/dashboard/formatters'
 import { JobStageActionButton } from '@/components/jobs/job-stage-action-button'
 import type { OperatorProfileRecord } from '@/lib/domain/types'
 import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
+import { getJobReviewHref } from '@/lib/jobs/review-navigation'
 import { formatWorkflowLabel } from '@/lib/jobs/presentation'
 
 export function ArchiveRow({
@@ -34,7 +39,7 @@ export function ArchiveRow({
             />
           </div>
           <div className="stage-action-slot stage-action-slot--status">
-            <Link className="button button-ghost button-small" href={`/jobs/${job.id}`}>
+            <Link className="button button-ghost button-small" href={getJobReviewHref(job.id)}>
               Details
             </Link>
           </div>
@@ -45,20 +50,17 @@ export function ArchiveRow({
       profile={profile}
       showActions={showActions}
     >
-      <div className="detail-pair-grid detail-pair-grid-stack">
-        <div>
-          <p className="panel-label">Status</p>
+      <StageDetailGrid stack>
+        <StageDetailItem label="Status">
           <p>{formatWorkflowLabel(job.workflowStatus)}</p>
-        </div>
-        <div>
-          <p className="panel-label">Why it matched</p>
+        </StageDetailItem>
+        <StageDetailItem label="Why it matched">
           <p>{getMatchReason(job)}</p>
-        </div>
-        <div>
-          <p className="panel-label">Why it fell out</p>
+        </StageDetailItem>
+        <StageDetailItem label="Why it fell out">
           <p>{job.queueReason}</p>
-        </div>
-      </div>
+        </StageDetailItem>
+      </StageDetailGrid>
     </StageRow>
   )
 }

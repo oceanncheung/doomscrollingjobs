@@ -1,5 +1,10 @@
 import Link from 'next/link'
 
+import {
+  StageDetailGrid,
+  StageDetailItem,
+  StageInlineLinks,
+} from '@/components/dashboard/stage-primitives'
 import { JobStageActionButton } from '@/components/jobs/job-stage-action-button'
 import type { OperatorProfileRecord } from '@/lib/domain/types'
 import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
@@ -14,6 +19,7 @@ import {
   getRiskReason,
   getSalaryDisplay,
 } from '@/components/dashboard/formatters'
+import { getJobReviewHref } from '@/lib/jobs/review-navigation'
 import { formatDateLabel } from '@/lib/jobs/presentation'
 
 export function PotentialRow({
@@ -64,24 +70,22 @@ export function PotentialRow({
         </summary>
 
         <div className="screening-expanded">
-          <div className="detail-pair-grid">
-            <div className="screening-match-column">
-              <p className="panel-label">Why it matches</p>
+          <StageDetailGrid>
+            <StageDetailItem className="screening-match-column" label="Why it matches">
               <p>{getMatchReason(job)}</p>
               <p className="screening-description-copy">{getDescriptionExcerpt(job)}</p>
-            </div>
-            <div>
-              <p className="panel-label">Risks / gaps</p>
+            </StageDetailItem>
+            <StageDetailItem label="Risks / gaps">
               <p>{getRiskReason(job)}</p>
-            </div>
-          </div>
+            </StageDetailItem>
+          </StageDetailGrid>
 
-          <div className="inline-link-row">
-            <Link href={`/jobs/${job.id}`}>More details</Link>
+          <StageInlineLinks>
+            <Link href={getJobReviewHref(job.id)}>More details</Link>
             <a href={job.sourceUrl} rel="noreferrer" target="_blank">
               {formatSourceLinkLabel(job)}
             </a>
-          </div>
+          </StageInlineLinks>
         </div>
       </details>
 

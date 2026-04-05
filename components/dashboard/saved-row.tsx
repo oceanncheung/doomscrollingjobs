@@ -1,5 +1,10 @@
 import Link from 'next/link'
 
+import {
+  StageDetailGrid,
+  StageDetailItem,
+  StageInlineLinks,
+} from '@/components/dashboard/stage-primitives'
 import { StageRow } from '@/components/dashboard/stage-row'
 import { formatSourceLinkLabel, getMatchReason, getRiskReason } from '@/components/dashboard/formatters'
 import { JobStageActionButton } from '@/components/jobs/job-stage-action-button'
@@ -58,27 +63,24 @@ export function SavedRow({
       profile={profile}
       showActions={showActions}
     >
-      <div className="detail-pair-grid detail-pair-grid-stack">
-        <div>
-          <p className="panel-label">Fit summary</p>
+      <StageDetailGrid stack>
+        <StageDetailItem label="Fit summary">
           <p>{job.fitSummary}</p>
-        </div>
-        <div>
-          <p className="panel-label">Why it matches</p>
+        </StageDetailItem>
+        <StageDetailItem label="Why it matches">
           <p>{getMatchReason(job)}</p>
-        </div>
-        <div>
-          <p className="panel-label">Risks / gaps</p>
+        </StageDetailItem>
+        <StageDetailItem label="Risks / gaps">
           <p>{getRiskReason(job)}</p>
-        </div>
-      </div>
+        </StageDetailItem>
+      </StageDetailGrid>
 
-      <div className="inline-link-row">
+      <StageInlineLinks>
         <Link href={getJobReviewHref(job.id)}>Details</Link>
         <a href={job.sourceUrl} rel="noreferrer" target="_blank">
           {formatSourceLinkLabel(job)}
         </a>
-      </div>
+      </StageInlineLinks>
     </StageRow>
   )
 }
