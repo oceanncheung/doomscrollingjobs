@@ -1,5 +1,7 @@
 import type { ApplicationAnswerRecord } from '@/lib/domain/types'
 
+import { SectionHeading } from '@/components/ui/section-heading'
+
 interface PacketQuestionsSectionProps {
   answers: ApplicationAnswerRecord[]
   readyAnswerCount: number
@@ -12,17 +14,16 @@ export function PacketQuestionsSection({
   return (
     <section className="packet-section">
       <div className="packet-section-inner">
-        <div className="settings-section-header packet-section-heading">
-          <div className="settings-section-title-stack">
-            <p className="panel-label">Application questions</p>
-            <h2>Check the generated answers.</h2>
-            <p className="settings-section-note">
-              {answers.length > 0
-                ? `${readyAnswerCount} of ${answers.length} recognized questions already have prepared answers.`
-                : 'Questions will appear here when the application asks for them.'}
-            </p>
-          </div>
-        </div>
+        <SectionHeading
+          className="packet-section-heading"
+          label="Application questions"
+          note={
+            answers.length > 0
+              ? `${readyAnswerCount} of ${answers.length} recognized questions already have prepared answers.`
+              : 'Questions will appear here when the application asks for them.'
+          }
+          title="Check the generated answers."
+        />
 
         {answers.length > 0 ? (
           <div className="packet-question-list">

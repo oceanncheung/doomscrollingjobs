@@ -1,5 +1,6 @@
 import Link from 'next/link'
 
+import { SectionHeading } from '@/components/ui/section-heading'
 import {
   getPacketGenerationRemediationHint,
   getPacketGenerationUserMessage,
@@ -32,21 +33,20 @@ export function PacketPreGenerationSection({
   return (
     <section className="packet-section">
       <div className="packet-section-inner">
-        <div className="settings-section-header packet-section-heading">
-          <div className="settings-section-title-stack">
-            <p className="panel-label">{screeningLocked ? 'Profile not ready' : 'Generate content'}</p>
-            <h2>
-              {screeningLocked
-                ? 'Complete your profile before preparing this packet.'
-                : 'Create the resume and cover letter for this role.'}
-            </h2>
-            <p className="settings-section-note">
-              {screeningLocked
-                ? 'Use Profile to upload your resume, generate the profile draft, review the extracted sections, and save once the required fields are ready. The application packet unlocks once your profile is ready.'
-                : 'Resume and cover letter will appear here after generation. Application questions only show up when the ATS actually asks for them.'}
-            </p>
-          </div>
-        </div>
+        <SectionHeading
+          className="packet-section-heading"
+          label={screeningLocked ? 'Profile not ready' : 'Generate content'}
+          note={
+            screeningLocked
+              ? 'Use Profile to upload your resume, generate the profile draft, review the extracted sections, and save once the required fields are ready. The application packet unlocks once your profile is ready.'
+              : 'Resume and cover letter will appear here after generation. Application questions only show up when the ATS actually asks for them.'
+          }
+          title={
+            screeningLocked
+              ? 'Complete your profile before preparing this packet.'
+              : 'Create the resume and cover letter for this role.'
+          }
+        />
 
         {screeningLocked ? (
           <div className="packet-remediation-callout">

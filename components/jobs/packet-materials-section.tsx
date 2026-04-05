@@ -1,3 +1,5 @@
+import { SectionHeading } from '@/components/ui/section-heading'
+
 interface PacketMaterialsSectionProps {
   coverLetterReady: boolean
   coverLetterSummary: string
@@ -16,16 +18,12 @@ export function PacketMaterialsSection({
   return (
     <section className="packet-section" id="packet-materials-section">
       <div className="packet-section-inner">
-        <div className="settings-section-header packet-section-heading">
-          <div className="settings-section-title-stack">
-            <p className="panel-label">Application materials</p>
-            <h2>Review what will be sent.</h2>
-            <p className="settings-section-note">
-              Short summaries of the tailored resume and cover letter are below. Use the source listing on this
-              page if you need the full job text or posting.
-            </p>
-          </div>
-        </div>
+        <SectionHeading
+          className="packet-section-heading"
+          label="Application materials"
+          note="Short summaries of the tailored resume and cover letter are below. Use the source listing on this page if you need the full job text or posting."
+          title="Review what will be sent."
+        />
 
         <div className="packet-material-grid">
           <article className="packet-material-block">

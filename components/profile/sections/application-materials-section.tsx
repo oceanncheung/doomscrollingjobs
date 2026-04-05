@@ -1,7 +1,7 @@
 'use client'
 
 import { FileUploadSlot } from '@/components/settings/file-upload-slot'
-import { LabeledHeading } from '@/components/ui/labeled-heading'
+import { SectionHeading } from '@/components/ui/section-heading'
 
 interface ApplicationMaterialsSectionProps {
   standalone: boolean
@@ -25,10 +25,8 @@ export function ApplicationMaterialsSection({
       className={`panel settings-section${standalone ? ' is-standalone' : ''}`}
       id="source-files"
     >
-      <LabeledHeading
-        className="settings-section-header"
+      <SectionHeading
         label="Source documents"
-        stackClassName="settings-section-title-stack"
         title="Generate your profile from your resume."
       />
 

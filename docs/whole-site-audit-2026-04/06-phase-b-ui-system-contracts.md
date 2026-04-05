@@ -37,9 +37,11 @@ Allowed use:
 
 Owned by:
 - `components/ui/labeled-heading.tsx`
+- `components/ui/section-heading.tsx`
 
 Contract:
 - Repeated label + heading stacks should use one shared heading primitive.
+- Standard section headers on profile and packet surfaces should use the shared section-heading wrapper so the shell classes stay consistent.
 - Preserve the existing wrapper structure used by route CSS:
   - section headers keep their stack wrapper
   - tab panel headers keep their inner wrapper

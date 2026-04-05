@@ -6,8 +6,8 @@ import { SectionLockFrame } from '@/components/profile/profile-form-controls'
 import { AutoSizeTextarea } from '@/components/ui/auto-size-textarea'
 import { FieldLabelRow } from '@/components/ui/field-label-row'
 import { ChevronDownIcon } from '@/components/ui/icons/chevron-down-icon'
-import { LabeledHeading } from '@/components/ui/labeled-heading'
 import { OverlayOptionField } from '@/components/ui/overlay-option-field'
+import { SectionHeading } from '@/components/ui/section-heading'
 import { TagToggleGroup } from '@/components/ui/tag-toggle-group'
 import { TagInput } from '@/components/ui/tag-input'
 import { REGION_SUGGESTIONS } from '@/lib/profile/autocomplete-options'
@@ -62,10 +62,8 @@ export function JobTargetsSection({
 }: JobTargetsSectionProps) {
   return (
     <section className="panel settings-section">
-      <LabeledHeading
-        className="settings-section-header"
+      <SectionHeading
         label="Job targets"
-        stackClassName="settings-section-title-stack"
         title="Refine the roles this workspace should prioritize."
       />
 
