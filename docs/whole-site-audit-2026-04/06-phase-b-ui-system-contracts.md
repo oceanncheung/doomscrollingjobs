@@ -21,11 +21,13 @@ The goal is to improve system quality without changing the existing visual langu
 Owned by:
 - `components/ui/field-label-row.tsx`
 - `components/profile/review-state-indicator.tsx`
+- `components/ui/status-indicator.tsx`
 
 Contract:
 - Use one shared field-label row for label + review indicator composition.
 - Reuse `.field-label-row` and existing label classes so there is zero visual diff.
 - Do not hand-roll review-indicator markup inside profile sections when the shared label primitive can own it.
+- Status dots should come from the shared status primitive even when a route only needs the dot-only form.
 
 Allowed use:
 - underline fields
@@ -92,10 +94,12 @@ Contract:
 
 Owned by:
 - `components/jobs/packet-primitives.tsx`
+- `components/ui/status-indicator.tsx`
 - `app/styles/forms.css`
 
 Contract:
 - Packet status pills, inline notes, remediation callouts, and question disclosure summaries should reuse shared packet primitives.
+- Packet readiness labels should compose the shared status primitive while preserving the existing packet class names expected by route CSS.
 - Packet surface refactors should preserve the existing packet class names so the visual system remains unchanged.
 - Packet-specific shared blocks belong in packet primitives, not in generic UI primitives, unless they become truly cross-surface.
 

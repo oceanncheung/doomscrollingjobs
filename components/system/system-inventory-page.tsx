@@ -10,6 +10,7 @@ import { useProfileReviewIndicators } from '@/components/profile/profile-save-me
 import { FileUploadSlot } from '@/components/settings/file-upload-slot'
 import { BulletTextarea } from '@/components/ui/bullet-textarea'
 import { OverlayOptionField } from '@/components/ui/overlay-option-field'
+import { StatusDot, StatusIndicator } from '@/components/ui/status-indicator'
 import { TagInput } from '@/components/ui/tag-input'
 import { TagToggleGroup } from '@/components/ui/tag-toggle-group'
 import {
@@ -205,6 +206,15 @@ export function SystemInventoryPage() {
                         setProofPoints((current) => [...current, ''])
                       }
                     />
+                  </div>
+                  <div className="field">
+                    <span>Status primitives</span>
+                    <div className="system-inventory-status-row">
+                      <StatusIndicator label="Ready" tone="ready" />
+                      <StatusIndicator label="Pending" tone="attention" />
+                      <StatusDot ariaLabel="Needs attention" tone="attention" />
+                      <StatusDot ariaLabel="Ready" tone="ready" />
+                    </div>
                   </div>
                 </div>
                 <label className="field">

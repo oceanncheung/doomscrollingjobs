@@ -1,23 +1,22 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 
+import { StatusIndicator } from '@/components/ui/status-indicator'
+
 interface PacketStatusProps {
   ready: boolean
 }
 
 export function PacketStatus({ ready }: PacketStatusProps) {
   return (
-    <span className="packet-material-status" role="status">
-      <span
-        aria-hidden="true"
-        className={
-          ready
-            ? 'packet-material-status-dot packet-material-status-dot--ready'
-            : 'packet-material-status-dot packet-material-status-dot--pending'
-        }
-      />
-      {ready ? 'Ready' : 'Pending'}
-    </span>
+    <StatusIndicator
+      className="packet-material-status"
+      dotClassName={`packet-material-status-dot ${
+        ready ? 'packet-material-status-dot--ready' : 'packet-material-status-dot--pending'
+      }`}
+      label={ready ? 'Ready' : 'Pending'}
+      tone={ready ? 'ready' : 'attention'}
+    />
   )
 }
 

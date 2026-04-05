@@ -2,6 +2,7 @@
 
 import type { ReviewState } from '@/lib/profile/master-assets'
 import { useProfileReviewIndicators } from '@/components/profile/profile-save-message-root'
+import { StatusDot } from '@/components/ui/status-indicator'
 
 function getReviewStateLabel(state: ReviewState) {
   return state === 'ready' ? 'Ready' : 'Needs attention'
@@ -22,11 +23,11 @@ export function ReviewStateIndicator({
   }
 
   return (
-    <span
-      aria-label={getReviewStateLabel(state)}
+    <StatusDot
+      ariaLabel={getReviewStateLabel(state)}
       className={['settings-review-indicator', tone, className].filter(Boolean).join(' ')}
-      role="status"
       title={getReviewStateLabel(state)}
+      tone={state === 'ready' ? 'ready' : 'attention'}
     />
   )
 }
