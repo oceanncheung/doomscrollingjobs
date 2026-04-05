@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import { ChevronDownIcon } from '@/components/ui/icons/chevron-down-icon'
 import { getOverlayPlacement, type OverlayPlacement } from '@/lib/profile/overlay-placement'
 
 interface OverlayOption {
@@ -154,14 +155,7 @@ export function OverlayOptionField({
             type="button"
           >
             <span aria-hidden className="overlay-option-chevron">
-              <svg fill="none" height="12" viewBox="0 0 12 12" width="12">
-                <path
-                  d="M3.25 4.5 6 7.25 8.75 4.5"
-                  stroke="currentColor"
-                  strokeLinecap="square"
-                  strokeWidth="1.2"
-                />
-              </svg>
+              <ChevronDownIcon />
             </span>
           </button>
         </div>
@@ -184,14 +178,7 @@ export function OverlayOptionField({
             </span>
           </button>
           <span aria-hidden className="overlay-option-chevron">
-            <svg fill="none" height="12" viewBox="0 0 12 12" width="12">
-              <path
-                d="M3.25 4.5 6 7.25 8.75 4.5"
-                stroke="currentColor"
-                strokeLinecap="square"
-                strokeWidth="1.2"
-              />
-            </svg>
+            <ChevronDownIcon />
           </span>
         </div>
       )}

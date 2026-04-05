@@ -4,6 +4,8 @@ import type { KeyboardEvent } from 'react'
 import { useId, useRef, useState } from 'react'
 
 import { ReviewStateIndicator } from '@/components/profile/review-state-indicator'
+import { ChevronDownIcon } from '@/components/ui/icons/chevron-down-icon'
+import { PlusIcon } from '@/components/ui/icons/plus-icon'
 import { getOverlayPlacement, type OverlayPlacement } from '@/lib/profile/overlay-placement'
 import type { ReviewState } from '@/lib/profile/master-assets'
 
@@ -256,17 +258,7 @@ export function TagInput({
               onClick={beginEditing}
               type="button"
             >
-              <svg
-                aria-hidden="true"
-                className="tag-add-icon"
-                fill="none"
-                height="14"
-                viewBox="0 0 14 14"
-                width="14"
-              >
-                <path d="M7 3V11" stroke="currentColor" strokeLinecap="square" strokeWidth="1.2" />
-                <path d="M3 7H11" stroke="currentColor" strokeLinecap="square" strokeWidth="1.2" />
-              </svg>
+              <PlusIcon className="tag-add-icon" />
             </button>
           ) : showSquareSuggestionField ? (
             <span className="tag-input-square-trigger">
@@ -281,14 +273,7 @@ export function TagInput({
                 type="button"
               >
                 <span aria-hidden className="tag-input-square-trigger__chevron">
-                  <svg fill="none" height="12" viewBox="0 0 12 12" width="12">
-                    <path
-                      d="M3.25 4.5 6 7.25 8.75 4.5"
-                      stroke="currentColor"
-                      strokeLinecap="square"
-                      strokeWidth="1.2"
-                    />
-                  </svg>
+                  <ChevronDownIcon />
                 </span>
               </button>
             </span>
@@ -296,14 +281,7 @@ export function TagInput({
             <span className="list-input-shell tag-input-datalist-wrap tag-input-datalist-wrap--field">
               {tagInputEl}
               <span aria-hidden className="list-input-shell__chevron">
-                <svg fill="none" height="12" viewBox="0 0 12 12" width="12">
-                  <path
-                    d="M3.25 4.5 6 7.25 8.75 4.5"
-                    stroke="currentColor"
-                    strokeLinecap="square"
-                    strokeWidth="1.2"
-                  />
-                </svg>
+                <ChevronDownIcon />
               </span>
             </span>
           ) : (

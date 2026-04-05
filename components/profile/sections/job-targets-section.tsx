@@ -4,6 +4,7 @@ import type { Dispatch, SetStateAction } from 'react'
 
 import { SectionLockFrame } from '@/components/profile/profile-form-controls'
 import { AutoSizeTextarea } from '@/components/ui/auto-size-textarea'
+import { ChevronDownIcon } from '@/components/ui/icons/chevron-down-icon'
 import { OverlayOptionField } from '@/components/ui/overlay-option-field'
 import { ReviewStateIndicator } from '@/components/profile/review-state-indicator'
 import { TagToggleGroup } from '@/components/ui/tag-toggle-group'
@@ -89,14 +90,7 @@ export function JobTargetsSection({
             <span className="settings-action-toggle">
               Additional filters
               <span aria-hidden="true" className="settings-action-toggle-icon">
-                <svg fill="none" height="12" viewBox="0 0 12 12" width="12">
-                  <path
-                    d="M3.25 4.5 6 7.25 8.75 4.5"
-                    stroke="currentColor"
-                    strokeLinecap="square"
-                    strokeWidth="1.2"
-                  />
-                </svg>
+                <ChevronDownIcon />
               </span>
             </span>
           </summary>

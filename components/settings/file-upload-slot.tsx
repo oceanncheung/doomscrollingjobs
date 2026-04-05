@@ -2,33 +2,9 @@
 
 import { useRef } from 'react'
 
+import { TrashIcon } from '@/components/ui/icons/trash-icon'
+import { UploadIcon } from '@/components/ui/icons/upload-icon'
 import { formatCompactFileName } from '@/lib/files/format-compact-file-name'
-
-function TrashGlyph() {
-  return (
-    <svg aria-hidden className="upload-slot-chip-icon-svg" fill="none" height="14" viewBox="0 0 14 14" width="14">
-      <path
-        d="M4.25 4.5V10.25M7 4.5V10.25M9.75 4.5V10.25M3 3h8M5 3V2h4v1M4 12h6"
-        stroke="currentColor"
-        strokeLinecap="square"
-        strokeWidth="1.2"
-      />
-    </svg>
-  )
-}
-
-function UploadGlyph() {
-  return (
-    <svg aria-hidden className="upload-slot-chip-icon-svg" fill="none" height="14" viewBox="0 0 14 14" width="14">
-      <path
-        d="M7 10.5V3.5M4.5 6 7 3.5 9.5 6M3 11.5h8"
-        stroke="currentColor"
-        strokeLinecap="square"
-        strokeWidth="1.2"
-      />
-    </svg>
-  )
-}
 
 interface FileUploadSlotProps {
   accept?: string
@@ -75,7 +51,7 @@ export function FileUploadSlot({
           >
             <span className="upload-slot-chip-filename">{compactFileName}</span>
             <span className="upload-slot-chip-trailing-icon">
-              <TrashGlyph />
+              <TrashIcon className="upload-slot-chip-icon-svg" />
             </span>
           </button>
         ) : (
@@ -84,7 +60,7 @@ export function FileUploadSlot({
               <>
                 <span className="upload-slot-chip-label">{label}</span>
                 <span className="upload-slot-chip-trailing-icon">
-                  <UploadGlyph />
+                  <UploadIcon className="upload-slot-chip-icon-svg" />
                 </span>
               </>
             ) : (

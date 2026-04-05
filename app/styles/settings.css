@@ -939,3 +939,53 @@
   display: grid;
   gap: 8px;
 }
+
+.system-inventory-main {
+  display: grid;
+  gap: 24px;
+  align-content: start;
+}
+
+.system-inventory-panel {
+  display: grid;
+  gap: 24px;
+  padding-top: 24px;
+  padding-right: var(--queue-column-pad);
+  box-sizing: border-box;
+}
+
+.system-inventory-heading {
+  display: grid;
+  gap: 8px;
+}
+
+.system-inventory-heading h2 {
+  margin: 0;
+}
+
+.system-inventory-note {
+  margin: 0;
+  max-width: 56rem;
+}
+
+.system-inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.system-inventory-stack {
+  display: grid;
+  gap: 24px;
+  align-content: start;
+}
+
+.system-inventory-tab-panel {
+  padding-top: 24px;
+}
+
+.system-inventory-upload-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+}

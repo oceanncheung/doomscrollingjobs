@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 
 import { ReviewStateIndicator } from '@/components/profile/review-state-indicator'
+import { ChevronDownIcon } from '@/components/ui/icons/chevron-down-icon'
 import type { ReviewState } from '@/lib/profile/master-assets'
 
 export function AddRowButton({
@@ -42,14 +43,7 @@ export function SettingsTabButton({
         <ReviewStateIndicator className="settings-tab-button-state" state={reviewState} />
       ) : null}
       <span aria-hidden="true" className="settings-tab-button-icon">
-        <svg fill="none" height="12" viewBox="0 0 12 12" width="12">
-          <path
-            d="M3.25 4.5 6 7.25 8.75 4.5"
-            stroke="currentColor"
-            strokeLinecap="square"
-            strokeWidth="1.2"
-          />
-        </svg>
+        <ChevronDownIcon />
       </span>
     </button>
   )
