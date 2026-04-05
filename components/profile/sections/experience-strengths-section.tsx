@@ -17,6 +17,7 @@ import {
 import { AutoSizeTextarea } from '@/components/ui/auto-size-textarea'
 import { BulletTextarea } from '@/components/ui/bullet-textarea'
 import { FieldLabelRow } from '@/components/ui/field-label-row'
+import { LabeledHeading } from '@/components/ui/labeled-heading'
 import { TagInput } from '@/components/ui/tag-input'
 import type { ReviewState } from '@/lib/profile/master-assets'
 
@@ -151,18 +152,16 @@ export function ExperienceStrengthsSection({
 
           {activeStrengthsTab === 'history' || activeStrengthsTab === 'education' ? (
             <section className="settings-tab-panel">
-            <div className="settings-tab-panel-header">
-              <div>
-                <p className="panel-label">
-                  {activeStrengthsTab === 'history' ? 'Work history' : 'Education'}
-                </p>
-                <h3>
-                  {activeStrengthsTab === 'history'
-                    ? 'Roles and responsibilities'
-                    : 'Schools and credentials'}
-                </h3>
-              </div>
-            </div>
+            <LabeledHeading
+              className="settings-tab-panel-header"
+              label={activeStrengthsTab === 'history' ? 'Work history' : 'Education'}
+              title={
+                activeStrengthsTab === 'history'
+                  ? 'Roles and responsibilities'
+                  : 'Schools and credentials'
+              }
+              titleLevel="h3"
+            />
             <div className="section-header">
               <AddRowButton
                 label={activeStrengthsTab === 'history' ? 'Add role' : 'Add school'}
@@ -420,12 +419,12 @@ export function ExperienceStrengthsSection({
 
           {activeStrengthsTab === 'skillsTools' ? (
             <section className="settings-tab-panel">
-            <div className="settings-tab-panel-header">
-              <div>
-                <p className="panel-label">Capabilities</p>
-                <h3>Skills and tools</h3>
-              </div>
-            </div>
+            <LabeledHeading
+              className="settings-tab-panel-header"
+              label="Capabilities"
+              title="Skills and tools"
+              titleLevel="h3"
+            />
             <div className="settings-tag-row field-grid field-grid-2">
               <TagInput
                 label="Core skills"
@@ -460,12 +459,12 @@ export function ExperienceStrengthsSection({
 
           {activeStrengthsTab === 'certifications' ? (
             <section className="settings-tab-panel">
-            <div className="settings-tab-panel-header">
-              <div>
-                <p className="panel-label">Credentials</p>
-                <h3>Certifications</h3>
-              </div>
-            </div>
+            <LabeledHeading
+              className="settings-tab-panel-header"
+              label="Credentials"
+              title="Certifications"
+              titleLevel="h3"
+            />
             <div className="settings-tag-row field-grid">
               <TagInput
                 label="Certifications"

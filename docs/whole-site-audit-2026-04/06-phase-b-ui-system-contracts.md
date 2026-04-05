@@ -33,6 +33,19 @@ Allowed use:
 - upload-style textarea blocks
 - tag-input sections
 
+### 1a. Labeled headings
+
+Owned by:
+- `components/ui/labeled-heading.tsx`
+
+Contract:
+- Repeated label + heading stacks should use one shared heading primitive.
+- Preserve the existing wrapper structure used by route CSS:
+  - section headers keep their stack wrapper
+  - tab panel headers keep their inner wrapper
+  - disclosure summaries keep the nested block expected by settings selectors
+- This primitive is for structure reuse only. It must not introduce new visual styles.
+
 ### 2. Overlay option fields
 
 Owned by:

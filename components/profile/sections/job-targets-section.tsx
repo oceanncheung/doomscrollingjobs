@@ -6,6 +6,7 @@ import { SectionLockFrame } from '@/components/profile/profile-form-controls'
 import { AutoSizeTextarea } from '@/components/ui/auto-size-textarea'
 import { FieldLabelRow } from '@/components/ui/field-label-row'
 import { ChevronDownIcon } from '@/components/ui/icons/chevron-down-icon'
+import { LabeledHeading } from '@/components/ui/labeled-heading'
 import { OverlayOptionField } from '@/components/ui/overlay-option-field'
 import { TagToggleGroup } from '@/components/ui/tag-toggle-group'
 import { TagInput } from '@/components/ui/tag-input'
@@ -61,12 +62,12 @@ export function JobTargetsSection({
 }: JobTargetsSectionProps) {
   return (
     <section className="panel settings-section">
-      <div className="settings-section-header">
-        <div className="settings-section-title-stack">
-          <p className="panel-label">Job targets</p>
-          <h2>Refine the roles this workspace should prioritize.</h2>
-        </div>
-      </div>
+      <LabeledHeading
+        className="settings-section-header"
+        label="Job targets"
+        stackClassName="settings-section-title-stack"
+        title="Refine the roles this workspace should prioritize."
+      />
 
       <SectionLockFrame lockedMessage={lockedMessage}>
         <div className="settings-core-grid">

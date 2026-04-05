@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 
 import { ReviewStateIndicator } from '@/components/profile/review-state-indicator'
 import { ChevronDownIcon } from '@/components/ui/icons/chevron-down-icon'
+import { LabeledHeading } from '@/components/ui/labeled-heading'
 import type { ReviewState } from '@/lib/profile/master-assets'
 
 export function AddRowButton({
@@ -84,12 +85,7 @@ export function DisclosureSection({
 }) {
   return (
     <section className={['panel', 'disclosure', className].filter(Boolean).join(' ')}>
-      <div className="disclosure-summary">
-        <div>
-          <p className="panel-label">{label}</p>
-          <h2>{title}</h2>
-        </div>
-      </div>
+      <LabeledHeading className="disclosure-summary" label={label} title={title} />
       {unwrapBody ? children : <div className="disclosure-body">{children}</div>}
     </section>
   )

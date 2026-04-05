@@ -13,6 +13,7 @@ import {
 import { AutoSizeTextarea } from '@/components/ui/auto-size-textarea'
 import { BulletTextarea } from '@/components/ui/bullet-textarea'
 import { FieldLabelRow } from '@/components/ui/field-label-row'
+import { LabeledHeading } from '@/components/ui/labeled-heading'
 import { TagInput } from '@/components/ui/tag-input'
 import type { ReviewState } from '@/lib/profile/master-assets'
 
@@ -97,12 +98,12 @@ export function CoverLetterStrategySection({
 
           {activeTab === 'positioning' ? (
             <section className="settings-tab-panel">
-              <div className="settings-tab-panel-header">
-                <div>
-                  <p className="panel-label">Positioning</p>
-                  <h3>Role target, positioning, and capabilities</h3>
-                </div>
-              </div>
+              <LabeledHeading
+                className="settings-tab-panel-header"
+                label="Positioning"
+                title="Role target, positioning, and capabilities"
+                titleLevel="h3"
+              />
               <label className={`field settings-field-autosize field--${positioningReviewState}`}>
                 <FieldLabelRow reviewState={positioningReviewState}>
                   Positioning / design philosophy
@@ -139,12 +140,12 @@ export function CoverLetterStrategySection({
 
           {activeTab === 'proofBank' ? (
             <section className="settings-tab-panel">
-              <div className="settings-tab-panel-header">
-                <div>
-                  <p className="panel-label">Proof points</p>
-                  <h3>Reusable evidence for strong tailored letters</h3>
-                </div>
-              </div>
+              <LabeledHeading
+                className="settings-tab-panel-header"
+                label="Proof points"
+                title="Reusable evidence for strong tailored letters"
+                titleLevel="h3"
+              />
               <div className="section-header">
                 <AddRowButton
                   label="Add proof point"
@@ -241,12 +242,12 @@ export function CoverLetterStrategySection({
 
           {activeTab === 'voice' ? (
             <section className="settings-tab-panel">
-              <div className="settings-tab-panel-header">
-                <div>
-                  <p className="panel-label">Voice</p>
-                  <h3>Tone and differentiators</h3>
-                </div>
-              </div>
+              <LabeledHeading
+                className="settings-tab-panel-header"
+                label="Voice"
+                title="Tone and differentiators"
+                titleLevel="h3"
+              />
               <div className="settings-tag-row field-grid field-grid-2">
                 <TagInput
                   label="Tone and voice"
