@@ -9,11 +9,12 @@ import {
   DisclosureSection,
   SectionLockFrame,
   SettingsTabButton,
+  SettingsTabPanel,
+  SettingsTabShell,
 } from '@/components/profile/profile-form-controls'
 import { AutoSizeTextarea } from '@/components/ui/auto-size-textarea'
 import { BulletTextarea } from '@/components/ui/bullet-textarea'
 import { FieldLabelRow } from '@/components/ui/field-label-row'
-import { LabeledHeading } from '@/components/ui/labeled-heading'
 import { TagInput } from '@/components/ui/tag-input'
 import type { ReviewState } from '@/lib/profile/master-assets'
 
@@ -70,40 +71,42 @@ export function CoverLetterStrategySection({
       unwrapBody
     >
       <SectionLockFrame lockedMessage={lockedMessage}>
-        <div className={`settings-tab-shell${activeTab ? ' has-selection' : ''}`}>
-          <div aria-label="Cover-letter sections" className="settings-tab-toolbar" role="tablist">
-            <SettingsTabButton
-              active={activeTab === 'positioning'}
-              label="Positioning"
-              onClick={() =>
-                setActiveTab((current) => (current === 'positioning' ? null : 'positioning'))
-              }
-              reviewState={positioningReviewState}
-            />
-            <SettingsTabButton
-              active={activeTab === 'proofBank'}
-              label="Proof points"
-              onClick={() =>
-                setActiveTab((current) => (current === 'proofBank' ? null : 'proofBank'))
-              }
-              reviewState={proofBankReviewState}
-            />
-            <SettingsTabButton
-              active={activeTab === 'voice'}
-              label="Voice"
-              onClick={() => setActiveTab((current) => (current === 'voice' ? null : 'voice'))}
-              reviewState={voiceReviewState}
-            />
-          </div>
+        <SettingsTabShell
+          ariaLabel="Cover-letter sections"
+          hasSelection={Boolean(activeTab)}
+          toolbar={
+            <>
+              <SettingsTabButton
+                active={activeTab === 'positioning'}
+                label="Positioning"
+                onClick={() =>
+                  setActiveTab((current) => (current === 'positioning' ? null : 'positioning'))
+                }
+                reviewState={positioningReviewState}
+              />
+              <SettingsTabButton
+                active={activeTab === 'proofBank'}
+                label="Proof points"
+                onClick={() =>
+                  setActiveTab((current) => (current === 'proofBank' ? null : 'proofBank'))
+                }
+                reviewState={proofBankReviewState}
+              />
+              <SettingsTabButton
+                active={activeTab === 'voice'}
+                label="Voice"
+                onClick={() => setActiveTab((current) => (current === 'voice' ? null : 'voice'))}
+                reviewState={voiceReviewState}
+              />
+            </>
+          }
+        >
 
           {activeTab === 'positioning' ? (
-            <section className="settings-tab-panel">
-              <LabeledHeading
-                className="settings-tab-panel-header"
-                label="Positioning"
-                title="Role target, positioning, and capabilities"
-                titleLevel="h3"
-              />
+            <SettingsTabPanel
+              label="Positioning"
+              title="Role target, positioning, and capabilities"
+            >
               <label className={`field settings-field-autosize field--${positioningReviewState}`}>
                 <FieldLabelRow reviewState={positioningReviewState}>
                   Positioning / design philosophy
@@ -135,17 +138,14 @@ export function CoverLetterStrategySection({
                   variant="square"
                 />
               </div>
-            </section>
+            </SettingsTabPanel>
           ) : null}
 
           {activeTab === 'proofBank' ? (
-            <section className="settings-tab-panel">
-              <LabeledHeading
-                className="settings-tab-panel-header"
-                label="Proof points"
-                title="Reusable evidence for strong tailored letters"
-                titleLevel="h3"
-              />
+            <SettingsTabPanel
+              label="Proof points"
+              title="Reusable evidence for strong tailored letters"
+            >
               <div className="section-header">
                 <AddRowButton
                   label="Add proof point"
@@ -237,17 +237,11 @@ export function CoverLetterStrategySection({
                   </article>
                 ))}
               </div>
-            </section>
+            </SettingsTabPanel>
           ) : null}
 
           {activeTab === 'voice' ? (
-            <section className="settings-tab-panel">
-              <LabeledHeading
-                className="settings-tab-panel-header"
-                label="Voice"
-                title="Tone and differentiators"
-                titleLevel="h3"
-              />
+            <SettingsTabPanel label="Voice" title="Tone and differentiators">
               <div className="settings-tag-row field-grid field-grid-2">
                 <TagInput
                   label="Tone and voice"
@@ -268,10 +262,10 @@ export function CoverLetterStrategySection({
                   variant="square"
                 />
               </div>
-            </section>
+            </SettingsTabPanel>
           ) : null}
 
-        </div>
+        </SettingsTabShell>
       </SectionLockFrame>
     </DisclosureSection>
   )

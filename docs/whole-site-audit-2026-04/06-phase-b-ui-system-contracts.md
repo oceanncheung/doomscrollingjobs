@@ -82,6 +82,7 @@ Owned by:
 
 Contract:
 - Settings tabs and disclosure controls must reuse shared tab button and disclosure wrappers.
+- Shared tab shells and tab panels should come from the same control module so elevated-control structure does not drift between profile sections.
 - Review state dots belong to the shared tab button, not route-specific copies.
 - Elevated-control layout rules stay in `settings.css`.
 

@@ -13,11 +13,12 @@ import {
   DisclosureSection,
   SectionLockFrame,
   SettingsTabButton,
+  SettingsTabPanel,
+  SettingsTabShell,
 } from '@/components/profile/profile-form-controls'
 import { AutoSizeTextarea } from '@/components/ui/auto-size-textarea'
 import { BulletTextarea } from '@/components/ui/bullet-textarea'
 import { FieldLabelRow } from '@/components/ui/field-label-row'
-import { LabeledHeading } from '@/components/ui/labeled-heading'
 import { TagInput } from '@/components/ui/tag-input'
 import type { ReviewState } from '@/lib/profile/master-assets'
 
@@ -116,52 +117,54 @@ export function ExperienceStrengthsSection({
           </label>
         </div>
 
-        <div className={`settings-tab-shell${activeStrengthsTab ? ' has-selection' : ''}`}>
-          <div aria-label="Background sections" className="settings-tab-toolbar" role="tablist">
-            <SettingsTabButton
-              active={activeStrengthsTab === 'history'}
-              label="Roles and responsibilities"
-              onClick={() => setActiveStrengthsTab((current) => (current === 'history' ? null : 'history'))}
-              reviewState={historyReviewState}
-            />
-            <SettingsTabButton
-              active={activeStrengthsTab === 'education'}
-              label="Schools and credentials"
-              onClick={() => setActiveStrengthsTab((current) => (current === 'education' ? null : 'education'))}
-              reviewState={educationReviewState}
-            />
-            <SettingsTabButton
-              active={activeStrengthsTab === 'skillsTools'}
-              label="Skills and tools"
-              onClick={() =>
-                setActiveStrengthsTab((current) => (current === 'skillsTools' ? null : 'skillsTools'))
-              }
-              reviewState={skillsToolsReviewState}
-            />
-            <SettingsTabButton
-              active={activeStrengthsTab === 'certifications'}
-              label="Certifications"
-              onClick={() =>
-                setActiveStrengthsTab((current) =>
-                  current === 'certifications' ? null : 'certifications',
-                )
-              }
-              reviewState={certificationsReviewState}
-            />
-          </div>
+        <SettingsTabShell
+          ariaLabel="Background sections"
+          hasSelection={Boolean(activeStrengthsTab)}
+          toolbar={
+            <>
+              <SettingsTabButton
+                active={activeStrengthsTab === 'history'}
+                label="Roles and responsibilities"
+                onClick={() => setActiveStrengthsTab((current) => (current === 'history' ? null : 'history'))}
+                reviewState={historyReviewState}
+              />
+              <SettingsTabButton
+                active={activeStrengthsTab === 'education'}
+                label="Schools and credentials"
+                onClick={() => setActiveStrengthsTab((current) => (current === 'education' ? null : 'education'))}
+                reviewState={educationReviewState}
+              />
+              <SettingsTabButton
+                active={activeStrengthsTab === 'skillsTools'}
+                label="Skills and tools"
+                onClick={() =>
+                  setActiveStrengthsTab((current) => (current === 'skillsTools' ? null : 'skillsTools'))
+                }
+                reviewState={skillsToolsReviewState}
+              />
+              <SettingsTabButton
+                active={activeStrengthsTab === 'certifications'}
+                label="Certifications"
+                onClick={() =>
+                  setActiveStrengthsTab((current) =>
+                    current === 'certifications' ? null : 'certifications',
+                  )
+                }
+                reviewState={certificationsReviewState}
+              />
+            </>
+          }
+        >
 
           {activeStrengthsTab === 'history' || activeStrengthsTab === 'education' ? (
-            <section className="settings-tab-panel">
-            <LabeledHeading
-              className="settings-tab-panel-header"
+            <SettingsTabPanel
               label={activeStrengthsTab === 'history' ? 'Work history' : 'Education'}
               title={
                 activeStrengthsTab === 'history'
                   ? 'Roles and responsibilities'
                   : 'Schools and credentials'
               }
-              titleLevel="h3"
-            />
+            >
             <div className="section-header">
               <AddRowButton
                 label={activeStrengthsTab === 'history' ? 'Add role' : 'Add school'}
@@ -414,17 +417,11 @@ export function ExperienceStrengthsSection({
                 </article>
               ))}
             </div>
-          </section>
+          </SettingsTabPanel>
           ) : null}
 
           {activeStrengthsTab === 'skillsTools' ? (
-            <section className="settings-tab-panel">
-            <LabeledHeading
-              className="settings-tab-panel-header"
-              label="Capabilities"
-              title="Skills and tools"
-              titleLevel="h3"
-            />
+            <SettingsTabPanel label="Capabilities" title="Skills and tools">
             <div className="settings-tag-row field-grid field-grid-2">
               <TagInput
                 label="Core skills"
@@ -454,17 +451,11 @@ export function ExperienceStrengthsSection({
                 variant="square"
               />
             </div>
-            </section>
+            </SettingsTabPanel>
           ) : null}
 
           {activeStrengthsTab === 'certifications' ? (
-            <section className="settings-tab-panel">
-            <LabeledHeading
-              className="settings-tab-panel-header"
-              label="Credentials"
-              title="Certifications"
-              titleLevel="h3"
-            />
+            <SettingsTabPanel label="Credentials" title="Certifications">
             <div className="settings-tag-row field-grid">
               <TagInput
                 label="Certifications"
@@ -476,9 +467,9 @@ export function ExperienceStrengthsSection({
                 variant="square"
               />
             </div>
-            </section>
+            </SettingsTabPanel>
           ) : null}
-        </div>
+        </SettingsTabShell>
       </SectionLockFrame>
 
       <div aria-hidden="true" className="profile-form-portfolio-preserve">

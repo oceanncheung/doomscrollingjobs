@@ -90,3 +90,46 @@ export function DisclosureSection({
     </section>
   )
 }
+
+export function SettingsTabShell({
+  ariaLabel,
+  children,
+  hasSelection,
+  toolbar,
+}: {
+  ariaLabel: string
+  children?: ReactNode
+  hasSelection: boolean
+  toolbar: ReactNode
+}) {
+  return (
+    <div className={`settings-tab-shell${hasSelection ? ' has-selection' : ''}`}>
+      <div aria-label={ariaLabel} className="settings-tab-toolbar" role="tablist">
+        {toolbar}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+export function SettingsTabPanel({
+  children,
+  label,
+  title,
+}: {
+  children?: ReactNode
+  label: string
+  title: string
+}) {
+  return (
+    <section className="settings-tab-panel">
+      <LabeledHeading
+        className="settings-tab-panel-header"
+        label={label}
+        title={title}
+        titleLevel="h3"
+      />
+      {children}
+    </section>
+  )
+}
