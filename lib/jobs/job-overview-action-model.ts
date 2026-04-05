@@ -1,5 +1,6 @@
 import type { ApplicationPacketRecord } from '@/lib/domain/types'
 import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
+import { getPacketLifecycle } from '@/lib/jobs/packet-lifecycle'
 import {
   isReadyWorkflowStatus,
   isScreeningWorkflowStatus,
@@ -41,6 +42,8 @@ export function getJobOverviewActionModel({
   }
 
   if (prepOpen) {
+    const packetLifecycle = getPacketLifecycle(packet)
+
     if (isReadyWorkflowStatus(job.workflowStatus)) {
       return {
         kind: 'ready-to-apply',
@@ -48,7 +51,7 @@ export function getJobOverviewActionModel({
       }
     }
 
-    const hasGeneratedContent = packet.generationStatus === 'generated'
+    const hasGeneratedContent = packetLifecycle.hasGeneratedContent
     const showShortlistArchive = job.workflowStatus === 'shortlisted'
     const slotCount = 1 + (hasGeneratedContent ? 1 : 0) + (showShortlistArchive ? 1 : 0)
 

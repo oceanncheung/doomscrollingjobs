@@ -3,28 +3,23 @@ import {
   PacketRemediationCallout,
 } from '@/components/jobs/packet-primitives'
 import { SectionHeading } from '@/components/ui/section-heading'
+import type { ApplicationPacketRecord } from '@/lib/domain/types'
 import { buildPacketPreGenerationViewModel } from '@/lib/jobs/packet-view-model'
 
 interface PacketPreGenerationSectionProps {
-  generationError?: string
-  isFailed: boolean
-  isRunning: boolean
+  packet: Pick<ApplicationPacketRecord, 'answers' | 'generationError' | 'generationStatus' | 'packetStatus' | 'questionSnapshotStatus'>
   /** When false, incomplete-ATS failures should not use the profile remediation callout (user has Settings material + resume source). */
   profileMaterialReady: boolean
   screeningLocked?: boolean
 }
 
 export function PacketPreGenerationSection({
-  generationError,
-  isFailed,
-  isRunning,
+  packet,
   profileMaterialReady,
   screeningLocked = false,
 }: PacketPreGenerationSectionProps) {
   const viewModel = buildPacketPreGenerationViewModel({
-    generationError,
-    isFailed,
-    isRunning,
+    packet,
     profileMaterialReady,
     screeningLocked,
   })

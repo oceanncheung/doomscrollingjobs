@@ -10,6 +10,7 @@ import { PacketPreGenerationSection } from '@/components/jobs/packet-pre-generat
 import { PacketQuestionsSection } from '@/components/jobs/packet-questions-section'
 import { type ApplicationPacketRecord } from '@/lib/domain/types'
 import type { RankedJobRecord } from '@/lib/jobs/contracts'
+import { getPacketLifecycle } from '@/lib/jobs/packet-lifecycle'
 import { buildPacketMaterialsViewModel } from '@/lib/jobs/packet-view-model'
 
 const initialState: ApplicationPacketActionState = {
@@ -24,7 +25,6 @@ interface ApplicationPacketFormProps {
   packet: ApplicationPacketRecord
   profileMaterialReady: boolean
   screeningLocked?: boolean
-  showGeneratedContent: boolean
 }
 
 export function ApplicationPacketForm({
@@ -32,16 +32,16 @@ export function ApplicationPacketForm({
   packet,
   profileMaterialReady,
   screeningLocked = false,
-  showGeneratedContent,
 }: ApplicationPacketFormProps) {
   const [state, formAction] = useActionState(saveApplicationPacket, initialState)
+  const lifecycle = getPacketLifecycle(packet)
   const viewModel = buildPacketMaterialsViewModel(packet)
 
   return (
     <form action={formAction} className="packet-form" id="packet-form">
       <PacketHiddenFields job={job} packet={packet} />
 
-      {showGeneratedContent ? (
+      {lifecycle.hasGeneratedContent ? (
         <>
           <PacketMaterialsSection
             coverLetterReady={viewModel.coverLetterReady}
@@ -56,9 +56,7 @@ export function ApplicationPacketForm({
         </>
       ) : (
         <PacketPreGenerationSection
-          generationError={packet.generationError}
-          isFailed={viewModel.isFailed}
-          isRunning={viewModel.isRunning}
+          packet={packet}
           profileMaterialReady={profileMaterialReady}
           screeningLocked={screeningLocked}
         />

@@ -14,6 +14,11 @@ import { hasSupabaseServerEnv } from '@/lib/env'
 import { generateAndPersistApplicationPacket } from '@/lib/jobs/application-packet-generation'
 import { persistPreferenceSignal } from '@/lib/jobs/learning'
 import {
+  asPacketSubmitIntent,
+  getNextPacketStatus,
+  getPacketWorkflowTargetStatus,
+} from '@/lib/jobs/packet-lifecycle'
+import {
   asJobWorkflowQuickActionKind,
   getJobWorkflowTargetStatusForQuickAction,
   getWorkflowEventType,
@@ -21,10 +26,6 @@ import {
   getWorkflowTransitionNote,
 } from '@/lib/jobs/workflow-actions'
 import {
-  isAppliedWorkflowStatus,
-  isArchivedWorkflowStatus,
-  isReadyWorkflowStatus,
-  shouldBeginPacketPrep,
   shouldEnsurePacketWorkspace,
 } from '@/lib/jobs/workflow-state'
 import { createClient } from '@/lib/supabase/server'
@@ -384,7 +385,7 @@ export async function saveApplicationPacket(
   }
 
   const jobId = asTextValue(formData.get('jobId'))
-  const submitIntent = asTextValue(formData.get('submitIntent')) || 'save-review'
+  const submitIntent = asPacketSubmitIntent(asTextValue(formData.get('submitIntent')))
   const packetId = asPersistedId(formData.get('packetId')) ?? crypto.randomUUID()
   const resumeVersionId = asPersistedId(formData.get('resumeVersionId')) ?? crypto.randomUUID()
   const suppliedJobScoreId = asPersistedId(formData.get('jobScoreId'))
@@ -449,12 +450,10 @@ export async function saveApplicationPacket(
     (existingPacket as Record<string, unknown> | null) ?? null,
   )
   const now = new Date().toISOString()
-  const nextPacketStatus =
-    submitIntent === 'mark-ready'
-      ? 'ready'
-      : submitIntent === 'apply'
-        ? 'applied'
-        : asPacketStatus(asTextValue(formData.get('packetStatus')))
+  const nextPacketStatus = getNextPacketStatus({
+    currentStatus: asPacketStatus(asTextValue(formData.get('packetStatus'))),
+    submitIntent,
+  })
   const experienceEntries = parseJsonArray(formData.get('resumeExperienceEntriesJson'), [])
   const caseStudySelection = parseJsonArray(formData.get('caseStudySelectionJson'), [])
   const applicationAnswers = parseApplicationAnswers(formData)
@@ -574,16 +573,17 @@ export async function saveApplicationPacket(
   }
 
   const currentWorkflowStatus = asWorkflowStatus(asTextValue(jobScore?.workflow_status))
-  const shouldMarkReady = submitIntent === 'mark-ready'
-  const shouldMarkPreparing =
-    !shouldMarkReady && currentWorkflowStatus ? shouldBeginPacketPrep(currentWorkflowStatus) : false
+  const nextWorkflowStatus = getPacketWorkflowTargetStatus({
+    currentWorkflowStatus,
+    submitIntent,
+  })
 
-  if (shouldMarkReady) {
+  if (nextWorkflowStatus && nextWorkflowStatus !== currentWorkflowStatus) {
     await supabase
       .from('job_scores')
       .update({
         last_status_changed_at: now,
-        workflow_status: 'ready_to_apply',
+        workflow_status: nextWorkflowStatus,
       })
       .eq('operator_id', operatorContext.operator.id)
       .eq('job_id', jobId)
@@ -592,57 +592,29 @@ export async function saveApplicationPacket(
       operator_id: operatorContext.operator.id,
       user_id: operatorContext.userId,
       job_id: jobId,
-      event_type: 'status_changed',
+      event_type: getWorkflowEventType(nextWorkflowStatus),
       from_status: currentWorkflowStatus,
-      to_status: 'ready_to_apply',
+      to_status: nextWorkflowStatus,
       event_payload: {
         sourceContext: 'packet-save',
         submitIntent,
-        targetStatus: 'ready_to_apply',
+        targetStatus: nextWorkflowStatus,
       },
-      notes: 'Packet marked ready from the prep workspace.',
-    })
-  } else if (shouldMarkPreparing) {
-    await supabase
-      .from('job_scores')
-      .update({
-        last_status_changed_at: now,
-        workflow_status: 'preparing',
-      })
-      .eq('operator_id', operatorContext.operator.id)
-      .eq('job_id', jobId)
-
-    await supabase.from('application_events').insert({
-      operator_id: operatorContext.operator.id,
-      user_id: operatorContext.userId,
-      job_id: jobId,
-      event_type: 'status_changed',
-      from_status: currentWorkflowStatus,
-      to_status: 'preparing',
-      event_payload: {
-        sourceContext: 'packet-save',
-        targetStatus: 'preparing',
-      },
-      notes: 'Packet work started from the prep workspace.',
+      notes:
+        submitIntent === 'mark-ready'
+          ? 'Packet marked ready from the prep workspace.'
+          : submitIntent === 'apply'
+            ? 'Application marked applied from the prep workspace.'
+            : 'Packet work started from the prep workspace.',
     })
   }
 
-  const signalStatus =
-    shouldMarkReady
-      ? 'ready_to_apply'
-      : currentWorkflowStatus &&
-          (isReadyWorkflowStatus(currentWorkflowStatus) || isAppliedWorkflowStatus(currentWorkflowStatus))
-        ? currentWorkflowStatus
-      : currentWorkflowStatus && isArchivedWorkflowStatus(currentWorkflowStatus)
-        ? null
-        : 'preparing'
-
-  if (signalStatus) {
+  if (nextWorkflowStatus) {
     await persistPreferenceSignal({
       jobId,
       operatorId: operatorContext.operator.id,
       sourceContext: 'packet-save',
-      targetStatus: signalStatus,
+      targetStatus: nextWorkflowStatus,
       userId: operatorContext.userId,
     })
   }

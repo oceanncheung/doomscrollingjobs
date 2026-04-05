@@ -1,5 +1,4 @@
 import type {
-  ApplicationPacketRecord,
   OperatorProfileRecord,
 } from '@/lib/domain/types'
 import { hasOpenAIEnv } from '@/lib/env'
@@ -23,7 +22,6 @@ export interface JobFlowHeaderViewModel {
 
 export interface JobFlowPageViewModel {
   canGenerate: boolean
-  draftReady: boolean
   generationDisabledReason?: string
   header: JobFlowHeaderViewModel
   pageIntro: string
@@ -97,7 +95,6 @@ export function buildJobFlowPageViewModel({
   canSave,
   issue,
   job,
-  packet,
   prepOpen,
   profile,
   screeningLocked,
@@ -105,12 +102,10 @@ export function buildJobFlowPageViewModel({
   canSave: boolean
   issue?: string
   job: QualifiedJobRecord
-  packet: ApplicationPacketRecord
   prepOpen: boolean
   profile: OperatorProfileRecord
   screeningLocked: boolean
 }): JobFlowPageViewModel {
-  const draftReady = packet.generationStatus === 'generated'
   const canGenerate = canSave && !screeningLocked && hasOpenAIEnv()
   const generationDisabledReason = !canSave
     ? issue
@@ -124,7 +119,6 @@ export function buildJobFlowPageViewModel({
 
   return {
     canGenerate,
-    draftReady,
     generationDisabledReason,
     header: buildJobFlowHeaderViewModel({
       job,

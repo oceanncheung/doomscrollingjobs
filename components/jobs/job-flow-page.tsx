@@ -30,7 +30,6 @@ export function JobFlowPage({
     canSave,
     issue,
     job,
-    packet,
     prepOpen,
     profile,
     screeningLocked,
@@ -59,7 +58,6 @@ export function JobFlowPage({
             packet={packet}
             profileMaterialReady={profileMaterialReady}
             screeningLocked={screeningLocked}
-            showGeneratedContent={viewModel.draftReady}
           />
         </div>
       ) : null}

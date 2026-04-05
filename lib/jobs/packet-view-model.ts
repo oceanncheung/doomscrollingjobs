@@ -4,6 +4,7 @@ import {
   getPacketGenerationUserMessage,
   isIncompleteAtsGenerationError,
 } from '@/lib/jobs/packet-generation-copy'
+import { getPacketLifecycle } from '@/lib/jobs/packet-lifecycle'
 
 function getFirstFilledText(...values: Array<string | null | undefined>) {
   return values.find((value) => value?.trim())?.trim() ?? ''
@@ -26,8 +27,6 @@ function getPreviewText(value: string, fallback: string, maxLength = 220) {
 export interface PacketMaterialsViewModel {
   coverLetterReady: boolean
   coverLetterSummary: string
-  isFailed: boolean
-  isRunning: boolean
   readyAnswerCount: number
   resumeChangeSummary: string
   resumeReady: boolean
@@ -46,11 +45,9 @@ export interface PacketPreGenerationViewModel {
 }
 
 export function buildPacketMaterialsViewModel(packet: ApplicationPacketRecord): PacketMaterialsViewModel {
+  const lifecycle = getPacketLifecycle(packet)
   const resumeSource = getFirstFilledText(packet.resumeVersion.summaryText, packet.professionalSummary)
   const coverLetterSource = packet.coverLetterDraft.trim()
-  const readyAnswerCount = packet.answers.filter(
-    (answer) => answer.answerText.trim() || answer.answerVariantShort.trim(),
-  ).length
 
   return {
     coverLetterReady: Boolean(coverLetterSource),
@@ -58,9 +55,7 @@ export function buildPacketMaterialsViewModel(packet: ApplicationPacketRecord): 
       packet.coverLetterSummary || coverLetterSource,
       'A role-specific cover letter will appear here once the application materials are generated.',
     ),
-    isFailed: packet.generationStatus === 'failed',
-    isRunning: packet.generationStatus === 'running',
-    readyAnswerCount,
+    readyAnswerCount: lifecycle.readyAnswerCount,
     resumeChangeSummary: getPreviewText(
       packet.resumeVersion.changeSummaryText,
       'A short explanation of how the resume changed will appear here once the application materials are generated.',
@@ -74,23 +69,21 @@ export function buildPacketMaterialsViewModel(packet: ApplicationPacketRecord): 
       resumeSource,
       'A tailored resume summary will appear here once the application materials are generated.',
     ),
-    showQuestionSection: packet.questionSnapshotStatus === 'extracted' && packet.answers.length > 0,
+    showQuestionSection: lifecycle.showQuestionSection,
   }
 }
 
 export function buildPacketPreGenerationViewModel({
-  generationError,
-  isFailed,
-  isRunning,
+  packet,
   profileMaterialReady,
   screeningLocked,
 }: {
-  generationError?: string
-  isFailed: boolean
-  isRunning: boolean
+  packet: Pick<ApplicationPacketRecord, 'answers' | 'generationError' | 'generationStatus' | 'packetStatus' | 'questionSnapshotStatus'>
   profileMaterialReady: boolean
   screeningLocked: boolean
 }): PacketPreGenerationViewModel {
+  const lifecycle = getPacketLifecycle(packet)
+  const generationError = packet.generationError
   const userFacingError = getPacketGenerationUserMessage(generationError)
   const remediationHint = getPacketGenerationRemediationHint(generationError)
   const incompleteAts = isIncompleteAtsGenerationError(generationError)
@@ -107,7 +100,7 @@ export function buildPacketPreGenerationViewModel({
     }
   }
 
-  if (isRunning) {
+  if (lifecycle.isRunning) {
     return {
       label: 'Generate content',
       lines: ['Generating tailored resume, cover letter, and answers...'],
@@ -117,7 +110,7 @@ export function buildPacketPreGenerationViewModel({
     }
   }
 
-  if (isFailed && incompleteAts && !profileMaterialReady && Boolean(userFacingError || remediationHint)) {
+  if (lifecycle.isFailed && incompleteAts && !profileMaterialReady && Boolean(userFacingError || remediationHint)) {
     return {
       actionHref: '/profile',
       actionLabel: 'Open Profile',
@@ -129,7 +122,7 @@ export function buildPacketPreGenerationViewModel({
     }
   }
 
-  if (isFailed) {
+  if (lifecycle.isFailed) {
     const lines = incompleteAts && profileMaterialReady
       ? ['The application materials could not be generated yet.', 'Try generating again.']
       : [userFacingError, remediationHint].filter(Boolean)
