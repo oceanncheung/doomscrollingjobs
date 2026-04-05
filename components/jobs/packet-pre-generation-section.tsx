@@ -1,15 +1,20 @@
-import Link from 'next/link'
-
+import {
+  PacketInlineNote,
+  PacketRemediationCallout,
+} from '@/components/jobs/packet-primitives'
 import { SectionHeading } from '@/components/ui/section-heading'
 import {
   getPacketGenerationRemediationHint,
   getPacketGenerationUserMessage,
+  isIncompleteAtsGenerationError,
 } from '@/lib/jobs/packet-generation-copy'
 
 interface PacketPreGenerationSectionProps {
   generationError?: string
   isFailed: boolean
   isRunning: boolean
+  /** When false, incomplete-ATS failures should not use the profile remediation callout (user has Settings material + resume source). */
+  profileMaterialReady: boolean
   screeningLocked?: boolean
 }
 
@@ -17,6 +22,7 @@ export function PacketPreGenerationSection({
   generationError,
   isFailed,
   isRunning,
+  profileMaterialReady,
   screeningLocked = false,
 }: PacketPreGenerationSectionProps) {
   const userFacingError = getPacketGenerationUserMessage(generationError)
@@ -24,11 +30,16 @@ export function PacketPreGenerationSection({
   const idleNote =
     'Nothing is shown yet so this step stays focused. Generate the content first, then review it here.'
   const runningNote = 'Generating tailored resume, cover letter, and answers...'
-  const showRemediationCallout = isFailed && Boolean(userFacingError || remediationHint)
 
-  const note = screeningLocked
-    ? 'Complete your profile in Profile before generating application materials.'
-    : userFacingError || idleNote
+  const incompleteAts = isIncompleteAtsGenerationError(generationError)
+  const showProfileRemediationCallout =
+    isFailed &&
+    incompleteAts &&
+    !profileMaterialReady &&
+    Boolean(userFacingError || remediationHint)
+
+  const lockedNote =
+    'Complete your profile in Profile before generating application materials.'
 
   return (
     <section className="packet-section">
@@ -49,28 +60,39 @@ export function PacketPreGenerationSection({
         />
 
         {screeningLocked ? (
-          <div className="packet-remediation-callout">
-            <p className="packet-remediation-callout__lead">{note}</p>
-            <Link className="button button-secondary button-small packet-remediation-callout__action" href="/profile">
-              Open Profile
-            </Link>
-          </div>
+          <PacketRemediationCallout actionHref="/profile" actionLabel="Open Profile" lead={lockedNote} />
         ) : isRunning ? (
-          <div className="packet-inline-note">
+          <PacketInlineNote>
             <p>{runningNote}</p>
-          </div>
-        ) : showRemediationCallout ? (
-          <div className="packet-remediation-callout">
-            {userFacingError ? <p className="packet-remediation-callout__lead">{userFacingError}</p> : null}
-            {remediationHint ? <p className="packet-remediation-callout__hint">{remediationHint}</p> : null}
-            <Link className="button button-secondary button-small packet-remediation-callout__action" href="/profile">
-              Open Profile
-            </Link>
-          </div>
+          </PacketInlineNote>
+        ) : showProfileRemediationCallout ? (
+          <PacketRemediationCallout
+            actionHref="/profile"
+            actionLabel="Open Profile"
+            hint={remediationHint}
+            lead={userFacingError}
+          />
+        ) : isFailed ? (
+          <PacketInlineNote>
+            {incompleteAts && profileMaterialReady ? (
+              <>
+                <p>The application materials could not be generated yet.</p>
+                <p>Try generating again.</p>
+              </>
+            ) : (
+              <>
+                {userFacingError ? <p>{userFacingError}</p> : null}
+                {remediationHint ? <p>{remediationHint}</p> : null}
+                {!userFacingError && !remediationHint ? (
+                  <p>The application materials could not be generated yet.</p>
+                ) : null}
+              </>
+            )}
+          </PacketInlineNote>
         ) : (
-          <div className="packet-inline-note">
-            <p>{note}</p>
-          </div>
+          <PacketInlineNote>
+            <p>{idleNote}</p>
+          </PacketInlineNote>
         )}
       </div>
     </section>

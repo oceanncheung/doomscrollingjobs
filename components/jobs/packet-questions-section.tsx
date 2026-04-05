@@ -1,5 +1,9 @@
 import type { ApplicationAnswerRecord } from '@/lib/domain/types'
 
+import {
+  PacketInlineNote,
+  PacketQuestionSummary,
+} from '@/components/jobs/packet-primitives'
 import { SectionHeading } from '@/components/ui/section-heading'
 
 interface PacketQuestionsSectionProps {
@@ -32,38 +36,11 @@ export function PacketQuestionsSection({
 
               return (
                 <details className="disclosure packet-question-card" key={`${answer.questionKey}-${index}`}>
-                  <summary className="disclosure-summary packet-question-summary">
-                    <div className="packet-question-main">
-                      <p className="upload-slot-label">Question {index + 1}</p>
-                      <h3>{answer.questionText}</h3>
-                    </div>
-                    <div className="packet-question-status-slot">
-                      <span className="packet-material-status" role="status">
-                        <span
-                          aria-hidden="true"
-                          className={
-                            answerReady
-                              ? 'packet-material-status-dot packet-material-status-dot--ready'
-                              : 'packet-material-status-dot packet-material-status-dot--pending'
-                          }
-                        />
-                        {answerReady ? 'Ready' : 'Pending'}
-                      </span>
-                    </div>
-                    <div className="disclosure-controls packet-question-controls">
-                      <span className="disclosure-caret" aria-hidden="true">
-                        <svg fill="none" height="14" viewBox="0 0 16 16" width="14">
-                          <path
-                            d="M4 6l4 4 4-4"
-                            stroke="currentColor"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="1.25"
-                          />
-                        </svg>
-                      </span>
-                    </div>
-                  </summary>
+                  <PacketQuestionSummary
+                    answerReady={answerReady}
+                    index={index}
+                    questionText={answer.questionText}
+                  />
                   <div className="disclosure-body packet-disclosure-body">
                     <div className="packet-preview-block">
                       <p>
@@ -82,9 +59,9 @@ export function PacketQuestionsSection({
             })}
           </div>
         ) : (
-          <div className="packet-inline-note">
+          <PacketInlineNote>
             <p>No extra questions have been detected for this application yet.</p>
-          </div>
+          </PacketInlineNote>
         )}
       </div>
     </section>

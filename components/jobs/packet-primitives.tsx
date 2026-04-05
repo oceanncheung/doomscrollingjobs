@@ -1,0 +1,98 @@
+import Link from 'next/link'
+import type { ReactNode } from 'react'
+
+interface PacketStatusProps {
+  ready: boolean
+}
+
+export function PacketStatus({ ready }: PacketStatusProps) {
+  return (
+    <span className="packet-material-status" role="status">
+      <span
+        aria-hidden="true"
+        className={
+          ready
+            ? 'packet-material-status-dot packet-material-status-dot--ready'
+            : 'packet-material-status-dot packet-material-status-dot--pending'
+        }
+      />
+      {ready ? 'Ready' : 'Pending'}
+    </span>
+  )
+}
+
+export function PacketInlineNote({ children }: { children: ReactNode }) {
+  return <div className="packet-inline-note">{children}</div>
+}
+
+interface PacketRemediationCalloutProps {
+  actionHref?: string
+  actionLabel?: string
+  hint?: ReactNode
+  lead?: ReactNode
+}
+
+export function PacketRemediationCallout({
+  actionHref,
+  actionLabel,
+  hint,
+  lead,
+}: PacketRemediationCalloutProps) {
+  return (
+    <div className="packet-remediation-callout">
+      {lead ? <p className="packet-remediation-callout__lead">{lead}</p> : null}
+      {hint ? <p className="packet-remediation-callout__hint">{hint}</p> : null}
+      {actionHref && actionLabel ? (
+        <Link
+          className="button button-secondary button-small packet-remediation-callout__action"
+          href={actionHref}
+        >
+          {actionLabel}
+        </Link>
+      ) : null}
+    </div>
+  )
+}
+
+export function PacketDisclosureCaret() {
+  return (
+    <span className="disclosure-caret" aria-hidden="true">
+      <svg fill="none" height="14" viewBox="0 0 16 16" width="14">
+        <path
+          d="M4 6l4 4 4-4"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.25"
+        />
+      </svg>
+    </span>
+  )
+}
+
+interface PacketQuestionSummaryProps {
+  answerReady: boolean
+  index: number
+  questionText: string
+}
+
+export function PacketQuestionSummary({
+  answerReady,
+  index,
+  questionText,
+}: PacketQuestionSummaryProps) {
+  return (
+    <summary className="disclosure-summary packet-question-summary">
+      <div className="packet-question-main">
+        <p className="upload-slot-label">Question {index + 1}</p>
+        <h3>{questionText}</h3>
+      </div>
+      <div className="packet-question-status-slot">
+        <PacketStatus ready={answerReady} />
+      </div>
+      <div className="disclosure-controls packet-question-controls">
+        <PacketDisclosureCaret />
+      </div>
+    </summary>
+  )
+}

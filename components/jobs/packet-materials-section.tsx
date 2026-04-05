@@ -1,3 +1,4 @@
+import { PacketStatus } from '@/components/jobs/packet-primitives'
 import { SectionHeading } from '@/components/ui/section-heading'
 
 interface PacketMaterialsSectionProps {
@@ -31,17 +32,7 @@ export function PacketMaterialsSection({
               <p className="upload-slot-label">Resume summary</p>
             </div>
             <p className="packet-material-copy">{resumeSummary}</p>
-            <p className="packet-material-status" role="status">
-              <span
-                aria-hidden="true"
-                className={
-                  resumeReady
-                    ? 'packet-material-status-dot packet-material-status-dot--ready'
-                    : 'packet-material-status-dot packet-material-status-dot--pending'
-                }
-              />
-              {resumeReady ? 'Ready' : 'Pending'}
-            </p>
+            <PacketStatus ready={resumeReady} />
           </article>
 
           <article className="packet-material-block">
@@ -56,17 +47,7 @@ export function PacketMaterialsSection({
               <p className="upload-slot-label">Cover letter summary</p>
             </div>
             <p className="packet-material-copy">{coverLetterSummary}</p>
-            <p className="packet-material-status" role="status">
-              <span
-                aria-hidden="true"
-                className={
-                  coverLetterReady
-                    ? 'packet-material-status-dot packet-material-status-dot--ready'
-                    : 'packet-material-status-dot packet-material-status-dot--pending'
-                }
-              />
-              {coverLetterReady ? 'Ready' : 'Pending'}
-            </p>
+            <PacketStatus ready={coverLetterReady} />
           </article>
         </div>
       </div>

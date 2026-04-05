@@ -88,6 +88,17 @@ Contract:
 - Review state dots belong to the shared tab button, not route-specific copies.
 - Elevated-control layout rules stay in `settings.css`.
 
+### 5. Packet primitives
+
+Owned by:
+- `components/jobs/packet-primitives.tsx`
+- `app/styles/forms.css`
+
+Contract:
+- Packet status pills, inline notes, remediation callouts, and question disclosure summaries should reuse shared packet primitives.
+- Packet surface refactors should preserve the existing packet class names so the visual system remains unchanged.
+- Packet-specific shared blocks belong in packet primitives, not in generic UI primitives, unless they become truly cross-surface.
+
 ### 5. Upload controls
 
 Owned by:
