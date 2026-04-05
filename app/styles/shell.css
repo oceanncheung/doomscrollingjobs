@@ -334,13 +334,36 @@
   background: transparent;
   text-align: center;
   justify-content: center;
-  transition: background-color 200ms ease, color 200ms ease;
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+}
+
+.today-block .button.button-secondary {
+  border-color: var(--line-soft);
+  color: var(--muted);
+  font-weight: 500;
 }
 
 .today-block .button:hover,
 .today-resume-status .button:hover {
   background: var(--text);
   color: var(--bg);
+}
+
+/* Apply next: primary = black fill; secondary Skip = dark grey (matches job card secondary hover) */
+.today-apply-next .today-actions .button.button-primary:hover:not(:disabled),
+.today-apply-next .today-actions .button.button-primary:focus-visible {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+  opacity: 1;
+}
+
+.today-apply-next .today-actions .button.button-secondary:hover:not(:disabled),
+.today-apply-next .today-actions .button.button-secondary:focus-visible {
+  background: var(--muted);
+  color: var(--bg);
+  border-color: var(--muted);
+  opacity: 1;
 }
 
 .today-stats {

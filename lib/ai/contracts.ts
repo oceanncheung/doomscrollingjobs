@@ -3,15 +3,31 @@ import type {
   OperatorWorkspaceRecord,
   ResumeExperienceRecord,
 } from '@/lib/domain/types'
-import type { RankedJobRecord } from '@/lib/jobs/contracts'
+import type { NormalizedJobRecord, RankedJobRecord } from '@/lib/jobs/contracts'
 
 export interface JobSummaryInput {
-  job: RankedJobRecord
+  fitReasons: string[]
+  fitSummary: string
+  job: Pick<
+    NormalizedJobRecord,
+    | 'companyName'
+    | 'department'
+    | 'descriptionText'
+    | 'locationLabel'
+    | 'preferredQualifications'
+    | 'remoteType'
+    | 'requirements'
+    | 'salaryCurrency'
+    | 'salaryMax'
+    | 'salaryMin'
+    | 'skillsKeywords'
+    | 'title'
+  >
 }
 
 export interface JobSummaryOutput {
-  editorialSummary: string
-  focusSummary: string
+  descriptionExcerpt: string
+  matchSummary: string
   hiringSignals: string[]
 }
 
@@ -58,6 +74,21 @@ export interface ApplicationAnswersInput {
 export interface GeneratedPacketOutput {
   answers: GeneratedAnswerOutput[]
   coverLetter: CoverLetterOutput
-  jobSummary: JobSummaryOutput
   resumeVariant: ResumeVariantOutput
+}
+
+export interface ProfileWorkspaceGenerationInput {
+  sourceCoverLetterMarkdown: string
+  sourceResumeMarkdown: string
+}
+
+export interface ProfileWorkspaceGenerationOutput {
+  bioSummary: string
+  headline: string
+  searchBrief: string
+  skills: string[]
+  targetRoles: string[]
+  targetSeniorityLevels: string[]
+  tools: string[]
+  allowedAdjacentRoles: string[]
 }

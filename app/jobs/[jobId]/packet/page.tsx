@@ -18,7 +18,7 @@ interface PacketReviewPageProps {
 export default async function PacketReviewPage({ params }: PacketReviewPageProps) {
   await requireActiveOperatorSelection()
   const { jobId } = await params
-  const [{ canSave, issue, job, packet, workspace }, { jobs, source }] = await Promise.all([
+  const [{ canSave, issue, job, packet, workspace }, { jobs, screeningLocked, source }] = await Promise.all([
     getApplicationPacketReview(jobId),
     getRankedJobs(),
   ])
@@ -32,8 +32,9 @@ export default async function PacketReviewPage({ params }: PacketReviewPageProps
       <WorkspaceSurface
         rail={
           <WorkspaceTodayRail
-            actionsEnabled={source === 'database'}
+            actionsEnabled={source === 'database' && !screeningLocked}
             jobs={jobs}
+            screeningLocked={screeningLocked}
           />
         }
       >
@@ -44,6 +45,7 @@ export default async function PacketReviewPage({ params }: PacketReviewPageProps
           packet={packet}
           prepOpen
           profile={workspace.profile}
+          screeningLocked={Boolean(screeningLocked)}
         />
       </WorkspaceSurface>
     </main>

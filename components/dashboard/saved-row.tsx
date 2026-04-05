@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 import { StageRow } from '@/components/dashboard/stage-row'
-import { getMatchReason, getRiskReason } from '@/components/dashboard/formatters'
+import { formatSourceLinkLabel, getMatchReason, getRiskReason } from '@/components/dashboard/formatters'
 import { JobStageActionButton } from '@/components/jobs/job-stage-action-button'
 import type { OperatorProfileRecord } from '@/lib/domain/types'
 import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
@@ -10,12 +10,15 @@ export function SavedRow({
   actionsEnabled,
   job,
   profile,
+  showActions = true,
 }: {
   actionsEnabled: boolean
   job: QualifiedJobRecord
   profile: OperatorProfileRecord
+  showActions?: boolean
 }) {
-  const packetLabel = job.workflowStatus === 'preparing' ? 'Continue prep' : 'Prepare application'
+  const packetLabel =
+    job.workflowStatus === 'preparing' ? 'Continue Preparation' : 'Prepare Application'
 
   return (
     <StageRow
@@ -40,10 +43,10 @@ export function SavedRow({
           <div className="stage-action-slot stage-action-slot--status">
             <JobStageActionButton
               canEdit={actionsEnabled}
-              disabledReason="Switch back to the database-backed queue to remove saved jobs."
+              disabledReason="Switch back to the database-backed queue to archive saved jobs."
               intent="dismiss"
               jobId={job.id}
-              label="Remove"
+              label="Archive"
               sourceContext="saved-review"
               variant="secondary"
             />
@@ -53,6 +56,7 @@ export function SavedRow({
       detailLabel="Review fit"
       job={job}
       profile={profile}
+      showActions={showActions}
     >
       <div className="detail-pair-grid detail-pair-grid-stack">
         <div>
@@ -72,7 +76,7 @@ export function SavedRow({
       <div className="inline-link-row">
         <Link href={`/jobs/${job.id}`}>Details</Link>
         <a href={job.sourceUrl} rel="noreferrer" target="_blank">
-          Source
+          {formatSourceLinkLabel(job)}
         </a>
       </div>
     </StageRow>

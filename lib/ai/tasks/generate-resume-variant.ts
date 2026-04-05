@@ -102,7 +102,13 @@ export async function generateResumeVariant(input: ResumeVariantInput): Promise<
     .filter((entry): entry is ResumeExperienceRecord => entry !== null)
 
   const fallbackEntries =
-    normalizedEntries.length > 0 ? normalizedEntries : sourceExperience.slice(0, 2).map((entry) => normalizeExperienceEntry(entry, entry))
+    normalizedEntries.length > 0
+      ? normalizedEntries
+      : sourceExperience.length > 0
+        ? sourceExperience
+            .slice(0, 2)
+            .map((entry) => normalizeExperienceEntry(entry, entry))
+        : []
 
   const normalized: ResumeVariantOutput = {
     changeSummaryForUser: cleanLine(response.changeSummaryForUser ?? ''),
@@ -117,7 +123,7 @@ export async function generateResumeVariant(input: ResumeVariantInput): Promise<
     tailoringRationale: cleanLine(response.tailoringRationale ?? ''),
   }
 
-  if (!normalized.summary || normalized.experienceEntries.length === 0) {
+  if (!normalized.summary || (sourceExperience.length > 0 && normalized.experienceEntries.length === 0)) {
     throw new Error('Resume generation returned incomplete ATS content.')
   }
 

@@ -17,9 +17,9 @@ function asStringArray(value: unknown) {
 
 function normalizeJobSummaryOutput(value: Partial<JobSummaryOutput>): JobSummaryOutput {
   return {
-    editorialSummary: cleanLine(value.editorialSummary ?? ''),
-    focusSummary: cleanLine(value.focusSummary ?? ''),
+    descriptionExcerpt: cleanLine(value.descriptionExcerpt ?? ''),
     hiringSignals: asStringArray(value.hiringSignals).slice(0, 4),
+    matchSummary: cleanLine(value.matchSummary ?? ''),
   }
 }
 
@@ -41,6 +41,8 @@ export async function generateJobSummary(input: JobSummaryInput): Promise<JobSum
     `Requirements: ${job.requirements.join(' | ')}`,
     `Preferred qualifications: ${job.preferredQualifications.join(' | ')}`,
     `Skills keywords: ${job.skillsKeywords.join(' | ')}`,
+    `Deterministic fit summary: ${input.fitSummary}`,
+    `Deterministic fit reasons: ${input.fitReasons.join(' | ')}`,
   ].join('\n')
 
   const response = await generateOpenAIJson<JobSummaryOutput>({
@@ -53,7 +55,7 @@ export async function generateJobSummary(input: JobSummaryInput): Promise<JobSum
 
   const normalized = normalizeJobSummaryOutput(response)
 
-  if (!normalized.editorialSummary || !normalized.focusSummary) {
+  if (!normalized.descriptionExcerpt || !normalized.matchSummary) {
     throw new Error('Job summary generation returned incomplete content.')
   }
 

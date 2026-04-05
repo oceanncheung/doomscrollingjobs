@@ -71,7 +71,7 @@ values (
   '22222222-2222-4222-8222-222222222222',
   '11111111-1111-4111-8111-111111111111',
   '11111111-1111-4111-8111-111111111111',
-  'Find remote-first design roles that prioritize quality, strong salary, and thoughtful brand, presentation, or campaign work. Designers first, but adjacent creative roles are okay if the fit is genuinely high.',
+  '',
   'Graphic Designer',
   'Toronto, Canada',
   'America/Toronto',

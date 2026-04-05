@@ -35,6 +35,13 @@ export function getLocationDisplay(job: QualifiedJobRecord) {
   }
 
   if (
+    job.remoteType === 'remote' &&
+    (locationLabel.toLowerCase() === 'remote' || remoteLabel.toLowerCase().startsWith('remote ·'))
+  ) {
+    return remoteLabel
+  }
+
+  if (
     remoteLabel.toLowerCase() === locationLabel.toLowerCase() ||
     remoteLabel.toLowerCase().includes(locationLabel.toLowerCase())
   ) {
@@ -94,6 +101,10 @@ export function toPlainDescription(value: string) {
 }
 
 export function getDescriptionExcerpt(job: QualifiedJobRecord) {
+  if (job.aiDescriptionExcerpt?.trim()) {
+    return job.aiDescriptionExcerpt.trim()
+  }
+
   const text = toPlainDescription(job.descriptionText)
 
   if (!text) {
@@ -105,6 +116,11 @@ export function getDescriptionExcerpt(job: QualifiedJobRecord) {
   }
 
   return `${text.slice(0, 277).trimEnd()}...`
+}
+
+export function formatSourceLinkLabel(job: { sourceName: string }) {
+  const name = job.sourceName?.trim()
+  return name ? `Source: ${name}` : 'Source'
 }
 
 export { getMatchReason }

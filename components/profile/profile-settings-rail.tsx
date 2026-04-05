@@ -2,6 +2,7 @@ import { clearActiveOperatorSelection } from '@/app/operators/actions'
 import { WorkspaceRailShell } from '@/components/navigation/workspace-rail-shell'
 import { ProfileSaveMessageSlot } from '@/components/profile/profile-save-message-root'
 import type { OperatorWorkspaceRecord } from '@/lib/domain/types'
+import { LOCATION_SUGGESTIONS } from '@/lib/profile/autocomplete-options'
 
 interface ProfileSettingsRailProps {
   formId: string
@@ -25,7 +26,7 @@ export function ProfileSettingsRail({ formId, workspace }: ProfileSettingsRailPr
             </div>
 
             <div className="settings-rail-actions">
-              <button className="button button-secondary" form={formId} type="submit">
+              <button className="button button-primary" form={formId} type="submit">
                 Save settings
               </button>
 
@@ -71,10 +72,16 @@ export function ProfileSettingsRail({ formId, workspace }: ProfileSettingsRailPr
               <input
                 defaultValue={workspace.profile.locationLabel}
                 form={formId}
+                list="profile-location-suggestions"
                 name="locationLabel"
                 placeholder="Toronto, Canada"
                 type="text"
               />
+              <datalist id="profile-location-suggestions">
+                {LOCATION_SUGGESTIONS.map((suggestion) => (
+                  <option key={suggestion} value={suggestion} />
+                ))}
+              </datalist>
             </label>
             <label className="field">
               <span>Title used on applications</span>

@@ -1,37 +1,77 @@
+import Link from 'next/link'
+
+import {
+  getPacketGenerationRemediationHint,
+  getPacketGenerationUserMessage,
+} from '@/lib/jobs/packet-generation-copy'
+
 interface PacketPreGenerationSectionProps {
   generationError?: string
   isFailed: boolean
   isRunning: boolean
+  screeningLocked?: boolean
 }
 
 export function PacketPreGenerationSection({
   generationError,
   isFailed,
   isRunning,
+  screeningLocked = false,
 }: PacketPreGenerationSectionProps) {
-  const note = isRunning
-    ? 'Generating tailored resume, cover letter, and answers...'
-    : generationError
-      ? generationError
-      : 'Nothing is shown yet so this step stays focused. Generate the content first, then review it here.'
+  const userFacingError = getPacketGenerationUserMessage(generationError)
+  const remediationHint = getPacketGenerationRemediationHint(generationError)
+  const idleNote =
+    'Nothing is shown yet so this step stays focused. Generate the content first, then review it here.'
+  const runningNote = 'Generating tailored resume, cover letter, and answers...'
+  const showRemediationCallout = isFailed && Boolean(userFacingError || remediationHint)
+
+  const note = screeningLocked
+    ? 'Add your base resume text or upload source documents in Settings before generating application materials.'
+    : userFacingError || idleNote
 
   return (
     <section className="packet-section">
       <div className="packet-section-inner">
         <div className="settings-section-header packet-section-heading">
           <div className="settings-section-title-stack">
-            <p className="panel-label">Generate content</p>
-            <h2>Create the resume and cover letter for this role.</h2>
+            <p className="panel-label">{screeningLocked ? 'Profile required' : 'Generate content'}</p>
+            <h2>
+              {screeningLocked
+                ? 'Add source material before preparing this application.'
+                : 'Create the resume and cover letter for this role.'}
+            </h2>
             <p className="settings-section-note">
-              Resume, cover letter, and any recognized application answers will appear here after you generate them.
+              {screeningLocked
+                ? 'Use Settings to paste your base resume text or upload source documents first. Application prep unlocks once the workspace has real source material.'
+                : 'Resume and cover letter will appear here after generation. Application questions only show up when the ATS actually asks for them.'}
             </p>
           </div>
         </div>
 
-        <div className="packet-inline-note">
-          <p>{note}</p>
-          {isFailed ? <p className="form-message form-message-error">Generation failed. Try generating again.</p> : null}
-        </div>
+        {screeningLocked ? (
+          <div className="packet-remediation-callout">
+            <p className="packet-remediation-callout__lead">{note}</p>
+            <Link className="button button-secondary button-small packet-remediation-callout__action" href="/profile">
+              Open Profile settings
+            </Link>
+          </div>
+        ) : isRunning ? (
+          <div className="packet-inline-note">
+            <p>{runningNote}</p>
+          </div>
+        ) : showRemediationCallout ? (
+          <div className="packet-remediation-callout">
+            {userFacingError ? <p className="packet-remediation-callout__lead">{userFacingError}</p> : null}
+            {remediationHint ? <p className="packet-remediation-callout__hint">{remediationHint}</p> : null}
+            <Link className="button button-secondary button-small packet-remediation-callout__action" href="/profile">
+              Open Profile settings
+            </Link>
+          </div>
+        ) : (
+          <div className="packet-inline-note">
+            <p>{note}</p>
+          </div>
+        )}
       </div>
     </section>
   )

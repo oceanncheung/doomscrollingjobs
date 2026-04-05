@@ -1,0 +1,22 @@
+---
+description: Stylesheet ownership map for split CSS architecture.
+globs:
+  - "app/styles/**/*.css"
+  - "app/globals.css"
+alwaysApply: true
+---
+
+Use this ownership map:
+
+- `app/styles/tokens.css`: variables, theme tokens, global measurements
+- `app/styles/shell.css`: app shell, header, shared rail/container scaffolding
+- `app/styles/dashboard.css`: queue rows, left rail blocks, job detail + prep shared surfaces
+- `app/styles/settings.css`: settings-page layout contracts and elevated controls
+- `app/styles/forms.css`: shared fields, uploads, disclosures, form states
+- `app/styles/operators.css`: operators/account screen only
+- `app/styles/responsive.css`: breakpoint-only overrides
+
+Rules:
+- Do not move layout logic into random component-level selectors when a shared file already owns it.
+- `app/globals.css` is import order only, not the place for surface-specific styling.
+- Keep zero visual diff when reorganizing CSS ownership.

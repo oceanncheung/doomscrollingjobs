@@ -29,8 +29,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   await requireActiveOperatorSelection()
   const resolvedSearchParams = (await searchParams) ?? {}
   const activeView = getQueueView(resolvedSearchParams.view)
-  const [{ jobs, source }, { workspace }] = await Promise.all([getRankedJobs(), getOperatorProfile()])
-  const actionsEnabled = source === 'database'
+  const [{ jobs, screeningLocked, source }, { workspace }] = await Promise.all([
+    getRankedJobs(),
+    getOperatorProfile(),
+  ])
+  const actionsEnabled = source === 'database' && !screeningLocked
 
   const { appliedJobs, archivedJobs, counts, potentialJobs, preparedJobs, savedJobs, screeningPool } =
     getDashboardQueues(jobs)
@@ -38,7 +41,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const activeContent: Record<QueueView, ReactNode> = {
     applied:
       appliedJobs.length > 0 ? (
-        appliedJobs.map((job) => <AppliedRow job={job} key={job.id} profile={workspace.profile} />)
+        appliedJobs.map((job) => (
+          <AppliedRow
+            job={job}
+            key={job.id}
+            profile={workspace.profile}
+            showActions={!screeningLocked}
+          />
+        ))
       ) : (
         <StageEmpty message="Applied jobs will collect here once you mark them sent." title="Applied" />
       ),
@@ -50,6 +60,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             job={job}
             key={job.id}
             profile={workspace.profile}
+            showActions={!screeningLocked}
           />
         ))
       ) : (
@@ -66,7 +77,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           />
         ))
       ) : (
-        <StageEmpty message="No active screening jobs are available right now." title="Potential" />
+        <StageEmpty
+          message={
+            screeningLocked
+              ? 'Add your base resume text or upload source documents in Settings to unlock Potential.'
+              : 'No active screening jobs are available right now.'
+          }
+          title="Potential"
+        />
       ),
     prepared:
       preparedJobs.length > 0 ? (
@@ -76,6 +94,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             job={job}
             key={job.id}
             profile={workspace.profile}
+            showActions={!screeningLocked}
           />
         ))
       ) : (
@@ -89,6 +108,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             job={job}
             key={job.id}
             profile={workspace.profile}
+            showActions={!screeningLocked}
           />
         ))
       ) : (
@@ -103,6 +123,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <WorkspaceTodayRail
             actionsEnabled={actionsEnabled}
             jobs={jobs}
+            screeningLocked={screeningLocked}
           />
         }
       >

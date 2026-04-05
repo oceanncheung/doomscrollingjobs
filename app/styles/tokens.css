@@ -87,6 +87,8 @@
   /* Align header brand column with dashboard today-rail */
   --site-gutter: 24px;
   --dashboard-rail: minmax(18rem, 28%);
+  /* One site-header workflow tab (Potential … Archive): mirrors grid column width */
+  --site-workflow-tab-width: calc((100vw - max(18rem, 28vw)) / 5);
 }
 
 * {

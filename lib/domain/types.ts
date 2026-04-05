@@ -21,6 +21,20 @@ export const packetGenerationStatuses = ['not_started', 'running', 'generated', 
 
 export type PacketGenerationStatus = (typeof packetGenerationStatuses)[number]
 
+export const packetQuestionSnapshotStatuses = [
+  'not_started',
+  'extracted',
+  'none',
+  'failed',
+  'unsupported',
+] as const
+
+export type PacketQuestionSnapshotStatus = (typeof packetQuestionSnapshotStatuses)[number]
+
+export const jobReviewSummaryStatuses = ['not_started', 'generated', 'failed'] as const
+
+export type JobReviewSummaryStatus = (typeof jobReviewSummaryStatuses)[number]
+
 export const answerReviewStatuses = ['draft', 'edited', 'approved'] as const
 
 export type AnswerReviewStatus = (typeof answerReviewStatuses)[number]
@@ -54,6 +68,7 @@ export interface UserProfileSnapshot {
   headline: string
   remoteRequired: boolean
   seniorityLevel: string
+  targetSeniorityLevels: string[]
   targetRoles: string[]
   allowedAdjacentRoles: string[]
   salaryFloorAmount?: number
@@ -89,6 +104,12 @@ export interface JobListing {
 }
 
 export interface JobScore {
+  aiDescriptionExcerpt?: string
+  aiMatchSummary?: string
+  aiSummaryError?: string
+  aiSummaryGeneratedAt?: string
+  aiSummaryModel?: string
+  aiSummaryStatus: JobReviewSummaryStatus
   id: string
   jobId: string
   totalScore: number
@@ -176,6 +197,9 @@ export interface ApplicationPacketRecord {
   packetStatus: PacketStatus
   portfolioRecommendation: PacketPortfolioRecommendationRecord
   professionalSummary: string
+  questionSnapshotError?: string
+  questionSnapshotRefreshedAt?: string
+  questionSnapshotStatus: PacketQuestionSnapshotStatus
   resumeVersion: ResumeVersionPacketRecord
 }
 
@@ -199,6 +223,7 @@ export interface OperatorProfileRecord {
   salaryTargetMin: string
   salaryTargetMax: string
   seniorityLevel: string
+  targetSeniorityLevels: string[]
   targetRoles: string[]
   allowedAdjacentRoles: string[]
   industriesPreferred: string[]
@@ -240,6 +265,8 @@ export interface ResumeEducationRecord {
 
 export interface ResumeMasterRecord {
   baseTitle: string
+  baseCoverLetterText: string
+  hasSourceMaterial: boolean
   summaryText: string
   experienceEntries: ResumeExperienceRecord[]
   achievementBank: ResumeAchievementRecord[]

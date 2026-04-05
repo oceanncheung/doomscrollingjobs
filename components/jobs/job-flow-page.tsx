@@ -1,37 +1,10 @@
 import { ApplicationPacketForm } from '@/components/jobs/application-packet-form'
+import { getDetailIntro, getPrepIntro } from '@/components/jobs/job-flow-copy'
 import { JobFlowHeader } from '@/components/jobs/job-flow-header'
 import { JobOverviewSection } from '@/components/jobs/job-overview-section'
 import type { ApplicationPacketRecord, OperatorProfileRecord } from '@/lib/domain/types'
 import { hasOpenAIEnv } from '@/lib/env'
 import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
-
-function getDetailIntro(job: QualifiedJobRecord) {
-  if (job.workflowStatus === 'ready_to_apply') {
-    return 'Everything is lined up. Review the role, then apply when you want to move.'
-  }
-
-  if (job.workflowStatus === 'preparing') {
-    return 'Materials are already being prepared. Review the role, then continue when you want.'
-  }
-
-  if (job.workflowStatus === 'shortlisted') {
-    return 'This role is saved. Review the basics, then prepare the application when it is worth pursuing.'
-  }
-
-  return 'Review the basics, then decide whether to save, skip, or open the source listing.'
-}
-
-function getPrepIntro(job: QualifiedJobRecord, hasDraft: boolean) {
-  if (job.workflowStatus === 'ready_to_apply') {
-    return 'Your materials are ready. Review the role, then apply when you want to submit.'
-  }
-
-  if (hasDraft) {
-    return 'Review the role and the prepared materials below, then mark the application ready to apply.'
-  }
-
-  return 'Generate tailored materials for this role first. The resume, cover letter, and answers will appear after that step.'
-}
 
 interface JobFlowPageProps {
   canSave: boolean
@@ -40,6 +13,7 @@ interface JobFlowPageProps {
   packet: ApplicationPacketRecord
   prepOpen: boolean
   profile: OperatorProfileRecord
+  screeningLocked?: boolean
 }
 
 export function JobFlowPage({
@@ -49,20 +23,23 @@ export function JobFlowPage({
   packet,
   prepOpen,
   profile,
+  screeningLocked = false,
 }: JobFlowPageProps) {
   const draftReady = packet.generationStatus === 'generated'
-  const canGenerate = canSave && hasOpenAIEnv()
+  const canGenerate = canSave && !screeningLocked && hasOpenAIEnv()
   const generationDisabledReason = !canSave
     ? issue
+    : screeningLocked
+      ? 'Add your base resume text or upload source documents in Settings before preparing applications.'
     : !canGenerate
       ? 'Add the OpenAI server environment before generating application materials.'
       : issue
   const pageLabel = prepOpen ? 'Application prep' : 'Job detail'
-  const pageIntro = prepOpen ? getPrepIntro(job, draftReady) : getDetailIntro(job)
+  const pageIntro = prepOpen ? getPrepIntro(job) : getDetailIntro(job)
 
   return (
     <>
-      <JobFlowHeader job={job} pageIntro={pageIntro} pageLabel={pageLabel} packet={packet} profile={profile} />
+      <JobFlowHeader job={job} pageIntro={pageIntro} pageLabel={pageLabel} profile={profile} />
       <JobOverviewSection
         canGenerate={canGenerate}
         canSave={canSave}
@@ -71,6 +48,7 @@ export function JobFlowPage({
         packet={packet}
         prepOpen={prepOpen}
         saveDisabledReason={issue}
+        screeningLocked={screeningLocked}
       />
 
       {prepOpen ? (
@@ -80,6 +58,7 @@ export function JobFlowPage({
             disabledReason={issue}
             job={job}
             packet={packet}
+            screeningLocked={screeningLocked}
             showGeneratedContent={draftReady}
           />
         </div>

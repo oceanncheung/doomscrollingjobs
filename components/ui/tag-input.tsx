@@ -1,7 +1,7 @@
 'use client'
 
 import type { KeyboardEvent } from 'react'
-import { useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 
 interface TagInputProps {
   helper?: string
@@ -9,6 +9,7 @@ interface TagInputProps {
   onChange: (tags: string[]) => void
   placeholder?: string
   preserveCase?: boolean
+  suggestions?: string[]
   tags: string[]
 }
 
@@ -18,11 +19,42 @@ export function TagInput({
   onChange,
   placeholder,
   preserveCase = false,
+  suggestions,
   tags,
 }: TagInputProps) {
   const [input, setInput] = useState('')
   const [isEditing, setIsEditing] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const suggestionsId = useId()
+  const availableSuggestions =
+    suggestions?.filter(
+      (suggestion, index, values) =>
+        suggestion.trim().length > 0 &&
+        values.findIndex((value) => value.toLowerCase() === suggestion.toLowerCase()) === index &&
+        !tags.some((tag) => tag.toLowerCase() === suggestion.toLowerCase()),
+    ) ?? []
+
+  function commitTag(rawValue: string) {
+    const raw = rawValue.trim()
+
+    if (!raw) {
+      return false
+    }
+
+    const exactSuggestion = availableSuggestions.find(
+      (suggestion) => suggestion.toLowerCase() === raw.toLowerCase(),
+    )
+    const nextTag = exactSuggestion ?? (preserveCase ? raw : raw.toLowerCase())
+    const duplicate = tags.some((tag) => tag.toLowerCase() === nextTag.toLowerCase())
+
+    if (!duplicate) {
+      onChange([...tags, nextTag])
+    }
+
+    setInput('')
+
+    return !duplicate
+  }
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Escape' && !input.trim()) {
@@ -32,13 +64,7 @@ export function TagInput({
 
     if ((e.key === 'Enter' || e.key === ',') && input.trim()) {
       e.preventDefault()
-      const raw = input.trim()
-      const newTag = preserveCase ? raw : raw.toLowerCase()
-      const duplicate = tags.some((t) => t.toLowerCase() === newTag.toLowerCase())
-      if (!duplicate) {
-        onChange([...tags, newTag])
-      }
-      setInput('')
+      commitTag(input)
       requestAnimationFrame(() => {
         inputRef.current?.focus()
       })
@@ -88,9 +114,31 @@ export function TagInput({
             onBlur={() => {
               if (!input.trim()) {
                 setIsEditing(false)
+                return
+              }
+
+              const exactSuggestion = availableSuggestions.find(
+                (suggestion) => suggestion.toLowerCase() === input.trim().toLowerCase(),
+              )
+
+              if (exactSuggestion) {
+                commitTag(exactSuggestion)
+                setIsEditing(false)
               }
             }}
-            onChange={(e) => setInput(e.target.value)}
+            list={availableSuggestions.length > 0 ? suggestionsId : undefined}
+            onChange={(e) => {
+              const nextValue = e.target.value
+              setInput(nextValue)
+
+              const exactSuggestion = availableSuggestions.find(
+                (suggestion) => suggestion.toLowerCase() === nextValue.trim().toLowerCase(),
+              )
+
+              if (exactSuggestion) {
+                commitTag(exactSuggestion)
+              }
+            }}
             onKeyDown={handleKeyDown}
             placeholder={placeholder ?? 'Type and press Enter'}
             ref={inputRef}
@@ -117,6 +165,13 @@ export function TagInput({
             </svg>
           </button>
         )}
+        {availableSuggestions.length > 0 ? (
+          <datalist id={suggestionsId}>
+            {availableSuggestions.map((suggestion) => (
+              <option key={suggestion} value={suggestion} />
+            ))}
+          </datalist>
+        ) : null}
       </div>
       {helper ? <small>{helper}</small> : null}
     </div>

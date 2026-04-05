@@ -1,0 +1,14 @@
+---
+description: Editorial grid design system and zero-diff rule for UI edits.
+globs:
+  - "app/**/*.tsx"
+  - "components/**/*.tsx"
+  - "app/styles/**/*.css"
+alwaysApply: true
+---
+
+- Preserve the current layout unless the request explicitly changes behavior or copy.
+- Read `DESIGN.md`, `AGENTS.md`, and `UI_CHANGE_PROTOCOL.md` before making UI edits.
+- This project uses the editorial grid system: structured lines, rigid spacing, and shared layout contracts.
+- Prefer changing shared rules in the owning stylesheet/component instead of patching one-off overrides.
+- Generated artifacts are not part of the design system. Never edit `.next`, `.next 2`, caches, or traces.

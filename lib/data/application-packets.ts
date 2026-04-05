@@ -2,19 +2,22 @@ import 'server-only'
 
 import { getActiveOperatorContext } from '@/lib/data/operators'
 import { hasSupabaseServerEnv } from '@/lib/env'
-import type {
-  ApplicationAnswerRecord,
-  ApplicationPacketRecord,
-  OperatorPortfolioItemRecord,
-  OperatorWorkspaceRecord,
-  PacketGenerationStatus,
-  PacketCaseStudyRecord,
-  PacketPortfolioRecommendationRecord,
-  PacketStatus,
-  ResumeExperienceRecord,
-  ResumeVersionPacketRecord,
+import {
+  packetQuestionSnapshotStatuses,
+  type ApplicationAnswerRecord,
+  type ApplicationPacketRecord,
+  type OperatorPortfolioItemRecord,
+  type OperatorWorkspaceRecord,
+  type PacketGenerationStatus,
+  type PacketCaseStudyRecord,
+  type PacketQuestionSnapshotStatus,
+  type PacketPortfolioRecommendationRecord,
+  type PacketStatus,
+  type ResumeExperienceRecord,
+  type ResumeVersionPacketRecord,
 } from '@/lib/domain/types'
 import type { QualifiedJobRecord, RankedJobRecord } from '@/lib/jobs/contracts'
+import { fetchGreenhouseApplicationQuestions } from '@/lib/jobs/greenhouse-application-questions'
 import { createClient } from '@/lib/supabase/server'
 
 import { getRankedJob } from './jobs'
@@ -30,6 +33,14 @@ export interface ApplicationPacketReviewResult {
   source: PacketSource
   workspace: OperatorWorkspaceRecord
 }
+
+interface ApplicationPacketReviewOptions {
+  ensurePacket?: boolean
+  syncQuestionSnapshot?: boolean
+  syncQuestionSnapshotIfStale?: boolean
+}
+
+const QUESTION_SNAPSHOT_STALE_WINDOW_MS = 1000 * 60 * 60 * 12
 
 function asRecord(value: unknown) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -227,55 +238,6 @@ What draws me most is the chance to contribute strong visual thinking without lo
 Thank you for your time and consideration.`
 }
 
-function buildAnswers(
-  workspace: OperatorWorkspaceRecord,
-  job: RankedJobRecord,
-  caseStudies: PacketCaseStudyRecord[],
-): ApplicationAnswerRecord[] {
-  const leadCaseStudy = caseStudies[0]
-  const relevantExperience = workspace.resumeMaster.experienceEntries[0]
-  const highlightedSkills = describeJobSkillFocus(job)
-
-  return [
-    {
-      id: `seed-answer-${job.id}-interest`,
-      answerText: `I am interested in this role because it sits directly at the intersection of ${highlightedSkills} work, which matches the kind of design problems I want to keep solving. ${job.companyName}'s ${job.title} role also looks like a strong fit for how I like to work: high-quality output, thoughtful collaboration, and a clear need for visual storytelling.`,
-      answerVariantShort: `Direct fit across ${describeJobSkillFocus(job, 2)} with strong motivation for the role's craft and collaboration mix.`,
-      fieldType: 'textarea',
-      questionKey: 'why_this_role',
-      questionText: 'Why are you interested in this role?',
-      reviewStatus: 'draft',
-    },
-    {
-      id: `seed-answer-${job.id}-relevant-work`,
-      answerText: `My most relevant recent work comes from ${relevantExperience?.companyName ?? 'recent portfolio projects'}, where I focused on ${relevantExperience?.summary.toLowerCase() ?? 'brand and campaign design work'}. I would pair that experience with ${leadCaseStudy?.title ?? 'my strongest case study'} to show both the strategic context and the finished execution.`,
-      answerVariantShort: `Recent brand and campaign work paired with ${leadCaseStudy?.title ?? 'a strong case study'} is the clearest fit proof.`,
-      fieldType: 'textarea',
-      questionKey: 'relevant_work',
-      questionText: 'Tell us about the work most relevant to this role.',
-      reviewStatus: 'draft',
-    },
-    {
-      id: `seed-answer-${job.id}-portfolio`,
-      answerText: leadCaseStudy?.url ?? workspace.profile.portfolioPrimaryUrl,
-      answerVariantShort: leadCaseStudy?.url ?? workspace.profile.portfolioPrimaryUrl,
-      fieldType: 'portfolio_field',
-      questionKey: 'portfolio_link',
-      questionText: 'What portfolio link should be used for this application?',
-      reviewStatus: 'draft',
-    },
-    {
-      id: `seed-answer-${job.id}-work-auth`,
-      answerText: workspace.profile.workAuthorizationNotes,
-      answerVariantShort: workspace.profile.workAuthorizationNotes,
-      fieldType: 'short_answer',
-      questionKey: 'work_authorization',
-      questionText: 'What should we say for work authorization or remote eligibility?',
-      reviewStatus: 'draft',
-    },
-  ]
-}
-
 function buildChecklist(job: RankedJobRecord, caseStudies: PacketCaseStudyRecord[]) {
   return [
     'Review the source listing once more before applying to confirm scope, salary, and location still match.',
@@ -353,7 +315,7 @@ function buildGeneratedPacket(
   const portfolioRecommendation = buildPortfolioRecommendation(workspace, caseStudySelection)
 
   return {
-    answers: buildAnswers(workspace, job, caseStudySelection),
+    answers: [],
     caseStudySelection,
     checklistItems: buildChecklist(job, caseStudySelection),
     coverLetterDraft: buildCoverLetterDraft(workspace, job, caseStudySelection),
@@ -369,6 +331,7 @@ function buildGeneratedPacket(
     packetStatus: 'draft',
     portfolioRecommendation,
     professionalSummary: buildProfessionalSummary(workspace, job, selectedSkills),
+    questionSnapshotStatus: 'not_started',
     resumeVersion: buildGeneratedResumeVersion(workspace, job, experienceEntries, selectedSkills),
   }
 }
@@ -481,6 +444,17 @@ function normalizeGenerationStatus(
   return fallback
 }
 
+function normalizeQuestionSnapshotStatus(
+  value: unknown,
+  fallback: PacketQuestionSnapshotStatus,
+): PacketQuestionSnapshotStatus {
+  const text = asString(value)
+
+  return packetQuestionSnapshotStatuses.includes(text as PacketQuestionSnapshotStatus)
+    ? (text as PacketQuestionSnapshotStatus)
+    : fallback
+}
+
 function inferLegacyGenerationStatus(record: Record<string, unknown> | null): PacketGenerationStatus {
   if (!record) {
     return 'not_started'
@@ -499,6 +473,161 @@ function inferLegacyGenerationStatus(record: Record<string, unknown> | null): Pa
   }
 
   return 'not_started'
+}
+
+async function syncPacketQuestionSnapshot({
+  job,
+  operatorId,
+  packetId,
+  userId,
+}: {
+  job: RankedJobRecord
+  operatorId: string
+  packetId: string
+  userId: string
+}) {
+  const supabase = createClient()
+  const snapshot = await fetchGreenhouseApplicationQuestions(job)
+  const now = new Date().toISOString()
+  const persistFailedSnapshot = async (message: string) => {
+    await supabase
+      .from('application_packets')
+      .update({
+        question_snapshot_error: message,
+        question_snapshot_refreshed_at: now,
+        question_snapshot_status: 'failed',
+      })
+      .eq('id', packetId)
+  }
+
+  const { data: existingAnswers, error: existingAnswersError } = await supabase
+    .from('application_answers')
+    .select(
+      `
+        id,
+        question_key,
+        question_text,
+        field_type,
+        answer_text,
+        answer_variant_short,
+        character_limit,
+        review_status
+      `,
+    )
+    .eq('application_packet_id', packetId)
+
+  if (existingAnswersError) {
+    await persistFailedSnapshot(existingAnswersError.message)
+    return {
+      error: existingAnswersError.message,
+      status: 'failed' as const,
+    }
+  }
+
+  const existingAnswerByKey = new Map(
+    (existingAnswers ?? [])
+      .map((answer) => normalizeAnswer(answer))
+      .filter((answer): answer is ApplicationAnswerRecord => answer !== null)
+      .map((answer) => [answer.questionKey, answer] as const),
+  )
+
+  const deleteAnswersResult = await supabase
+    .from('application_answers')
+    .delete()
+    .eq('application_packet_id', packetId)
+
+  if (deleteAnswersResult.error) {
+    await persistFailedSnapshot(deleteAnswersResult.error.message)
+    return {
+      error: deleteAnswersResult.error.message,
+      status: 'failed' as const,
+    }
+  }
+
+  if (snapshot.status === 'extracted' && snapshot.questions.length > 0) {
+    const insertAnswersResult = await supabase.from('application_answers').insert(
+      snapshot.questions.map((question) => {
+        const existingAnswer = existingAnswerByKey.get(question.questionKey)
+
+        return {
+          answer_text: existingAnswer?.answerText || null,
+          answer_variant_short: existingAnswer?.answerVariantShort || null,
+          application_packet_id: packetId,
+          character_limit: question.characterLimit ?? existingAnswer?.characterLimit ?? null,
+          field_type: question.fieldType,
+          id: existingAnswer?.id || crypto.randomUUID(),
+          job_id: job.id,
+          operator_id: operatorId,
+          question_key: question.questionKey,
+          question_text: question.questionText,
+          review_status: existingAnswer?.reviewStatus ?? 'draft',
+          source_context: question.sourceContext,
+          user_id: userId,
+        }
+      }),
+    )
+
+    if (insertAnswersResult.error) {
+      await persistFailedSnapshot(insertAnswersResult.error.message)
+      return {
+        error: insertAnswersResult.error.message,
+        status: 'failed' as const,
+      }
+    }
+  }
+
+  const updateResult = await supabase
+    .from('application_packets')
+    .update({
+      question_snapshot_error: snapshot.error ?? null,
+      question_snapshot_refreshed_at: now,
+      question_snapshot_status: snapshot.status,
+    })
+    .eq('id', packetId)
+
+  if (updateResult.error) {
+    return {
+      error: updateResult.error.message,
+      status: 'failed' as const,
+    }
+  }
+
+  return {
+    status: snapshot.status,
+  }
+}
+
+function shouldRefreshQuestionSnapshot(
+  packetRow: Record<string, unknown>,
+  options: Pick<ApplicationPacketReviewOptions, 'syncQuestionSnapshot' | 'syncQuestionSnapshotIfStale'>,
+) {
+  if (!options.syncQuestionSnapshot) {
+    return false
+  }
+
+  if (!options.syncQuestionSnapshotIfStale) {
+    return true
+  }
+
+  const status = normalizeQuestionSnapshotStatus(packetRow.question_snapshot_status, 'not_started')
+
+  if (status === 'not_started') {
+    return true
+  }
+
+  const refreshedAt = asString(packetRow.question_snapshot_refreshed_at)
+
+  if (!refreshedAt) {
+    return true
+  }
+
+  const refreshedAtTime = Date.parse(refreshedAt)
+
+  if (!Number.isFinite(refreshedAtTime)) {
+    return true
+  }
+
+  return Date.now() - refreshedAtTime >= QUESTION_SNAPSHOT_STALE_WINDOW_MS
 }
 
 function normalizeAnswer(value: unknown): ApplicationAnswerRecord | null {
@@ -532,7 +661,13 @@ function normalizeAnswer(value: unknown): ApplicationAnswerRecord | null {
 
 export async function getApplicationPacketReview(
   jobId: string,
+  options: ApplicationPacketReviewOptions = {},
 ): Promise<ApplicationPacketReviewResult> {
+  const {
+    ensurePacket = false,
+    syncQuestionSnapshot = false,
+    syncQuestionSnapshotIfStale = false,
+  } = options
   const [{ job, source: jobSource }, { workspace }] = await Promise.all([
     getRankedJob(jobId),
     getOperatorProfile(),
@@ -576,7 +711,7 @@ export async function getApplicationPacketReview(
   }
 
   const supabase = createClient()
-  const { data: packetRow, error: packetError } = await supabase
+  const { data: existingPacketRow, error: packetError } = await supabase
     .from('application_packets')
     .select('*')
     .eq('operator_id', operatorContext.operator.id)
@@ -594,6 +729,46 @@ export async function getApplicationPacketReview(
     }
   }
 
+  let packetRow = existingPacketRow
+
+  if (!packetRow && (syncQuestionSnapshot || ensurePacket)) {
+    const { data: createdPacket, error: createPacketError } = await supabase
+      .from('application_packets')
+      .upsert(
+        {
+          application_checklist: generatedPacket.checklistItems,
+          case_study_selection: generatedPacket.caseStudySelection,
+          generation_status: 'not_started',
+          id: crypto.randomUUID(),
+          job_id: generatedPacket.jobId,
+          job_score_id: generatedPacket.jobScoreId,
+          job_focus_summary: generatedPacket.jobFocusSummary,
+          job_summary: generatedPacket.jobSummary,
+          operator_id: operatorContext.operator.id,
+          packet_status: generatedPacket.packetStatus,
+          portfolio_recommendation: generatedPacket.portfolioRecommendation,
+          question_snapshot_status: 'not_started',
+          user_id: operatorContext.userId,
+        },
+        { onConflict: 'id' },
+      )
+      .select('*')
+      .single()
+
+    if (createPacketError) {
+      return {
+        canSave: true,
+        issue: createPacketError.message,
+        job,
+        packet: generatedPacket,
+        source: 'database-fallback',
+        workspace,
+      }
+    }
+
+    packetRow = createdPacket
+  }
+
   if (!packetRow) {
     return {
       canSave: true,
@@ -603,6 +778,31 @@ export async function getApplicationPacketReview(
       packet: generatedPacket,
       source: 'database-fallback',
       workspace,
+    }
+  }
+
+  if (
+    packetRow &&
+    shouldRefreshQuestionSnapshot(packetRow as Record<string, unknown>, {
+      syncQuestionSnapshot,
+      syncQuestionSnapshotIfStale,
+    })
+  ) {
+    await syncPacketQuestionSnapshot({
+      job,
+      operatorId: operatorContext.operator.id,
+      packetId: asString(packetRow.id),
+      userId: operatorContext.userId,
+    })
+
+    const { data: refreshedPacketRow, error: refreshedPacketRowError } = await supabase
+      .from('application_packets')
+      .select('*')
+      .eq('id', packetRow.id)
+      .maybeSingle()
+
+    if (!refreshedPacketRowError && refreshedPacketRow) {
+      packetRow = refreshedPacketRow
     }
   }
 
@@ -636,12 +836,16 @@ export async function getApplicationPacketReview(
     answersResult.data
       ?.map((item) => normalizeAnswer(item))
       .filter((item): item is ApplicationAnswerRecord => item !== null) ?? []
+  const questionSnapshotStatus = normalizeQuestionSnapshotStatus(
+    packetRow.question_snapshot_status,
+    'not_started',
+  )
 
   return {
     canSave: true,
     job,
     packet: {
-      answers: answers.length > 0 ? answers : generatedPacket.answers,
+      answers: questionSnapshotStatus === 'extracted' ? answers : [],
       caseStudySelection: normalizeCaseStudySelection(
         packetRow.case_study_selection,
         generatedPacket.caseStudySelection,
@@ -671,6 +875,9 @@ export async function getApplicationPacketReview(
         generatedPacket.portfolioRecommendation,
       ),
       professionalSummary: asString(packetRow.professional_summary) || generatedPacket.professionalSummary,
+      questionSnapshotError: asString(packetRow.question_snapshot_error) || undefined,
+      questionSnapshotRefreshedAt: asString(packetRow.question_snapshot_refreshed_at) || undefined,
+      questionSnapshotStatus,
       resumeVersion: normalizeResumeVersion(
         resumeVersionResult.data,
         generatedPacket.resumeVersion,

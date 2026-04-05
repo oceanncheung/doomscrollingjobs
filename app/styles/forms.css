@@ -74,8 +74,8 @@
 .upload-slot-chip-btn {
   display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  justify-content: flex-start;
+  gap: 10px;
   width: 100%;
   min-height: 40px;
   padding: 10px 18px;
@@ -104,6 +104,13 @@
   border-color: var(--text);
 }
 
+.upload-slot-chip-trailing-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 .upload-slot-chip-icon {
   display: inline-flex;
   align-items: center;
@@ -116,11 +123,9 @@
 .upload-slot-chip-filled {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 0;
   width: 100%;
   min-height: 40px;
-  padding: 10px 18px;
   box-sizing: border-box;
   border: 1px solid var(--line);
   border-bottom: none;
@@ -128,7 +133,22 @@
   color: var(--text);
 }
 
+.upload-slot-chip-main {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 40px;
+  padding: 10px 24px 10px 18px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
 .upload-slot-chip-filename {
+  display: block;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -138,22 +158,18 @@
   letter-spacing: 0.02em;
 }
 
-.upload-slot-chip-file-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
 .upload-slot-chip-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
+  align-self: stretch;
+  min-width: 48px;
+  padding: 0;
   margin: 0;
-  border: 1px solid var(--line);
+  border: 0;
+  border-left: 1px solid var(--line);
   border-radius: 0;
-  background: var(--bg);
+  background: transparent;
   color: var(--text);
   cursor: pointer;
   transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
@@ -224,6 +240,38 @@
   opacity: 1;
 }
 
+.tag-toggle-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0 0;
+}
+
+.tag-toggle-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+}
+
+.tag-toggle-chip.is-selected,
+.tag-toggle-chip:hover {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg);
+}
+
 .tag-input {
   flex: 1 1 8rem;
   min-width: 8rem;
@@ -274,6 +322,15 @@
   align-items: start;
 }
 
+.settings-section-subcopy {
+  display: grid;
+  gap: 8px;
+}
+
+.settings-section-subcopy--spacious {
+  padding-top: 8px;
+}
+
 /* Match .field-grid-2 / .settings-core-grid column rhythm */
 .settings-source-grid .upload-slot,
 .strengths-experience-grid .upload-slot {
@@ -297,6 +354,140 @@
   align-items: start;
   width: 100%;
   box-sizing: border-box;
+}
+
+.settings-source-uploads-row--materials {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) minmax(0, var(--site-workflow-tab-width));
+  gap: 16px;
+  align-items: stretch;
+  box-sizing: border-box;
+}
+
+/* Bleed past section padding so the source-doc row can sit flush with the queue column edge. */
+.settings-main .settings-source-uploads-row--materials {
+  width: calc(100% + var(--settings-section-pad-right));
+  margin-right: calc(-1 * var(--settings-section-pad-right));
+  max-width: none;
+}
+
+.settings-source-gpt-row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.settings-source-gpt-link {
+  display: inline-flex;
+  align-items: center;
+}
+
+.settings-source-gpt-row.inline-link-row a.settings-source-gpt-link,
+.settings-source-gpt-row .settings-source-gpt-link--disabled {
+  color: var(--text);
+  border-bottom-color: var(--line);
+}
+
+.settings-source-uploads-row--materials .upload-slot {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+
+.settings-source-uploads-row--materials .upload-slot-chip-filled,
+.settings-source-uploads-row--materials .upload-slot-chip-btn:not(.upload-slot-chip-btn--action) {
+  min-height: 44px;
+}
+
+.settings-main .settings-source-uploads-row--materials .upload-slot-chip-btn:not(.upload-slot-chip-btn--action) {
+  width: 100%;
+  max-width: none;
+  padding: 12px 20px;
+  border: 1px solid var(--line);
+  border-bottom: none;
+  border-radius: 0;
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--surface-soft);
+  color: var(--text);
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+}
+
+/* Label + icon centered together in each source-doc chip */
+.settings-main .settings-source-uploads-row--materials .upload-slot-chip-btn:not(.upload-slot-chip-btn--action) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.settings-main .settings-source-uploads-row--materials .upload-slot-chip-label {
+  min-width: 0;
+}
+
+.settings-main .settings-source-uploads-row--materials .upload-slot-chip-btn:not(.upload-slot-chip-btn--action):hover {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+  border-bottom: none;
+}
+
+.settings-source-uploads-row--materials .upload-slot-chip-filled {
+  border: 1px solid var(--line);
+  border-bottom: none;
+}
+
+.settings-main .settings-source-uploads-row--materials > * {
+  min-width: 0;
+}
+
+.settings-source-uploads-materials-files--dual {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, var(--site-workflow-tab-width)));
+  gap: 0;
+  width: max-content;
+  max-width: 100%;
+}
+
+.settings-main .settings-source-uploads-materials-files--dual > .upload-slot + .upload-slot .upload-slot-chip-btn:not(.upload-slot-chip-btn--action),
+.settings-main .settings-source-uploads-materials-files--dual > .upload-slot + .upload-slot .upload-slot-chip-filled {
+  border-left: 0;
+}
+
+.settings-main .settings-source-uploads-row--materials .upload-slot-chip-btn--action {
+  justify-content: center;
+  align-self: stretch;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--site-workflow-tab-width);
+  margin-right: 0;
+  padding: 12px 20px;
+  min-width: 0;
+  background: var(--text);
+  color: var(--bg);
+  border: 1px solid var(--text);
+  border-bottom: none;
+}
+
+.settings-main .settings-source-generate-button {
+  grid-column: 3 / 4;
+}
+
+.settings-main .settings-source-uploads-row--materials .upload-slot-chip-btn--action:hover {
+  opacity: 0.92;
+}
+
+.settings-source-gpt-link--disabled {
+  padding-bottom: 3px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  pointer-events: none;
+  opacity: 0.45;
 }
 
 .settings-source-primary textarea,
@@ -339,6 +530,13 @@
 
 .settings-job-targets-col-market,
 .settings-job-targets-col-salary {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+  min-width: 0;
+}
+
+.settings-job-targets-col-priorities {
   display: grid;
   gap: 16px;
   align-items: start;
@@ -764,6 +962,38 @@
   padding-right: var(--queue-column-pad);
   padding-bottom: 32px;
   box-sizing: border-box;
+}
+
+/* Typography aligned with .settings-section-note / .settings-section-title-stack */
+.packet-remediation-callout {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid var(--line-soft);
+  background: var(--surface-soft);
+  box-sizing: border-box;
+}
+
+.packet-remediation-callout__lead {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.875rem;
+  letter-spacing: 0.16px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.packet-remediation-callout__hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+  letter-spacing: 0.16px;
+  line-height: 1.5;
+}
+
+.packet-remediation-callout__action {
+  justify-self: start;
+  margin-top: 8px;
 }
 
 .packet-section-heading {

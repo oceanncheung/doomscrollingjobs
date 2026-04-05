@@ -1,0 +1,24 @@
+---
+description: Dashboard, detail, prep, and rail contract.
+globs:
+  - "app/dashboard/**/*.tsx"
+  - "app/jobs/**/*.tsx"
+  - "components/dashboard/**/*.tsx"
+  - "components/jobs/**/*.tsx"
+  - "components/navigation/**/*.tsx"
+  - "app/styles/dashboard.css"
+  - "app/styles/responsive.css"
+alwaysApply: true
+---
+
+Use the shared dashboard/job-flow contract:
+
+- left rail + main queue/detail surface stay on the same structural grid
+- queue rows, detail pages, and prep pages share layout language instead of diverging
+- blank-profile lock must be truthful across Potential, left rail, detail, and prep
+- workflow actions should only appear when upstream state truly supports them
+
+When editing these surfaces:
+- prefer shared job-flow or stage-row fixes over per-page drift
+- keep copy and behavior consistent across queue, detail, prep, and rail
+- do not redesign the visual system while doing cleanup

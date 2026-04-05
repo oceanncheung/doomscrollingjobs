@@ -1,14 +1,7 @@
 'use client'
 
-import { useActionState } from 'react'
-
-import { createOperator, selectOperator, type OperatorSetupActionState } from '@/app/operators/actions'
+import { selectOperator } from '@/app/operators/actions'
 import type { OperatorRecord } from '@/lib/domain/types'
-
-const initialState: OperatorSetupActionState = {
-  message: '',
-  status: 'idle',
-}
 
 interface OperatorAccessFormProps {
   activeOperatorId?: string
@@ -19,12 +12,9 @@ export function OperatorAccessForm({
   activeOperatorId,
   operators,
 }: OperatorAccessFormProps) {
-  const [state, formAction, isPending] = useActionState(createOperator, initialState)
-  const hasOperators = operators.length > 0
-
   return (
     <div className="operator-access-shell">
-      {hasOperators ? (
+      {operators.length > 0 ? (
         <section className="operator-list" aria-label="Available operators">
           {operators.map((operator) => {
             const isActive = operator.id === activeOperatorId
@@ -43,34 +33,12 @@ export function OperatorAccessForm({
             )
           })}
         </section>
-      ) : null}
-
-      <section className="panel operator-setup-panel">
-        <p className="panel-label">{hasOperators ? 'Add account' : 'First account'}</p>
-        <h2>{hasOperators ? 'Create another internal account' : 'Create the first account'}</h2>
-
-        <form action={formAction} className="operator-setup-form">
-          <label className="field">
-            <span>Display name</span>
-            <input name="displayName" placeholder="Ocean" required type="text" />
-          </label>
-
-          <label className="field">
-            <span>Email</span>
-            <input name="email" placeholder="ocean@example.com" required type="email" />
-          </label>
-
-          <button className="button button-primary" disabled={isPending} type="submit">
-            {isPending ? 'Saving...' : hasOperators ? 'Add Account' : 'Create Account'}
-          </button>
-
-          {state.message ? (
-            <p className={`form-message ${state.status === 'error' ? 'form-message-error' : ''}`}>
-              {state.message}
-            </p>
-          ) : null}
-        </form>
-      </section>
+      ) : (
+        <section className="empty-state operator-empty-state">
+          <p className="panel-label">Accounts</p>
+          <p>No internal accounts are saved on this browser yet.</p>
+        </section>
+      )}
     </div>
   )
 }

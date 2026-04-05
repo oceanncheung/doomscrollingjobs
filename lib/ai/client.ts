@@ -10,6 +10,16 @@ interface OpenAIJsonRequest {
   user: string
 }
 
+interface ResponsesApiPayload {
+  output?: Array<{
+    content?: Array<{
+      text?: string | null
+      type?: string
+    }>
+  }>
+  output_text?: string | null
+}
+
 function stripFence(value: string) {
   const trimmed = value.trim()
 
@@ -27,6 +37,26 @@ export function canGenerateWithOpenAI() {
   return hasOpenAIEnv()
 }
 
+function extractResponseText(payload: ResponsesApiPayload) {
+  const outputText = payload.output_text?.trim()
+
+  if (outputText) {
+    return outputText
+  }
+
+  for (const item of payload.output ?? []) {
+    for (const contentItem of item.content ?? []) {
+      const text = contentItem.text?.trim()
+
+      if (text) {
+        return text
+      }
+    }
+  }
+
+  return ''
+}
+
 export async function generateOpenAIJson<T>({
   model,
   promptVersion,
@@ -35,21 +65,35 @@ export async function generateOpenAIJson<T>({
   user,
 }: OpenAIJsonRequest): Promise<T> {
   const { apiKey } = getOpenAIEnv()
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch('https://api.openai.com/v1/responses', {
     body: JSON.stringify({
-      messages: [
+      input: [
         {
-          content: `${system}\n\nPrompt version: ${promptVersion}\nReturn valid JSON only.`,
           role: 'system',
+          content: [
+            {
+              text: `${system}\n\nPrompt version: ${promptVersion}\nReturn valid JSON only.`,
+              type: 'input_text',
+            },
+          ],
         },
         {
-          content: `${user}\n\nReturn a JSON object with this shape:\n${schemaHint}`,
           role: 'user',
+          content: [
+            {
+              text: `${user}\n\nReturn a JSON object with this shape:\n${schemaHint}`,
+              type: 'input_text',
+            },
+          ],
         },
       ],
       model,
-      response_format: { type: 'json_object' },
       temperature: 0.2,
+      text: {
+        format: {
+          type: 'json_object',
+        },
+      },
     }),
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -63,10 +107,8 @@ export async function generateOpenAIJson<T>({
     throw new Error(`OpenAI request failed (${response.status}): ${message}`)
   }
 
-  const payload = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string | null } }>
-  }
-  const content = payload.choices?.[0]?.message?.content
+  const payload = (await response.json()) as ResponsesApiPayload
+  const content = extractResponseText(payload)
 
   if (!content) {
     throw new Error('OpenAI response did not include any content.')

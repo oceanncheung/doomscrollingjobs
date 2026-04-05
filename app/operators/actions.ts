@@ -213,6 +213,7 @@ export async function createOperator(
   const resumePayload = {
     achievement_bank: [],
     base_title: 'Graphic Designer',
+    base_cover_letter_text: '',
     certifications: [],
     education_entries: [],
     experience_entries: [],

@@ -24,7 +24,7 @@ import {
   normalizeSalaryFloorCurrency,
 } from '@/lib/profile/salary-currency'
 import {
-  seniorityLevelToSelectValue,
+  getTargetSeniorityLevels,
 } from '@/lib/profile/seniority-level'
 
 const initialState: ProfileActionState = {
@@ -38,6 +38,14 @@ interface ProfileFormProps {
 
 function tagsFromDelimitedString(value: string) {
   return value.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean)
+}
+
+function normalizeSourceFileName(value: string | null | undefined) {
+  if (!value) {
+    return null
+  }
+
+  return /\.(md|markdown)$/i.test(value.trim()) ? value : null
 }
 
 function createUuid() {
@@ -101,31 +109,30 @@ function createPortfolioItem(): OperatorPortfolioItemRecord {
   }
 }
 
-function targetSenioritySelectDefaults(seniorityLevel: string) {
-  const raw = seniorityLevel.trim()
-  const mapped = seniorityLevelToSelectValue(seniorityLevel)
-  if (raw.length > 0 && mapped === '') {
-    return { defaultValue: raw, legacyOption: raw }
-  }
-  return { defaultValue: mapped, legacyOption: null }
-}
-
 export function ProfileForm({ workspace }: ProfileFormProps) {
   const [state, formAction] = useActionState(saveOperatorProfile, initialState)
   const saveMessageRoot = useProfileSaveMessageRoot()
   const [activeStrengthsTab, setActiveStrengthsTab] = useState<StrengthsTab | null>(null)
   const [targetRoleTags, setTargetRoleTags] = useState(() => [...workspace.profile.targetRoles])
+  const [hiringMarketTags, setHiringMarketTags] = useState(() =>
+    [workspace.profile.primaryMarket, ...workspace.profile.secondaryMarkets].filter(
+      (value, index, values) => value.trim().length > 0 && values.indexOf(value) === index,
+    ),
+  )
+  const [targetSeniorityLevels, setTargetSeniorityLevels] = useState(() =>
+    getTargetSeniorityLevels(
+      workspace.profile.targetSeniorityLevels,
+      workspace.profile.seniorityLevel,
+    ),
+  )
   const [adjacentRoleTags, setAdjacentRoleTags] = useState(() => [
     ...workspace.profile.allowedAdjacentRoles,
   ])
   const [coverLetterPdfName, setCoverLetterPdfName] = useState<string | null>(
-    workspace.resumeMaster.coverLetterPdfFileName || null,
-  )
-  const [portfolioPdfName, setPortfolioPdfName] = useState<string | null>(
-    workspace.resumeMaster.portfolioPdfFileName || null,
+    normalizeSourceFileName(workspace.resumeMaster.coverLetterPdfFileName),
   )
   const [resumePdfName, setResumePdfName] = useState<string | null>(
-    workspace.resumeMaster.resumePdfFileName || null,
+    normalizeSourceFileName(workspace.resumeMaster.resumePdfFileName),
   )
   const [experienceEntries, setExperienceEntries] = useState(
     workspace.resumeMaster.experienceEntries.length > 0
@@ -148,7 +155,6 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
   const [certificationTags, setCertificationTags] = useState(() => [
     ...workspace.resumeMaster.certifications,
   ])
-  const senioritySelect = targetSenioritySelectDefaults(workspace.profile.seniorityLevel)
   const [timezoneTags, setTimezoneTags] = useState(() =>
     tagsFromDelimitedString(workspace.profile.timezone),
   )
@@ -160,7 +166,14 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
   ])
 
   return (
-    <form action={formAction} className="profile-form settings-main" id="profile-workspace-form">
+    <form
+      action={formAction}
+      className="profile-form settings-main"
+      encType="multipart/form-data"
+      id="profile-workspace-form"
+    >
+      <input name="hiringMarkets" type="hidden" value={hiringMarketTags.join('\n')} />
+      <input name="targetSeniorityLevels" type="hidden" value={targetSeniorityLevels.join('\n')} />
       <input name="targetRoles" type="hidden" value={targetRoleTags.join('\n')} />
       <input name="allowedAdjacentRoles" type="hidden" value={adjacentRoleTags.join('\n')} />
       <input name="skills" type="hidden" value={skillsTags.join('\n')} />
@@ -169,33 +182,31 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
       <input name="resumeSkillsSection" type="hidden" value={skillsTags.join('\n')} />
       <input name="resumePdfFileName" type="hidden" value={resumePdfName ?? ''} />
       <input name="coverLetterPdfFileName" type="hidden" value={coverLetterPdfName ?? ''} />
-      <input name="portfolioPdfFileName" type="hidden" value={portfolioPdfName ?? ''} />
       <input name="timezone" type="hidden" value={timezoneTags.join(', ')} />
       <input name="allowedRemoteRegions" type="hidden" value={allowedRemoteRegionTags.join('\n')} />
       <input name="industriesPreferred" type="hidden" value={industriesPreferredTags.join('\n')} />
 
       <ApplicationMaterialsSection
-        coverLetterPdfName={coverLetterPdfName}
-        portfolioPdfName={portfolioPdfName}
-        resumePdfName={resumePdfName}
-        resumeSummaryText={workspace.resumeMaster.summaryText}
-        setCoverLetterPdfName={setCoverLetterPdfName}
-        setPortfolioPdfName={setPortfolioPdfName}
-        setResumePdfName={setResumePdfName}
+        coverLetterFileName={coverLetterPdfName}
+        resumeFileName={resumePdfName}
+        setCoverLetterFileName={setCoverLetterPdfName}
+        setResumeFileName={setResumePdfName}
       />
 
       <JobTargetsSection
         adjacentRoleTags={adjacentRoleTags}
-        primaryMarket={workspace.profile.primaryMarket}
+        hiringMarketTags={hiringMarketTags}
         relocationOpen={workspace.profile.relocationOpen}
         remoteRequired={workspace.profile.remoteRequired}
         salaryFloorCurrency={normalizeSalaryFloorCurrency(workspace.profile.salaryFloorCurrency)}
         salaryTargetMax={workspace.profile.salaryTargetMax}
         salaryTargetMin={workspace.profile.salaryTargetMin}
         searchBrief={workspace.profile.searchBrief}
-        senioritySelect={senioritySelect}
+        setHiringMarketTags={setHiringMarketTags}
         setAdjacentRoleTags={setAdjacentRoleTags}
+        setTargetSeniorityLevels={setTargetSeniorityLevels}
         setTargetRoleTags={setTargetRoleTags}
+        targetSeniorityLevels={targetSeniorityLevels}
         targetRoleTags={targetRoleTags}
       />
 

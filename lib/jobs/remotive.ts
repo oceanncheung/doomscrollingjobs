@@ -65,6 +65,41 @@ const remotiveQueries = [
       search: 'marketing designer',
     }),
   },
+  {
+    label: 'campaign designer search',
+    params: new URLSearchParams({
+      limit: '120',
+      search: 'campaign designer',
+    }),
+  },
+  {
+    label: 'presentation designer search',
+    params: new URLSearchParams({
+      limit: '120',
+      search: 'presentation designer',
+    }),
+  },
+  {
+    label: 'communication designer search',
+    params: new URLSearchParams({
+      limit: '120',
+      search: 'communication designer',
+    }),
+  },
+  {
+    label: 'product designer search',
+    params: new URLSearchParams({
+      limit: '120',
+      search: 'product designer',
+    }),
+  },
+  {
+    label: 'motion designer search',
+    params: new URLSearchParams({
+      limit: '120',
+      search: 'motion designer',
+    }),
+  },
 ]
 
 interface RemotiveJobRecord {
@@ -129,6 +164,28 @@ function parseSalaryAmount(raw: string) {
   return match[2] ? numeric * 1000 : numeric
 }
 
+function detectSalaryPeriod(raw: string) {
+  const lowered = raw.toLowerCase()
+
+  if (lowered.includes('per month') || lowered.includes('monthly') || lowered.includes('/month') || lowered.includes('/mo')) {
+    return 'monthly' as const
+  }
+
+  if (lowered.includes('per hour') || lowered.includes('hourly') || lowered.includes('/hour') || lowered.includes('/hr')) {
+    return 'hourly' as const
+  }
+
+  if (lowered.includes('per week') || lowered.includes('weekly') || lowered.includes('/week') || lowered.includes('/wk')) {
+    return 'weekly' as const
+  }
+
+  if (lowered.includes('per day') || lowered.includes('daily') || lowered.includes('/day')) {
+    return 'daily' as const
+  }
+
+  return 'annual' as const
+}
+
 function parseSalaryRange(raw: string) {
   const matches = [...raw.matchAll(/(\d[\d,.]*(?:\.\d+)?)\s*([kK])?/g)]
     .map((match) => parseSalaryAmount(`${match[1] ?? ''}${match[2] ?? ''}`))
@@ -140,10 +197,18 @@ function parseSalaryRange(raw: string) {
 
   const [first, second] = matches
   const ordered = [first, second ?? first].sort((left, right) => left - right)
+  const salaryPeriod = detectSalaryPeriod(raw)
+  const min = Math.round(ordered[0] ?? 0)
+  const max = Math.round(ordered[1] ?? ordered[0] ?? 0)
+
+  if (salaryPeriod === 'annual' && max > 0 && max < 10_000) {
+    return {}
+  }
 
   return {
-    salary_max: Math.round(ordered[1] ?? ordered[0] ?? 0),
-    salary_min: Math.round(ordered[0] ?? 0),
+    salary_max: max,
+    salary_min: min,
+    salary_period: salaryPeriod,
   }
 }
 

@@ -14,7 +14,7 @@ export function PacketMaterialsSection({
   resumeSummary,
 }: PacketMaterialsSectionProps) {
   return (
-    <section className="packet-section">
+    <section className="packet-section" id="packet-materials-section">
       <div className="packet-section-inner">
         <div className="settings-section-header packet-section-heading">
           <div className="settings-section-title-stack">

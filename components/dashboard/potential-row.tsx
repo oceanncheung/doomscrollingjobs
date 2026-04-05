@@ -6,6 +6,7 @@ import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
 
 import {
   formatFitBand,
+  formatSourceLinkLabel,
   getDescriptionExcerpt,
   getFreshnessLabel,
   getLocationDisplay,
@@ -35,6 +36,7 @@ export function PotentialRow({
             <div className="screening-cell screening-title-cell">
               <strong>{job.title}</strong>
               <span>{job.companyName}</span>
+              <p className="screening-match">{getMatchReason(job)}</p>
             </div>
 
             <div className="screening-cell">
@@ -59,15 +61,14 @@ export function PotentialRow({
               <span className="screening-freshness">{getFreshnessLabel(job)}</span>
             </div>
           </div>
-
-          <p className="screening-match">{getMatchReason(job)}</p>
         </summary>
 
         <div className="screening-expanded">
           <div className="detail-pair-grid">
-            <div>
+            <div className="screening-match-column">
               <p className="panel-label">Why it matches</p>
-              <p>{job.fitSummary}</p>
+              <p>{getMatchReason(job)}</p>
+              <p className="screening-description-copy">{getDescriptionExcerpt(job)}</p>
             </div>
             <div>
               <p className="panel-label">Risks / gaps</p>
@@ -75,15 +76,10 @@ export function PotentialRow({
             </div>
           </div>
 
-          <div className="screening-description">
-            <p className="panel-label">Description excerpt</p>
-            <p>{getDescriptionExcerpt(job)}</p>
-          </div>
-
           <div className="inline-link-row">
             <Link href={`/jobs/${job.id}`}>More details</Link>
             <a href={job.sourceUrl} rel="noreferrer" target="_blank">
-              Source
+              {formatSourceLinkLabel(job)}
             </a>
           </div>
         </div>

@@ -1,4 +1,9 @@
-import type { RecommendationLevel, RemoteType, WorkflowStatus } from '@/lib/domain/types'
+import type {
+  JobReviewSummaryStatus,
+  RecommendationLevel,
+  RemoteType,
+  WorkflowStatus,
+} from '@/lib/domain/types'
 
 export type JobSourceKind = 'remote_board' | 'company_career_page' | 'ats_hosted_job_page'
 
@@ -113,6 +118,12 @@ export interface JobDeduplicationFingerprint {
 }
 
 export interface RankedJobRecord extends NormalizedJobRecord {
+  aiDescriptionExcerpt?: string
+  aiMatchSummary?: string
+  aiSummaryError?: string
+  aiSummaryGeneratedAt?: string
+  aiSummaryModel?: string
+  aiSummaryStatus: JobReviewSummaryStatus
   feedbackReasons?: string[]
   feedbackScoreDelta?: number
   feedbackSummary?: string

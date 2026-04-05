@@ -3,6 +3,7 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { Suspense } from 'react'
 
+import { ProfileTestingResetButton } from '@/components/profile/profile-testing-reset-button'
 import { ProfileSettingsIcon } from '@/components/navigation/profile-settings-icon'
 import { WorkspaceHeader } from '@/components/navigation/workspace-header'
 import { site } from '@/lib/config/site'
@@ -85,6 +86,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           </Suspense>
 
           <div className="workspace-main">{children}</div>
+          <ProfileTestingResetButton />
         </div>
       </body>
     </html>

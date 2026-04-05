@@ -4,12 +4,15 @@ import { cache } from 'react'
 
 import { getActiveOperatorContext } from '@/lib/data/operators'
 import { getOperatorProfile } from '@/lib/data/operator-profile'
+import { jobReviewSummaryStatuses } from '@/lib/domain/types'
 import { hasSupabaseServerEnv } from '@/lib/env'
 import type { QualifiedJobRecord, RankedJobRecord } from '@/lib/jobs/contracts'
 import { getDashboardQueues } from '@/lib/jobs/dashboard-queue'
 import { applyWorkflowLearning } from '@/lib/jobs/learning'
 import { applyQualificationEngine } from '@/lib/jobs/qualification'
 import { ensurePrimaryImportedJobs } from '@/lib/jobs/real-feed'
+import { buildRemoteSourceJobUrl } from '@/lib/jobs/remote-source'
+import { normalizeStoredSalaryPeriod } from '@/lib/jobs/source-parsing'
 import {
   isImportedSourceName,
   saveSourceQueueCoverage,
@@ -23,7 +26,29 @@ export interface RankedJobsResult {
   candidatePoolCount: number
   issue?: string
   jobs: QualifiedJobRecord[]
+  screeningLocked?: boolean
   source: JobsSource
+}
+
+function hasRankingSourceMaterial(workspace: Awaited<ReturnType<typeof getOperatorProfile>>['workspace']) {
+  return workspace.resumeMaster.hasSourceMaterial
+}
+
+function applyScreeningLock(
+  jobs: QualifiedJobRecord[],
+  workspace: Awaited<ReturnType<typeof getOperatorProfile>>['workspace'],
+) {
+  if (hasRankingSourceMaterial(workspace)) {
+    return {
+      jobs,
+      screeningLocked: false,
+    }
+  }
+
+  return {
+    jobs: jobs.filter((job) => job.workflowStatus !== 'new' && job.workflowStatus !== 'ranked'),
+    screeningLocked: true,
+  }
 }
 
 const seededJobs: RankedJobRecord[] = [
@@ -93,6 +118,7 @@ const seededJobs: RankedJobRecord[] = [
     seniorityScore: 9.5,
     totalScore: 89,
     workflowStatus: 'shortlisted',
+    aiSummaryStatus: 'not_started',
   },
   {
     id: '77777777-7777-4777-8777-777777777777',
@@ -159,6 +185,7 @@ const seededJobs: RankedJobRecord[] = [
     seniorityScore: 9,
     totalScore: 84.3,
     workflowStatus: 'ranked',
+    aiSummaryStatus: 'not_started',
   },
   {
     id: '88888888-8888-4888-8888-888888888888',
@@ -220,6 +247,7 @@ const seededJobs: RankedJobRecord[] = [
     seniorityScore: 8.5,
     totalScore: 73.8,
     workflowStatus: 'new',
+    aiSummaryStatus: 'not_started',
   },
   {
     id: '99999999-9999-4999-8999-999999999999',
@@ -281,6 +309,7 @@ const seededJobs: RankedJobRecord[] = [
     seniorityScore: 6,
     totalScore: 71.5,
     workflowStatus: 'ranked',
+    aiSummaryStatus: 'not_started',
   },
 ]
 
@@ -361,12 +390,32 @@ function normalizeRankedJob(value: unknown): RankedJobRecord | null {
     return null
   }
 
+  const sourceName = asString(job.source_name)
+  const sourceJobId = asString(job.source_job_id) || undefined
+  const sourceUrl =
+    sourceName === 'Remote Source'
+      ? buildRemoteSourceJobUrl({
+          sourceJobId,
+          sourceUrl: asString(job.source_url),
+        })
+      : asString(job.source_url)
+
   return {
+    aiDescriptionExcerpt: asString(score.ai_description_excerpt) || undefined,
+    aiMatchSummary: asString(score.ai_match_summary) || undefined,
+    aiSummaryError: asString(score.ai_summary_error) || undefined,
+    aiSummaryGeneratedAt: asString(score.ai_summary_generated_at) || undefined,
+    aiSummaryModel: asString(score.ai_summary_model) || undefined,
+    aiSummaryStatus: jobReviewSummaryStatuses.includes(
+      asString(score.ai_summary_status) as (typeof jobReviewSummaryStatuses)[number],
+    )
+      ? (asString(score.ai_summary_status) as RankedJobRecord['aiSummaryStatus'])
+      : 'not_started',
     id: asString(job.id),
     jobScoreId: asString(score.id),
-    sourceName: asString(job.source_name),
-    sourceJobId: asString(job.source_job_id) || undefined,
-    sourceUrl: asString(job.source_url),
+    sourceName,
+    sourceJobId,
+    sourceUrl,
     applicationUrl: asString(job.application_url) || undefined,
     companyName: asString(job.company_name),
     companyDomain: asString(job.company_domain) || undefined,
@@ -379,7 +428,12 @@ function normalizeRankedJob(value: unknown): RankedJobRecord | null {
     salaryCurrency: asString(job.salary_currency) || undefined,
     salaryMin: asOptionalNumber(job.salary_min),
     salaryMax: asOptionalNumber(job.salary_max),
-    salaryPeriod: asString(job.salary_period) as RankedJobRecord['salaryPeriod'],
+    salaryPeriod: normalizeStoredSalaryPeriod({
+      descriptionText: asString(job.description_text),
+      salaryMax: asOptionalNumber(job.salary_max),
+      salaryMin: asOptionalNumber(job.salary_min),
+      storedPeriod: asString(job.salary_period),
+    }),
     postedAt: asString(job.posted_at) || undefined,
     descriptionText: asString(job.description_text),
     requirements: asStringArray(job.requirements),
@@ -416,12 +470,17 @@ export const getRankedJobs = cache(async function getRankedJobs(): Promise<Ranke
 
   if (!hasSupabaseServerEnv()) {
     const learnedJobs = await applyWorkflowLearning(seededJobs)
+    const qualificationResult = applyScreeningLock(
+      applyQualificationEngine(dedupeRankedJobs(learnedJobs), workspace.profile),
+      workspace,
+    )
 
     return {
       candidatePoolCount: learnedJobs.length,
       issue:
         'Supabase server environment variables are not configured yet, so the jobs dashboard is showing seeded fallback listings.',
-      jobs: applyQualificationEngine(dedupeRankedJobs(learnedJobs), workspace.profile),
+      jobs: qualificationResult.jobs,
+      screeningLocked: qualificationResult.screeningLocked,
       source: 'seed',
     }
   }
@@ -430,11 +489,16 @@ export const getRankedJobs = cache(async function getRankedJobs(): Promise<Ranke
 
   if (!operatorContext) {
     const learnedJobs = await applyWorkflowLearning(seededJobs)
+    const qualificationResult = applyScreeningLock(
+      applyQualificationEngine(dedupeRankedJobs(learnedJobs), workspace.profile),
+      workspace,
+    )
 
     return {
       candidatePoolCount: learnedJobs.length,
       issue: 'Choose an operator before loading the ranked jobs queue.',
-      jobs: applyQualificationEngine(dedupeRankedJobs(learnedJobs), workspace.profile),
+      jobs: qualificationResult.jobs,
+      screeningLocked: qualificationResult.screeningLocked,
       source: 'database-fallback',
     }
   }
@@ -457,6 +521,12 @@ export const getRankedJobs = cache(async function getRankedJobs(): Promise<Ranke
         remote_gate_passed,
         recommendation_level,
         workflow_status,
+        ai_match_summary,
+        ai_description_excerpt,
+        ai_summary_status,
+        ai_summary_model,
+        ai_summary_generated_at,
+        ai_summary_error,
         fit_summary,
         fit_reasons,
         missing_requirements,
@@ -502,13 +572,18 @@ export const getRankedJobs = cache(async function getRankedJobs(): Promise<Ranke
 
   if (error || !data || data.length === 0) {
     const learnedJobs = await applyWorkflowLearning(seededJobs, operatorContext.operator.id)
+    const qualificationResult = applyScreeningLock(
+      applyQualificationEngine(dedupeRankedJobs(learnedJobs), workspace.profile),
+      workspace,
+    )
 
     return {
       candidatePoolCount: learnedJobs.length,
       issue:
         importResult.issue ??
         'No persisted job scores were found yet, so the dashboard is using the seeded ranked-job fallback set.',
-      jobs: applyQualificationEngine(dedupeRankedJobs(learnedJobs), workspace.profile),
+      jobs: qualificationResult.jobs,
+      screeningLocked: qualificationResult.screeningLocked,
       source: 'database-fallback',
     }
   }
@@ -521,13 +596,18 @@ export const getRankedJobs = cache(async function getRankedJobs(): Promise<Ranke
 
   if (jobs.length === 0) {
     const learnedJobs = await applyWorkflowLearning(seededJobs, operatorContext.operator.id)
+    const qualificationResult = applyScreeningLock(
+      applyQualificationEngine(dedupeRankedJobs(learnedJobs), workspace.profile),
+      workspace,
+    )
 
     return {
       candidatePoolCount: learnedJobs.length,
       issue:
         importResult.issue ??
         'Job scores were loaded, but the joined job records were incomplete. The dashboard is falling back to the seeded ranked set.',
-      jobs: applyQualificationEngine(dedupeRankedJobs(learnedJobs), workspace.profile),
+      jobs: qualificationResult.jobs,
+      screeningLocked: qualificationResult.screeningLocked,
       source: 'database-fallback',
     }
   }
@@ -536,7 +616,11 @@ export const getRankedJobs = cache(async function getRankedJobs(): Promise<Ranke
 
   if (importedJobs.length > 0) {
     const learnedJobs = await applyWorkflowLearning(importedJobs, operatorContext.operator.id)
-    const qualifiedJobs = applyQualificationEngine(dedupeRankedJobs(learnedJobs), workspace.profile)
+    const qualificationResult = applyScreeningLock(
+      applyQualificationEngine(dedupeRankedJobs(learnedJobs), workspace.profile),
+      workspace,
+    )
+    const qualifiedJobs = qualificationResult.jobs
     const queues = getDashboardQueues(qualifiedJobs)
     const qualifiedCounts = new Map<string, number>()
     const visibleCounts = new Map<string, number>()
@@ -555,22 +639,30 @@ export const getRankedJobs = cache(async function getRankedJobs(): Promise<Ranke
     return {
       candidatePoolCount: learnedJobs.length,
       issue:
-        importResult.importedCount > 0
-          ? `Imported ${importResult.importedCount} jobs into the primary ranked feed.${diagnosticsSummary ? ` ${diagnosticsSummary}.` : ''}`
-          : undefined,
+        qualificationResult.screeningLocked
+          ? 'Add your base resume text or upload source documents to unlock the Potential queue.'
+          : importResult.importedCount > 0
+            ? `Imported ${importResult.importedCount} jobs into the primary ranked feed.${diagnosticsSummary ? ` ${diagnosticsSummary}.` : ''}`
+            : undefined,
       jobs: qualifiedJobs,
+      screeningLocked: qualificationResult.screeningLocked,
       source: 'database',
     }
   }
 
   const learnedJobs = await applyWorkflowLearning(jobs, operatorContext.operator.id)
+  const qualificationResult = applyScreeningLock(
+    applyQualificationEngine(dedupeRankedJobs(learnedJobs), workspace.profile),
+    workspace,
+  )
 
   return {
     candidatePoolCount: learnedJobs.length,
     issue:
       importResult.issue ??
       'Imported-source jobs are not available yet, so the database-backed feed is still showing the existing seeded demo records.',
-    jobs: applyQualificationEngine(dedupeRankedJobs(learnedJobs), workspace.profile),
+    jobs: qualificationResult.jobs,
+    screeningLocked: qualificationResult.screeningLocked,
     source: 'database-fallback',
   }
 })

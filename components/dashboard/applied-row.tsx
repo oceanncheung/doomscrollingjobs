@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 import { StageRow } from '@/components/dashboard/stage-row'
-import { getRiskReason } from '@/components/dashboard/formatters'
+import { formatSourceLinkLabel, getMatchReason, getRiskReason } from '@/components/dashboard/formatters'
 import type { OperatorProfileRecord } from '@/lib/domain/types'
 import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
 import { formatWorkflowLabel } from '@/lib/jobs/presentation'
@@ -9,9 +9,11 @@ import { formatWorkflowLabel } from '@/lib/jobs/presentation'
 export function AppliedRow({
   job,
   profile,
+  showActions = true,
 }: {
   job: QualifiedJobRecord
   profile: OperatorProfileRecord
+  showActions?: boolean
 }) {
   return (
     <StageRow
@@ -19,7 +21,7 @@ export function AppliedRow({
         <div className="stage-actions">
           <div className="stage-action-slot stage-action-slot--remote">
             <Link className="button button-primary button-small" href={`/jobs/${job.id}/packet`}>
-              View packet
+              Materials
             </Link>
           </div>
           <div className="stage-action-slot stage-action-slot--salary">
@@ -29,7 +31,7 @@ export function AppliedRow({
               rel="noreferrer"
               target="_blank"
             >
-              Source
+              {formatSourceLinkLabel(job)}
             </a>
           </div>
         </div>
@@ -37,6 +39,7 @@ export function AppliedRow({
       detailLabel="Application context"
       job={job}
       profile={profile}
+      showActions={showActions}
     >
       <div className="detail-pair-grid detail-pair-grid-stack">
         <div>
@@ -45,7 +48,7 @@ export function AppliedRow({
         </div>
         <div>
           <p className="panel-label">Why it made the cut</p>
-          <p>{job.fitSummary}</p>
+          <p>{getMatchReason(job)}</p>
         </div>
         <div>
           <p className="panel-label">Watchout</p>

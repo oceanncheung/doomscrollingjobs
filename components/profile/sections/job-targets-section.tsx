@@ -2,22 +2,23 @@
 
 import type { Dispatch, SetStateAction } from 'react'
 
+import { TagToggleGroup } from '@/components/ui/tag-toggle-group'
 import { TagInput } from '@/components/ui/tag-input'
+import { REGION_SUGGESTIONS } from '@/lib/profile/autocomplete-options'
 import { SALARY_CURRENCY_OPTIONS } from '@/lib/profile/salary-currency'
 import { SENIORITY_LEVEL_OPTIONS } from '@/lib/profile/seniority-level'
 
 interface JobTargetsSectionProps {
   searchBrief: string
-  primaryMarket: string
+  hiringMarketTags: string[]
   salaryFloorCurrency: string
   salaryTargetMin: string
   salaryTargetMax: string
   remoteRequired: boolean
   relocationOpen: boolean
-  senioritySelect: {
-    defaultValue: string
-    legacyOption: string | null
-  }
+  targetSeniorityLevels: string[]
+  setHiringMarketTags: Dispatch<SetStateAction<string[]>>
+  setTargetSeniorityLevels: Dispatch<SetStateAction<string[]>>
   targetRoleTags: string[]
   setTargetRoleTags: Dispatch<SetStateAction<string[]>>
   adjacentRoleTags: string[]
@@ -26,13 +27,15 @@ interface JobTargetsSectionProps {
 
 export function JobTargetsSection({
   searchBrief,
-  primaryMarket,
+  hiringMarketTags,
   salaryFloorCurrency,
   salaryTargetMin,
   salaryTargetMax,
   remoteRequired,
   relocationOpen,
-  senioritySelect,
+  targetSeniorityLevels,
+  setHiringMarketTags,
+  setTargetSeniorityLevels,
   targetRoleTags,
   setTargetRoleTags,
   adjacentRoleTags,
@@ -79,33 +82,16 @@ export function JobTargetsSection({
         <div className="settings-action-body">
           <div className="settings-core-grid">
             <div className="settings-job-targets-row">
-              <div className="settings-job-targets-col-market">
-                <label className="field">
-                  <span>Main hiring market</span>
-                  <input
-                    defaultValue={primaryMarket}
-                    name="primaryMarket"
-                    placeholder="Canada"
-                    type="text"
-                  />
-                </label>
-                <label className="field">
-                  <span>Target seniority</span>
-                  <select defaultValue={senioritySelect.defaultValue} name="seniorityLevel">
-                    {senioritySelect.legacyOption ? (
-                      <option value={senioritySelect.legacyOption}>
-                        Saved: {senioritySelect.legacyOption}
-                      </option>
-                    ) : null}
-                    {SENIORITY_LEVEL_OPTIONS.map((option) => (
-                      <option key={option.value || 'none'} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
               <div className="settings-job-targets-col-salary">
+                <TagInput
+                  helper="Start typing for suggestions, or press Enter to keep a custom market."
+                  label="Main hiring market"
+                  onChange={setHiringMarketTags}
+                  placeholder="e.g. Canada"
+                  preserveCase
+                  suggestions={REGION_SUGGESTIONS}
+                  tags={hiringMarketTags}
+                />
                 <label className="field settings-salary-currency-field">
                   <span>Salary currency</span>
                   <select defaultValue={salaryFloorCurrency} name="salaryFloorCurrency">
@@ -137,23 +123,29 @@ export function JobTargetsSection({
                   </label>
                 </div>
               </div>
-            </div>
-
-            <div className="settings-tag-row field-grid field-grid-2">
-              <TagInput
-                helper="Press Enter after each role."
-                label="Prioritize these roles"
-                onChange={setTargetRoleTags}
-                placeholder="e.g. Brand designer"
-                tags={targetRoleTags}
-              />
-              <TagInput
-                helper="Roles that are still worth seeing when the fit is strong."
-                label="Also consider"
-                onChange={setAdjacentRoleTags}
-                placeholder="e.g. Art director"
-                tags={adjacentRoleTags}
-              />
+              <div className="settings-job-targets-col-priorities">
+                <TagToggleGroup
+                  helper="Select every level that still feels like a fit."
+                  label="Target seniority"
+                  onChange={setTargetSeniorityLevels}
+                  options={SENIORITY_LEVEL_OPTIONS.filter((option) => option.value.length > 0)}
+                  values={targetSeniorityLevels}
+                />
+                <TagInput
+                  helper="Press Enter after each role."
+                  label="Prioritize these roles"
+                  onChange={setTargetRoleTags}
+                  placeholder="e.g. Brand designer"
+                  tags={targetRoleTags}
+                />
+                <TagInput
+                  helper="Roles that are still worth seeing when the fit is strong."
+                  label="Also consider"
+                  onChange={setAdjacentRoleTags}
+                  placeholder="e.g. Art director"
+                  tags={adjacentRoleTags}
+                />
+              </div>
             </div>
           </div>
 

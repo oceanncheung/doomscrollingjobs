@@ -3,13 +3,33 @@
   gap: 24px;
 }
 
+.operator-page-header {
+  padding-bottom: 24px;
+}
+
+.dashboard-workspace .queue-column > .operator-page-header::after {
+  display: none;
+}
+
 .operator-list {
   display: grid;
-  border-top: 1px solid var(--line);
+  margin-right: calc(-1 * var(--queue-column-pad));
+  width: calc(100% + var(--queue-column-pad));
 }
 
 .operator-row {
+  position: relative;
   margin: 0;
+}
+
+.operator-row::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--line-soft);
 }
 
 .operator-row-button {
@@ -17,9 +37,9 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 16px;
   width: 100%;
-  padding: 16px 0;
+  padding: 16px var(--queue-column-pad) 16px 0;
   border: 0;
-  border-bottom: 1px solid var(--line-soft);
+  border-bottom: 0;
   background: transparent;
   color: var(--text);
   text-align: left;
@@ -40,21 +60,29 @@
 
 .operator-row-main span,
 .operator-row-meta {
+  display: block;
   color: var(--muted);
   font-family: var(--font-mono), monospace;
   font-size: 0.82rem;
   letter-spacing: 0.02em;
-}
-
-.operator-setup-panel {
-  display: grid;
-  gap: 16px;
+  text-decoration: none;
 }
 
 .operator-setup-form {
   display: grid;
   gap: 16px;
-  max-width: 32rem;
+}
+
+.operator-setup-form--rail > .button {
+  margin-top: 12px;
+}
+
+.operator-setup-form--rail .button {
+  width: 100%;
+}
+
+.operator-create-rail-block {
+  gap: 16px;
 }
 
 .detail-group {
@@ -67,3 +95,7 @@
   gap: 8px;
 }
 
+.operator-empty-state {
+  padding-top: 0;
+  border-top: 0;
+}

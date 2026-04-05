@@ -8,8 +8,8 @@ import type { ImportedSourceBatch } from './greenhouse'
 const jobspressoSourceKey = 'jobspresso'
 const jobspressoSourceName = 'Jobspresso'
 const jobspressoListingsEndpoint = 'https://jobspresso.co/jm-ajax/get_listings/'
-const maxJobspressoPagesPerQuery = 2
-const maxJobspressoListings = 90
+const maxJobspressoPagesPerQuery = 4
+const maxJobspressoListings = 180
 const browserUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'
 
 const jobspressoQueries = [
@@ -59,6 +59,30 @@ const jobspressoQueries = [
     label: 'presentation designer search',
     params: new URLSearchParams({
       search_keywords: 'presentation designer',
+    }),
+  },
+  {
+    label: 'campaign designer search',
+    params: new URLSearchParams({
+      search_keywords: 'campaign designer',
+    }),
+  },
+  {
+    label: 'communication designer search',
+    params: new URLSearchParams({
+      search_keywords: 'communication designer',
+    }),
+  },
+  {
+    label: 'product designer search',
+    params: new URLSearchParams({
+      search_keywords: 'product designer',
+    }),
+  },
+  {
+    label: 'motion designer search',
+    params: new URLSearchParams({
+      search_keywords: 'motion designer',
     }),
   },
 ] as const

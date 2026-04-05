@@ -3,7 +3,12 @@ import 'server-only'
 import { createHash } from 'node:crypto'
 
 import { getActiveOperatorContext } from '@/lib/data/operators'
-import type { RecommendationLevel, RemoteType, WorkflowStatus } from '@/lib/domain/types'
+import type {
+  OperatorWorkspaceRecord,
+  RecommendationLevel,
+  RemoteType,
+  WorkflowStatus,
+} from '@/lib/domain/types'
 import type {
   JobSourceKind,
   NormalizedJobRecord,
@@ -14,8 +19,9 @@ import type {
 import { fetchAuthenticJobs } from '@/lib/jobs/authentic-jobs'
 import { fetchGreenhouseCompanyJobs, type ImportedSourceBatch } from '@/lib/jobs/greenhouse'
 import { fetchJobspressoJobs } from '@/lib/jobs/jobspresso'
-import { fetchRemoteSourceJobs } from '@/lib/jobs/remote-source'
+import { buildRemoteSourceJobUrl, fetchRemoteSourceJobs } from '@/lib/jobs/remote-source'
 import { fetchRemotiveJobs } from '@/lib/jobs/remotive'
+import { syncJobReviewCopy } from '@/lib/jobs/job-review-copy'
 import { getEffectiveSalaryBounds } from '@/lib/jobs/salary-estimation'
 import {
   getCompanyWatchlist,
@@ -28,13 +34,14 @@ import {
 } from '@/lib/jobs/source-registry'
 import { fetchWellfoundJobs } from '@/lib/jobs/wellfound'
 import { fetchWeWorkRemotelyJobs } from '@/lib/jobs/we-work-remotely'
+import { getTargetSeniorityLevels } from '@/lib/profile/seniority-level'
 import { createClient } from '@/lib/supabase/server'
 
 import { getOperatorProfile } from '../data/operator-profile'
 
 export const primaryImportedSourceName = 'Remote OK'
 const primaryImportedSourceApiUrl = 'https://remoteok.com/api'
-const maxImportedJobsPerBoardSource = 120
+const maxImportedJobsPerBoardSource = 240
 const maxWatchedCompanies = 20
 const minimumHealthyCandidatePool = 40
 
@@ -676,7 +683,14 @@ function normalizePersistedImportedJobRow(value: unknown): PersistedImportedJobR
 
   const id = asString(record.id)
   const sourceName = asString(record.source_name)
-  const sourceUrl = asString(record.source_url)
+  const sourceJobId = asString(record.source_job_id) || undefined
+  const sourceUrl =
+    sourceName === 'Remote Source'
+      ? buildRemoteSourceJobUrl({
+          sourceJobId,
+          sourceUrl: asString(record.source_url),
+        })
+      : asString(record.source_url)
   const companyName = asString(record.company_name)
   const title = asString(record.title)
 
@@ -709,7 +723,7 @@ function normalizePersistedImportedJobRow(value: unknown): PersistedImportedJobR
       salaryPeriod: asString(record.salary_period) as NormalizedJobRecord['salaryPeriod'],
       seniorityLabel: asString(record.seniority_label) || undefined,
       skillsKeywords: asStringArray(record.skills_keywords),
-      sourceJobId: asString(record.source_job_id) || undefined,
+      sourceJobId,
       sourceName,
       sourceUrl,
       title,
@@ -722,6 +736,64 @@ function getProfileRolePhrases(values: string[]) {
   return values
     .map((value) => normalizeWhitespace(value))
     .filter(Boolean)
+}
+
+function getWorkspaceRoleSignals(workspace: OperatorWorkspaceRecord) {
+  const explicitTargets = getProfileRolePhrases(workspace.profile.targetRoles)
+  const explicitAdjacent = getProfileRolePhrases(workspace.profile.allowedAdjacentRoles)
+  const resumeDrivenTargets = getProfileRolePhrases([
+    workspace.profile.headline,
+    workspace.resumeMaster.baseTitle,
+    ...workspace.resumeMaster.experienceEntries.map((entry) => entry.roleTitle),
+  ]).filter((value) => !explicitTargets.includes(value))
+  const adjacentFromPortfolio = getProfileRolePhrases([
+    ...workspace.portfolioItems.map((item) => item.roleLabel),
+    ...workspace.portfolioItems.map((item) => item.projectType),
+  ]).filter((value) => !explicitAdjacent.includes(value))
+
+  return {
+    adjacent: [...new Set([...explicitAdjacent, ...adjacentFromPortfolio])],
+    explicitTargets,
+    resumeDrivenTargets: [...new Set(resumeDrivenTargets)],
+  }
+}
+
+function getWorkspaceSkillPhrases(workspace: OperatorWorkspaceRecord) {
+  return [
+    ...new Set(
+      [
+        ...workspace.resumeMaster.skillsSection,
+        ...workspace.profile.skills,
+        ...workspace.profile.tools,
+        ...workspace.portfolioItems.flatMap((item) => item.skillsTags),
+      ]
+        .map((value) => normalizeWhitespace(value))
+        .filter((value) => value.length >= 3),
+    ),
+  ].slice(0, 24)
+}
+
+function getResumeSignalBoost(
+  title: string,
+  descriptionText: string,
+  workspace: OperatorWorkspaceRecord,
+) {
+  const normalizedText = normalizeSearchText([title, descriptionText].join(' '))
+  const matchedSkills = getWorkspaceSkillPhrases(workspace).filter((phrase) =>
+    matchesPhrase(normalizedText, phrase),
+  )
+
+  if (matchedSkills.length === 0) {
+    return {
+      reason: '',
+      score: 0,
+    }
+  }
+
+  return {
+    reason: `Resume and portfolio skills overlap with ${matchedSkills.slice(0, 2).join(', ')}.`,
+    score: Math.min(3, matchedSkills.length * 1.2),
+  }
 }
 
 function normalizeRemoteOkRawRecord(value: unknown, capturedAt: string): RawJobIntakeRecord | null {
@@ -997,26 +1069,40 @@ function getProfileTargetAmount(profile: Awaited<ReturnType<typeof getOperatorPr
 function getRoleRelevanceScore(
   title: string,
   descriptionText: string,
-  profile: Awaited<ReturnType<typeof getOperatorProfile>>['workspace']['profile'],
+  workspace: OperatorWorkspaceRecord,
 ) {
   const normalizedTitle = normalizeToken(title)
-  const targetRoles = getProfileRolePhrases(profile.targetRoles)
-  const adjacentRoles = getProfileRolePhrases(profile.allowedAdjacentRoles)
+  const roleSignals = getWorkspaceRoleSignals(workspace)
+  const targetRoles = roleSignals.explicitTargets
+  const adjacentRoles = roleSignals.adjacent
+  const resumeRoles = roleSignals.resumeDrivenTargets
   const designerRoleMatch = getDesignerRoleMatch(title, descriptionText)
   const exactTargetMatch = targetRoles.find((role) => normalizedTitle.includes(normalizeToken(role)))
   const exactAdjacentMatch = adjacentRoles.find((role) => normalizedTitle.includes(normalizeToken(role)))
+  const resumeRoleMatch = resumeRoles.find((role) => normalizedTitle.includes(normalizeToken(role)))
+  const resumeSignal = getResumeSignalBoost(title, descriptionText, workspace)
 
   if (exactTargetMatch) {
     return {
       matchingRole: exactTargetMatch,
-      score: 18,
+      score: Math.min(21, 18 + resumeSignal.score),
+      supportingReason: resumeSignal.reason,
+    }
+  }
+
+  if (resumeRoleMatch) {
+    return {
+      matchingRole: resumeRoleMatch,
+      score: Math.min(20, 16 + resumeSignal.score),
+      supportingReason: resumeSignal.reason,
     }
   }
 
   if (exactAdjacentMatch) {
     return {
       matchingRole: exactAdjacentMatch,
-      score: 13,
+      score: Math.min(17, 13 + resumeSignal.score),
+      supportingReason: resumeSignal.reason,
     }
   }
 
@@ -1024,19 +1110,24 @@ function getRoleRelevanceScore(
     return {
       matchingRole: `${designerRoleMatch.bucket} role family: ${designerRoleMatch.familyLabel}`,
       score:
-        designerRoleMatch.bucket === 'core'
-          ? designerRoleMatch.matchedBy === 'title'
-            ? 17
-            : 15.5
-          : designerRoleMatch.matchedBy === 'title'
-            ? 13
-            : 11.5,
+        Math.min(
+          20,
+          (designerRoleMatch.bucket === 'core'
+            ? designerRoleMatch.matchedBy === 'title'
+              ? 17
+              : 15.5
+            : designerRoleMatch.matchedBy === 'title'
+              ? 13
+              : 11.5) + resumeSignal.score,
+        ),
+      supportingReason: resumeSignal.reason,
     }
   }
 
   return {
     matchingRole: '',
-    score: 4,
+    score: Math.min(8, 4 + resumeSignal.score),
+    supportingReason: resumeSignal.reason,
   }
 }
 
@@ -1125,38 +1216,75 @@ function getSeniorityScore(
   job: NormalizedJobRecord,
   profile: Awaited<ReturnType<typeof getOperatorProfile>>['workspace']['profile'],
 ) {
-  const desired = normalizeToken(profile.seniorityLevel)
   const actual = normalizeToken(job.seniorityLabel ?? '')
+  const desiredLevels = getTargetSeniorityLevels(
+    profile.targetSeniorityLevels,
+    profile.seniorityLevel,
+  ).map((value) => normalizeToken(value))
 
-  if (!desired || !actual) {
+  if (desiredLevels.length === 0 || !actual) {
     return 6
   }
 
-  if (desired.includes('lead') && actual.includes('lead')) {
-    return 8.5
-  }
+  const scores = desiredLevels.map((desired) => {
+    if (desired.includes('lead') && actual.includes('lead')) {
+      return 8.5
+    }
 
-  if (desired.includes('staff') && actual.includes('staff')) {
-    return 8
-  }
+    if (desired.includes('staff') && actual.includes('staff')) {
+      return 8
+    }
 
-  if (desired.includes('senior') && (actual.includes('senior') || actual.includes('lead'))) {
-    return 8.5
-  }
+    if (desired.includes('senior') && (actual.includes('senior') || actual.includes('lead'))) {
+      return 8.5
+    }
 
-  if (desired.includes('mid') && actual.includes('mid')) {
-    return 8
-  }
+    if (desired.includes('mid') && actual.includes('mid')) {
+      return 8
+    }
 
-  if (desired.includes('junior') && actual.includes('junior')) {
-    return 8
-  }
+    if (desired.includes('junior') && actual.includes('junior')) {
+      return 8
+    }
 
-  if (desired.includes('senior') && actual.includes('staff')) {
-    return 7
-  }
+    if (desired.includes('senior') && actual.includes('staff')) {
+      return 7
+    }
 
-  return 5
+    return 5
+  })
+
+  return Math.max(...scores, 5)
+}
+
+function normalizeAiSummaryStatus(value: unknown): 'failed' | 'generated' | 'not_started' {
+  const text = asString(value)
+
+  return text === 'generated' || text === 'failed' ? text : 'not_started'
+}
+
+function normalizeAiSummaryGeneratedAt(value: unknown) {
+  const text = asString(value)
+
+  return text || null
+}
+
+function normalizeAiSummaryText(value: unknown) {
+  const text = asString(value)
+
+  return text || undefined
+}
+
+function normalizeAiSummaryModel(value: unknown) {
+  const text = asString(value)
+
+  return text || undefined
+}
+
+function normalizeAiSummaryError(value: unknown) {
+  const text = asString(value)
+
+  return text || undefined
 }
 
 function getPortfolioFitScore(job: NormalizedJobRecord) {
@@ -1244,11 +1372,12 @@ function buildFitSummary(
 
 function buildBasicScore(
   job: NormalizedJobRecord,
-  profile: Awaited<ReturnType<typeof getOperatorProfile>>['workspace']['profile'],
+  workspace: OperatorWorkspaceRecord,
 ): BasicScoreResult {
+  const { profile } = workspace
   const remoteGatePassed = !profile.remoteRequired || job.remoteType === 'remote'
   const designSignalText = buildDesignSignalText(job)
-  const roleMatch = getRoleRelevanceScore(job.title, designSignalText, profile)
+  const roleMatch = getRoleRelevanceScore(job.title, designSignalText, workspace)
   const designerRoleMatch = getDesignerRoleMatch(job.title, designSignalText)
   const salaryResult = getSalaryScore(job, profile)
   const qualityScore = getQualityScore(job)
@@ -1276,6 +1405,7 @@ function buildBasicScore(
     roleMatch.matchingRole
       ? `Title overlap aligns with ${roleMatch.matchingRole}.`
       : 'The title is only loosely connected to the current role targets.',
+    roleMatch.supportingReason,
     salaryResult.note,
     job.postedAt ? 'Posted date is available from the source feed.' : '',
   ].filter(Boolean)
@@ -1818,7 +1948,20 @@ export async function ensurePrimaryImportedJobs(
 
     const { data: existingScores, error: scoreLookupError } = await supabase
       .from('job_scores')
-      .select('job_id, workflow_status, last_status_changed_at')
+      .select(
+        `
+          id,
+          job_id,
+          workflow_status,
+          last_status_changed_at,
+          ai_match_summary,
+          ai_description_excerpt,
+          ai_summary_status,
+          ai_summary_model,
+          ai_summary_generated_at,
+          ai_summary_error
+        `,
+      )
       .eq('operator_id', operatorContext.operator.id)
       .in('job_id', persistedJobIds)
 
@@ -1833,17 +1976,39 @@ export async function ensurePrimaryImportedJobs(
       (existingScores ?? []).map((row) => [
         asString(row.job_id),
         {
+          aiDescriptionExcerpt: normalizeAiSummaryText(row.ai_description_excerpt),
+          aiMatchSummary: normalizeAiSummaryText(row.ai_match_summary),
+          aiSummaryError: normalizeAiSummaryError(row.ai_summary_error),
+          aiSummaryGeneratedAt: normalizeAiSummaryGeneratedAt(row.ai_summary_generated_at),
+          aiSummaryModel: normalizeAiSummaryModel(row.ai_summary_model),
+          aiSummaryStatus: normalizeAiSummaryStatus(row.ai_summary_status),
+          id: asString(row.id),
           lastStatusChangedAt: asString(row.last_status_changed_at) || null,
           workflowStatus: asString(row.workflow_status) as WorkflowStatus,
         },
       ]),
     )
 
-    const scoreRows = persistedPool.map(({ id: jobId, normalizedJob: job }) => {
-      const score = buildBasicScore(job, workspace.profile)
+    const scoreInputs = persistedPool.map(({ id: jobId, normalizedJob: job }) => {
+      const score = buildBasicScore(job, workspace)
       const existingScore = existingScoreMap.get(jobId)
 
       return {
+        existingScore,
+        job,
+        jobId,
+        score,
+      }
+    })
+
+    const scoreRows = scoreInputs.map(({ existingScore, jobId, score }) => {
+      return {
+        ai_description_excerpt: existingScore?.aiDescriptionExcerpt ?? null,
+        ai_match_summary: existingScore?.aiMatchSummary ?? null,
+        ai_summary_error: existingScore?.aiSummaryError ?? null,
+        ai_summary_generated_at: existingScore?.aiSummaryGeneratedAt ?? null,
+        ai_summary_model: existingScore?.aiSummaryModel ?? null,
+        ai_summary_status: existingScore?.aiSummaryStatus ?? 'not_started',
         effort_score: score.effortScore,
         fit_reasons: score.fitReasons,
         fit_summary: score.fitSummary,
@@ -1869,9 +2034,12 @@ export async function ensurePrimaryImportedJobs(
       }
     })
 
-    const { error: scoreUpsertError } = await supabase.from('job_scores').upsert(scoreRows, {
-      onConflict: 'operator_id,job_id',
-    })
+    const { data: upsertedScores, error: scoreUpsertError } = await supabase
+      .from('job_scores')
+      .upsert(scoreRows, {
+        onConflict: 'operator_id,job_id',
+      })
+      .select('id, job_id')
 
     if (scoreUpsertError) {
       return {
@@ -1880,6 +2048,24 @@ export async function ensurePrimaryImportedJobs(
         sourceDiagnostics: [...diagnosticsBySourceKey.values()],
       }
     }
+
+    const scoreIdByJobId = new Map(
+      (upsertedScores ?? []).map((row) => [asString(row.job_id), asString(row.id)]),
+    )
+
+    await syncJobReviewCopy(
+      scoreInputs
+        .map(({ existingScore, job, jobId, score }) => ({
+          existingAiDescriptionExcerpt: existingScore?.aiDescriptionExcerpt,
+          existingAiMatchSummary: existingScore?.aiMatchSummary,
+          existingAiSummaryStatus: existingScore?.aiSummaryStatus,
+          fitReasons: score.fitReasons,
+          fitSummary: score.fitSummary,
+          job,
+          jobScoreId: scoreIdByJobId.get(jobId) ?? existingScore?.id ?? '',
+        }))
+        .filter((item) => item.jobScoreId.length > 0),
+    )
 
     for (const diagnostics of diagnosticsBySourceKey.values()) {
       diagnostics.rowsImported = normalizedJobs.filter((job) => job.sourceName === diagnostics.sourceName).length

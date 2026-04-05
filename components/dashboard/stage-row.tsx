@@ -18,12 +18,14 @@ export function StageRow({
   detailLabel,
   job,
   profile,
+  showActions = true,
 }: {
   actions: ReactNode
   children: ReactNode
   detailLabel: string
   job: QualifiedJobRecord
   profile: OperatorProfileRecord
+  showActions?: boolean
 }) {
   const salary = getSalaryDisplay(job, profile)
   const fit = formatFitBand(job)
@@ -36,6 +38,7 @@ export function StageRow({
             <div className="screening-cell screening-title-cell">
               <strong>{job.title}</strong>
               <span>{job.companyName}</span>
+              <p className="screening-match">{getMatchReason(job)}</p>
             </div>
 
             <div className="screening-cell">
@@ -62,16 +65,16 @@ export function StageRow({
               </span>
             </div>
           </div>
-
-          <p className="screening-match">{getMatchReason(job)}</p>
         </summary>
 
         <div className="stage-expanded">{children}</div>
       </details>
 
-      <div aria-label={detailLabel} className="stage-actions-bar" role="group">
-        <div className="stage-actions-cluster">{actions}</div>
-      </div>
+      {showActions ? (
+        <div aria-label={detailLabel} className="stage-actions-bar" role="group">
+          <div className="stage-actions-cluster">{actions}</div>
+        </div>
+      ) : null}
     </article>
   )
 }

@@ -8,6 +8,7 @@ import { getDashboardQueues, getMatchReason } from '@/lib/jobs/dashboard-queue'
 interface WorkspaceTodayRailProps {
   actionsEnabled: boolean
   jobs: QualifiedJobRecord[]
+  screeningLocked?: boolean
 }
 
 function getApplyNextJob(savedJobs: QualifiedJobRecord[], preparedJobs: QualifiedJobRecord[]) {
@@ -34,7 +35,11 @@ function getNewTodayCount(jobs: QualifiedJobRecord[]) {
   return jobs.filter((job) => job.daysSincePosted === 0).length
 }
 
-export function WorkspaceTodayRail({ actionsEnabled, jobs }: WorkspaceTodayRailProps) {
+export function WorkspaceTodayRail({
+  actionsEnabled,
+  jobs,
+  screeningLocked = false,
+}: WorkspaceTodayRailProps) {
   const { preparedJobs, savedJobs } = getDashboardQueues(jobs)
   const applyNextJob = getApplyNextJob(savedJobs, preparedJobs)
   const applyNextAction = applyNextJob ? getApplyNextLink(applyNextJob) : null
@@ -47,7 +52,12 @@ export function WorkspaceTodayRail({ actionsEnabled, jobs }: WorkspaceTodayRailP
           <p className="panel-label">Apply next</p>
         </div>
 
-        {applyNextJob ? (
+        {screeningLocked ? (
+          <div className="today-empty">
+            <p>Add source material to unlock the queue.</p>
+            <p>Paste your base resume text or upload source documents in Settings first.</p>
+          </div>
+        ) : applyNextJob ? (
           <div className="today-apply-next">
             <div className="today-apply-copy">
               <Link className="today-job-link" href={`/jobs/${applyNextJob.id}`}>
@@ -102,7 +112,7 @@ export function WorkspaceTodayRail({ actionsEnabled, jobs }: WorkspaceTodayRailP
         <dl className="today-stats">
           <div>
             <dt>New today</dt>
-            <dd>{newTodayCount}</dd>
+            <dd>{screeningLocked ? 0 : newTodayCount}</dd>
           </div>
           <div>
             <dt>Ready to apply</dt>

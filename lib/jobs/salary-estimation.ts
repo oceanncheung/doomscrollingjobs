@@ -132,18 +132,67 @@ function formatRangeValue(
   min: number,
   max: number,
   currency: string,
+  period: CompensationPeriod,
 ) {
   const formatter = new Intl.NumberFormat('en-US', {
     currency,
     maximumFractionDigits: 0,
     style: 'currency',
   })
+  const suffix =
+    period === 'hourly'
+      ? ' / hr'
+      : period === 'daily'
+        ? ' / day'
+        : period === 'weekly'
+          ? ' / wk'
+          : period === 'monthly'
+            ? ' / mo'
+            : ''
 
   if (Math.abs(max - min) < 1000) {
-    return formatter.format(min)
+    return `${formatter.format(min)}${suffix}`
   }
 
-  return `${formatter.format(min)} - ${formatter.format(max)}`
+  return `${formatter.format(min)} - ${formatter.format(max)}${suffix}`
+}
+
+function getCompensationLabel(period: CompensationPeriod, estimated: boolean) {
+  if (estimated || period === 'annual' || period === 'unknown') {
+    return estimated ? 'Estimated salary' : 'Salary'
+  }
+
+  switch (period) {
+    case 'hourly':
+      return 'Hourly pay'
+    case 'monthly':
+      return 'Monthly pay'
+    case 'weekly':
+      return 'Weekly pay'
+    case 'daily':
+      return 'Daily pay'
+    default:
+      return 'Compensation'
+  }
+}
+
+function hasSuspiciousStoredSalary(job: SalaryEstimateJob | RankedJobRecord) {
+  const min = job.salaryMin ?? job.salaryMax ?? 0
+  const max = job.salaryMax ?? job.salaryMin ?? min
+
+  if (job.salaryPeriod !== 'annual' && job.salaryPeriod !== 'unknown') {
+    return false
+  }
+
+  if (!min && !max) {
+    return false
+  }
+
+  if (max > 0 && max < 10_000) {
+    return true
+  }
+
+  return min >= 1900 && max <= 2105 && max - min <= 5
 }
 
 function getSeniorityMultiplier(job: SalaryEstimateJob) {
@@ -292,18 +341,18 @@ export function getEffectiveSalaryInsight(
   job: SalaryEstimateJob | RankedJobRecord,
   profile?: OperatorProfileRecord,
 ): SalaryInsight {
-  if (job.salaryCurrency && (job.salaryMin || job.salaryMax)) {
+  if (job.salaryCurrency && (job.salaryMin || job.salaryMax) && !hasSuspiciousStoredSalary(job)) {
     const min = job.salaryMin ?? job.salaryMax ?? 0
     const max = job.salaryMax ?? job.salaryMin ?? min
 
     return {
       currency: job.salaryCurrency,
       estimated: false,
-      label: 'Salary',
+      label: getCompensationLabel(job.salaryPeriod, false),
       max,
       min,
       period: job.salaryPeriod,
-      value: formatRangeValue(min, max, job.salaryCurrency),
+      value: formatRangeValue(min, max, job.salaryCurrency, job.salaryPeriod),
     }
   }
 
@@ -312,9 +361,9 @@ export function getEffectiveSalaryInsight(
   return {
     ...estimate,
     estimated: true,
-    label: 'Estimated salary',
+    label: getCompensationLabel(estimate.period, true),
     note: 'Estimated market range',
-    value: formatRangeValue(estimate.min, estimate.max, estimate.currency),
+    value: formatRangeValue(estimate.min, estimate.max, estimate.currency, estimate.period),
   }
 }
 

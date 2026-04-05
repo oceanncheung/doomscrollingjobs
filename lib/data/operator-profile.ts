@@ -12,6 +12,7 @@ import type {
   ResumeMasterRecord,
 } from '@/lib/domain/types'
 import { hasSupabaseServerEnv } from '@/lib/env'
+import { getTargetSeniorityLevels } from '@/lib/profile/seniority-level'
 import { createClient } from '@/lib/supabase/server'
 
 type ProfileSource = 'seed' | 'database' | 'database-fallback'
@@ -27,8 +28,7 @@ const seededProfile: OperatorProfileRecord = {
   profileId: defaultOperator.profileId,
   displayName: 'Internal Operator',
   email: 'internal@doomscrollingjobs.local',
-  searchBrief:
-    'Find remote-first design roles that prioritize quality, strong salary, and thoughtful brand, presentation, or campaign work. Designers first, but adjacent creative roles are okay if the fit is genuinely high.',
+  searchBrief: '',
   headline: 'Graphic Designer',
   locationLabel: 'Toronto, Canada',
   timezone: 'America/Toronto',
@@ -43,6 +43,7 @@ const seededProfile: OperatorProfileRecord = {
   salaryTargetMin: '',
   salaryTargetMax: '',
   seniorityLevel: 'senior',
+  targetSeniorityLevels: ['senior'],
   targetRoles: [
     'graphic designer',
     'brand designer',
@@ -76,6 +77,8 @@ const seededProfile: OperatorProfileRecord = {
 
 const seededResumeMaster: ResumeMasterRecord = {
   baseTitle: 'Graphic Designer',
+  baseCoverLetterText: '',
+  hasSourceMaterial: true,
   summaryText:
     'Designer focused on brand systems, presentation design, and campaign work for high-quality remote teams.',
   experienceEntries: [
@@ -271,30 +274,72 @@ function normalizePortfolioItem(value: unknown): OperatorPortfolioItemRecord {
 function normalizeResumeMaster(value: unknown): ResumeMasterRecord {
   const record = asRecord(value)
   const sourceContent = asRecord(record?.source_content ?? record?.sourceContent)
+  const resumeDocumentText = asString(
+    sourceContent?.resumeDocumentText ?? sourceContent?.resume_document_text,
+  )
+  const coverLetterDocumentText = asString(
+    sourceContent?.coverLetterDocumentText ?? sourceContent?.cover_letter_document_text,
+  )
+  const portfolioDocumentText = asString(
+    sourceContent?.portfolioDocumentText ?? sourceContent?.portfolio_document_text,
+  )
+  const baseTitle = asString(record?.base_title ?? record?.baseTitle)
+  const baseCoverLetterText = asString(
+    record?.base_cover_letter_text ??
+      record?.baseCoverLetterText ??
+      sourceContent?.baseCoverLetterText ??
+      sourceContent?.base_cover_letter_text,
+  )
+  const summaryText = asString(record?.summary_text ?? record?.summaryText)
+  const experienceEntries = asObjectArray(record?.experience_entries ?? record?.experienceEntries).map(
+    normalizeExperienceEntry,
+  )
+  const achievementBank = asObjectArray(record?.achievement_bank ?? record?.achievementBank).map(
+    normalizeAchievementEntry,
+  )
+  const skillsSection = asStringArray(record?.skills_section ?? record?.skillsSection)
+  const educationEntries = asObjectArray(record?.education_entries ?? record?.educationEntries).map(
+    normalizeEducationEntry,
+  )
+  const certifications = asStringArray(record?.certifications)
+  const coverLetterPdfFileName = asString(
+    sourceContent?.coverLetterPdfFileName ?? sourceContent?.cover_letter_pdf_file_name,
+  )
+  const portfolioPdfFileName = asString(
+    sourceContent?.portfolioPdfFileName ?? sourceContent?.portfolio_pdf_file_name,
+  )
+  const resumePdfFileName = asString(
+    sourceContent?.resumePdfFileName ?? sourceContent?.resume_pdf_file_name,
+  )
+  const hasSourceMaterial = Boolean(
+    baseCoverLetterText.trim() ||
+      summaryText.trim() ||
+      resumeDocumentText.trim() ||
+      coverLetterDocumentText.trim() ||
+      portfolioDocumentText.trim() ||
+      resumePdfFileName.trim() ||
+      coverLetterPdfFileName.trim() ||
+      portfolioPdfFileName.trim() ||
+      experienceEntries.length > 0 ||
+      achievementBank.length > 0 ||
+      skillsSection.length > 0 ||
+      educationEntries.length > 0 ||
+      certifications.length > 0,
+  )
 
   return {
-    baseTitle: asString(record?.base_title ?? record?.baseTitle) || seededResumeMaster.baseTitle,
-    summaryText: asString(record?.summary_text ?? record?.summaryText),
-    experienceEntries: asObjectArray(record?.experience_entries ?? record?.experienceEntries).map(
-      normalizeExperienceEntry,
-    ),
-    achievementBank: asObjectArray(record?.achievement_bank ?? record?.achievementBank).map(
-      normalizeAchievementEntry,
-    ),
-    skillsSection: asStringArray(record?.skills_section ?? record?.skillsSection),
-    educationEntries: asObjectArray(record?.education_entries ?? record?.educationEntries).map(
-      normalizeEducationEntry,
-    ),
-    certifications: asStringArray(record?.certifications),
-    coverLetterPdfFileName: asString(
-      sourceContent?.coverLetterPdfFileName ?? sourceContent?.cover_letter_pdf_file_name,
-    ),
-    portfolioPdfFileName: asString(
-      sourceContent?.portfolioPdfFileName ?? sourceContent?.portfolio_pdf_file_name,
-    ),
-    resumePdfFileName: asString(
-      sourceContent?.resumePdfFileName ?? sourceContent?.resume_pdf_file_name,
-    ),
+    baseTitle,
+    baseCoverLetterText,
+    hasSourceMaterial,
+    summaryText,
+    experienceEntries,
+    achievementBank,
+    skillsSection,
+    educationEntries,
+    certifications,
+    coverLetterPdfFileName,
+    portfolioPdfFileName,
+    resumePdfFileName,
   }
 }
 
@@ -352,6 +397,10 @@ export async function getOperatorProfile(): Promise<OperatorProfileResult> {
   const issues: string[] = []
   const secondaryMarkets = asStringArray(profile.secondary_markets)
   const allowedRemoteRegions = asStringArray(profile.allowed_remote_regions)
+  const targetSeniorityLevels = getTargetSeniorityLevels(
+    asStringArray(profile.target_seniority_levels),
+    asString(profile.seniority_level),
+  )
 
   const resumeMaster =
     resumeResult.error || !resumeResult.data
@@ -383,33 +432,28 @@ export async function getOperatorProfile(): Promise<OperatorProfileResult> {
         profileId: profile.id ?? seededProfile.profileId,
         displayName: operatorContext.operator.displayName || seededProfile.displayName,
         email: operatorContext.operator.email || seededProfile.email,
-        searchBrief: asString(profile.search_brief) || seededProfile.searchBrief,
-        headline: asString(profile.headline) || seededProfile.headline,
+        searchBrief: asString(profile.search_brief),
+        headline: asString(profile.headline),
         locationLabel: asString(profile.location_label),
-        timezone: asString(profile.timezone) || seededProfile.timezone,
+        timezone: asString(profile.timezone) || 'America/Toronto',
         remoteRequired:
           typeof profile.remote_required === 'boolean'
             ? profile.remote_required
             : seededProfile.remoteRequired,
-        primaryMarket: asString(profile.primary_market) || seededProfile.primaryMarket,
-        secondaryMarkets:
-          secondaryMarkets.length > 0 ? secondaryMarkets : seededProfile.secondaryMarkets,
-        allowedRemoteRegions:
-          allowedRemoteRegions.length > 0
-            ? allowedRemoteRegions
-            : seededProfile.allowedRemoteRegions,
-        timezoneToleranceHours:
-          asNumericString(profile.timezone_tolerance_hours) || seededProfile.timezoneToleranceHours,
+        primaryMarket: asString(profile.primary_market),
+        secondaryMarkets,
+        allowedRemoteRegions,
+        timezoneToleranceHours: asNumericString(profile.timezone_tolerance_hours),
         relocationOpen:
           typeof profile.relocation_open === 'boolean'
             ? profile.relocation_open
             : seededProfile.relocationOpen,
-        salaryFloorCurrency:
-          asString(profile.salary_floor_currency) || seededProfile.salaryFloorCurrency,
+        salaryFloorCurrency: asString(profile.salary_floor_currency) || 'USD',
         salaryFloorAmount: asNumericString(profile.salary_floor_amount),
         salaryTargetMin: asNumericString(profile.salary_target_min),
         salaryTargetMax: asNumericString(profile.salary_target_max),
         seniorityLevel: asString(profile.seniority_level),
+        targetSeniorityLevels,
         targetRoles: asStringArray(profile.target_roles),
         allowedAdjacentRoles: asStringArray(profile.allowed_adjacent_roles),
         industriesPreferred: asStringArray(profile.industries_preferred),

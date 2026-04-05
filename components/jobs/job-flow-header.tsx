@@ -1,5 +1,5 @@
 import { getLocationDisplay, getSalaryDisplay } from '@/components/dashboard/formatters'
-import type { ApplicationPacketRecord, OperatorProfileRecord } from '@/lib/domain/types'
+import type { OperatorProfileRecord } from '@/lib/domain/types'
 import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
 import { formatDateLabel, formatWorkflowLabel } from '@/lib/jobs/presentation'
 
@@ -7,7 +7,6 @@ interface JobFlowHeaderProps {
   job: QualifiedJobRecord
   pageIntro: string
   pageLabel: string
-  packet: ApplicationPacketRecord
   profile: OperatorProfileRecord
 }
 
@@ -15,7 +14,6 @@ export function JobFlowHeader({
   job,
   pageIntro,
   pageLabel,
-  packet,
   profile,
 }: JobFlowHeaderProps) {
   const salaryDisplay = getSalaryDisplay(job, profile)
@@ -28,10 +26,8 @@ export function JobFlowHeader({
             <p className="panel-label">{pageLabel}</p>
             <h1>{job.title}</h1>
             <p className="job-flow-company">{job.companyName}</p>
-            <p className="job-flow-intro">{pageIntro}</p>
-            {packet.generationStatus === 'generated' && packet.jobFocusSummary ? (
-              <p className="job-flow-intro">{packet.jobFocusSummary}</p>
-            ) : null}
+            {pageIntro ? <p className="job-flow-intro">{pageIntro}</p> : null}
+            {job.aiMatchSummary ? <p className="job-flow-intro">{job.aiMatchSummary}</p> : null}
           </div>
         </div>
         <div className="flow-snapshot job-flow-snapshot detail-page-snapshot">

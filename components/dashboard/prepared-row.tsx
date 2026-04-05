@@ -10,10 +10,12 @@ export function PreparedRow({
   actionsEnabled,
   job,
   profile,
+  showActions = true,
 }: {
   actionsEnabled: boolean
   job: QualifiedJobRecord
   profile: OperatorProfileRecord
+  showActions?: boolean
 }) {
   return (
     <StageRow
@@ -34,7 +36,7 @@ export function PreparedRow({
               canEdit={actionsEnabled}
               disabledReason="Switch back to the database-backed queue to mark jobs as applied."
               jobId={job.id}
-              label="Mark applied"
+              label="Mark Applied"
               sourceContext="prepared-apply"
               variant="secondary"
               workflowStatus="applied"
@@ -50,6 +52,7 @@ export function PreparedRow({
       detailLabel="Prepared materials"
       job={job}
       profile={profile}
+      showActions={showActions}
     >
       <div className="detail-pair-grid detail-pair-grid-stack">
         <div>

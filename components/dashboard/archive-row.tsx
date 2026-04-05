@@ -11,10 +11,12 @@ export function ArchiveRow({
   actionsEnabled,
   job,
   profile,
+  showActions = true,
 }: {
   actionsEnabled: boolean
   job: QualifiedJobRecord
   profile: OperatorProfileRecord
+  showActions?: boolean
 }) {
   return (
     <StageRow
@@ -41,6 +43,7 @@ export function ArchiveRow({
       detailLabel="Why it left the queue"
       job={job}
       profile={profile}
+      showActions={showActions}
     >
       <div className="detail-pair-grid detail-pair-grid-stack">
         <div>

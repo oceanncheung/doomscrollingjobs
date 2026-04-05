@@ -1,0 +1,10 @@
+.next
+.next 2
+node_modules
+coverage
+dist
+build
+.trace
+.turbo
+cache
+out

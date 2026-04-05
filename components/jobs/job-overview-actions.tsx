@@ -37,6 +37,7 @@ interface JobOverviewActionsProps {
   packet: ApplicationPacketRecord
   prepOpen: boolean
   saveDisabledReason?: string
+  screeningLocked?: boolean
 }
 
 export function JobOverviewActions({
@@ -47,8 +48,13 @@ export function JobOverviewActions({
   packet,
   prepOpen,
   saveDisabledReason,
+  screeningLocked = false,
 }: JobOverviewActionsProps) {
   const hasGeneratedContent = packet.generationStatus === 'generated'
+
+  if (screeningLocked) {
+    return null
+  }
 
   if (prepOpen) {
     if (job.workflowStatus === 'ready_to_apply') {
@@ -88,7 +94,11 @@ export function JobOverviewActions({
     return (
       <div
         aria-label="Job overview actions"
-        className="screening-actions-bar job-overview-actions job-overview-actions--single-right"
+        className={`screening-actions-bar job-overview-actions ${
+          hasGeneratedContent
+            ? 'job-overview-actions--pair-right'
+            : 'job-overview-actions--single-right'
+        }`}
         role="group"
       >
         <div className="screening-actions-cluster">
@@ -99,6 +109,13 @@ export function JobOverviewActions({
               <GeneratePacketButton canEdit={canGenerate} disabledReason={generationDisabledReason} jobId={job.id} />
             )}
           </div>
+          {hasGeneratedContent ? (
+            <div className="screening-action-slot">
+              <a className="button button-ghost button-small" href="#packet-materials-section">
+                Review Materials
+              </a>
+            </div>
+          ) : null}
         </div>
       </div>
     )
@@ -121,10 +138,10 @@ export function JobOverviewActions({
             <div className="screening-action-slot">
               <JobStageActionButton
                 canEdit={canSave}
-                disabledReason={saveDisabledReason || 'Switch back to the database-backed queue to remove saved jobs.'}
+                disabledReason={saveDisabledReason || 'Switch back to the database-backed queue to archive saved jobs.'}
                 intent="dismiss"
                 jobId={job.id}
-                label="Remove"
+                label="Archive"
                 sourceContext="job-flow"
                 variant="secondary"
               />

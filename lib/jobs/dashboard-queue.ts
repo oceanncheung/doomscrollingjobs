@@ -50,6 +50,10 @@ function isGenericMatchReason(reason: string) {
 }
 
 export function getMatchReason(job: QualifiedJobRecord) {
+  if (job.aiMatchSummary?.trim()) {
+    return job.aiMatchSummary.trim()
+  }
+
   const candidates = [...job.fitReasons, ...job.strongReasons, job.queueReason].filter(Boolean)
 
   return candidates.find((reason) => !isGenericMatchReason(reason)) ?? candidates[0] ?? job.queueReason

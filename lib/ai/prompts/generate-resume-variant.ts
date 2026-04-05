@@ -28,6 +28,11 @@ Keep the output structurally consistent and optimized for ATS screening:
 - selected relevant experience only
 - bullet highlights that remain factual
 - compact skills list
+- no more than 3 experience entries
+- no more than 4 highlights per experience entry
+- headline should stay short and plain-language
+- summary should stay concise and direct
+- if no allowed source experience entries are provided, return an empty experienceEntries array
 Return valid JSON only.`,
   version: 'resume-variant-v1',
 } as const

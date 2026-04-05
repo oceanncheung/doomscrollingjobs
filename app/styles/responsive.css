@@ -124,6 +124,39 @@
     grid-column: auto;
   }
 
+  .settings-source-gpt-row {
+    display: grid;
+  }
+
+  .settings-main .settings-source-uploads-row--materials {
+    grid-template-columns: 1fr;
+    width: calc(100% + var(--site-gutter));
+    margin-right: calc(-1 * var(--site-gutter));
+  }
+
+  .settings-source-uploads-materials-files--dual {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .settings-main .settings-source-uploads-row--materials .upload-slot {
+    max-width: none;
+  }
+
+  .settings-main .settings-source-uploads-row--materials .upload-slot-chip-btn:not(.upload-slot-chip-btn--action) {
+    max-width: none;
+    width: 100%;
+  }
+
+  .settings-main .settings-source-uploads-row--materials .upload-slot-chip-btn--action {
+    width: 100%;
+    max-width: none;
+  }
+
+  .settings-main .settings-source-generate-button {
+    grid-column: auto;
+  }
+
   .settings-source-primary,
   .settings-source-secondary {
     padding-right: 0;
@@ -135,6 +168,15 @@
 
   .detail-pair-grid {
     grid-template-columns: 1fr;
+  }
+
+  .screening-expanded .detail-pair-grid:not(.detail-pair-grid-stack) {
+    grid-template-columns: 1fr;
+  }
+
+  .screening-expanded .detail-pair-grid:not(.detail-pair-grid-stack) > .screening-match-column,
+  .screening-expanded .detail-pair-grid:not(.detail-pair-grid-stack) > .screening-match-column + div {
+    grid-column: auto;
   }
 
   .job-review-grid {
@@ -234,6 +276,12 @@
 }
 
 @media (max-width: 900px) {
+  .profile-testing-reset {
+    right: 16px;
+    bottom: 16px;
+    width: calc(100vw - 32px);
+  }
+
   .site-header {
     grid-template-columns: 1fr;
     padding: 0;

@@ -4,6 +4,7 @@ import type { Dispatch, SetStateAction } from 'react'
 
 import { DisclosureSection } from '@/components/profile/profile-form-controls'
 import { TagInput } from '@/components/ui/tag-input'
+import { REGION_SUGGESTIONS, TIMEZONE_SUGGESTIONS } from '@/lib/profile/autocomplete-options'
 
 interface AdvancedFiltersSectionProps {
   timezoneTags: string[]
@@ -26,19 +27,21 @@ export function AdvancedFiltersSection({
     <DisclosureSection label="Advanced filters" title="Add constraints only if they help.">
       <div className="settings-advanced-tags-row">
         <TagInput
-          helper="Press Enter after each value. Stored as a comma-separated preference."
+          helper="Start typing for suggestions, or press Enter to keep a custom timezone."
           label="Timezone"
           onChange={setTimezoneTags}
           placeholder="e.g. America/Toronto"
           preserveCase
+          suggestions={TIMEZONE_SUGGESTIONS}
           tags={timezoneTags}
         />
         <TagInput
-          helper="Press Enter after each region."
+          helper="Start typing for suggestions, or press Enter to keep a custom region."
           label="Allowed remote regions"
           onChange={setAllowedRemoteRegionTags}
           placeholder="e.g. Canada"
           preserveCase
+          suggestions={REGION_SUGGESTIONS}
           tags={allowedRemoteRegionTags}
         />
         <TagInput

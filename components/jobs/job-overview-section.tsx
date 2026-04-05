@@ -1,4 +1,4 @@
-import { getDescriptionExcerpt } from '@/components/dashboard/formatters'
+import { formatSourceLinkLabel, getDescriptionExcerpt } from '@/components/dashboard/formatters'
 import { JobOverviewActions } from '@/components/jobs/job-overview-actions'
 import type { ApplicationPacketRecord } from '@/lib/domain/types'
 import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
@@ -11,6 +11,7 @@ interface JobOverviewSectionProps {
   job: QualifiedJobRecord
   packet: ApplicationPacketRecord
   prepOpen: boolean
+  screeningLocked?: boolean
 }
 
 export function JobOverviewSection({
@@ -21,18 +22,17 @@ export function JobOverviewSection({
   job,
   packet,
   prepOpen,
+  screeningLocked = false,
 }: JobOverviewSectionProps) {
   const hasOverviewActions =
-    prepOpen ||
-    job.workflowStatus === 'new' ||
-    job.workflowStatus === 'ranked' ||
-    job.workflowStatus === 'shortlisted' ||
-    job.workflowStatus === 'preparing' ||
-    job.workflowStatus === 'ready_to_apply'
-  const overviewText =
-    packet.generationStatus === 'generated' && packet.jobSummary
-      ? packet.jobSummary
-      : getDescriptionExcerpt(job)
+    !screeningLocked &&
+    (prepOpen ||
+      job.workflowStatus === 'new' ||
+      job.workflowStatus === 'ranked' ||
+      job.workflowStatus === 'shortlisted' ||
+      job.workflowStatus === 'preparing' ||
+      job.workflowStatus === 'ready_to_apply')
+  const overviewText = getDescriptionExcerpt(job)
 
   return (
     <div className="job-flow-prep-overview-wrap">
@@ -48,7 +48,7 @@ export function JobOverviewSection({
               <p>{overviewText}</p>
               <div className="inline-link-row">
                 <a href={job.sourceUrl} rel="noreferrer" target="_blank">
-                  Source
+                  {formatSourceLinkLabel(job)}
                 </a>
               </div>
             </div>
@@ -74,6 +74,7 @@ export function JobOverviewSection({
               packet={packet}
               prepOpen={prepOpen}
               saveDisabledReason={saveDisabledReason}
+              screeningLocked={screeningLocked}
             />
           ) : null}
         </div>

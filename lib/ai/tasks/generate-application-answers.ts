@@ -55,10 +55,14 @@ export async function generateApplicationAnswers(
     `Preferred qualifications: ${input.job.preferredQualifications.join(' | ')}`,
     `Profile headline: ${input.workspace.profile.headline}`,
     `Profile summary: ${input.workspace.profile.bioSummary}`,
+    `Work authorization notes: ${input.workspace.profile.workAuthorizationNotes}`,
+    `Portfolio primary URL: ${input.workspace.profile.portfolioPrimaryUrl}`,
     `Resume headline: ${input.resumeVariant.headline}`,
     `Resume summary: ${input.resumeVariant.summary}`,
     `Questions: ${JSON.stringify(
       input.answers.map((answer) => ({
+        baselineAnswerText: answer.answerText,
+        baselineShortAnswer: answer.answerVariantShort,
         characterLimit: answer.characterLimit ?? null,
         fieldType: answer.fieldType,
         questionKey: answer.questionKey,

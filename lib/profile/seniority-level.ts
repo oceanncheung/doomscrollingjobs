@@ -1,4 +1,3 @@
-/** Stored in `operator_profiles.seniority_level`; aligned with `getSeniorityScore` in real-feed. */
 export const SENIORITY_LEVEL_OPTIONS: ReadonlyArray<{ label: string; value: string }> = [
   { value: '', label: 'No preference' },
   { value: 'junior', label: 'Junior / entry' },
@@ -10,8 +9,7 @@ export const SENIORITY_LEVEL_OPTIONS: ReadonlyArray<{ label: string; value: stri
 
 const ALLOWED = new Set(SENIORITY_LEVEL_OPTIONS.map((o) => o.value).filter(Boolean))
 
-/** Map legacy free-text (or canonical) values to the closest `<select>` value. */
-export function seniorityLevelToSelectValue(stored: string | undefined | null): string {
+export function normalizeSeniorityLevel(stored: string | undefined | null): string {
   const raw = (stored ?? '').trim().toLowerCase()
   if (!raw) {
     return ''
@@ -35,4 +33,29 @@ export function seniorityLevelToSelectValue(stored: string | undefined | null): 
     return 'senior'
   }
   return ''
+}
+
+export function seniorityLevelToSelectValue(stored: string | undefined | null): string {
+  return normalizeSeniorityLevel(stored)
+}
+
+export function getTargetSeniorityLevels(
+  storedLevels: string[] | undefined | null,
+  legacyLevel: string | undefined | null,
+) {
+  const normalizedLevels = (storedLevels ?? [])
+    .map((value) => normalizeSeniorityLevel(value))
+    .filter(Boolean)
+
+  if (normalizedLevels.length > 0) {
+    return Array.from(new Set(normalizedLevels))
+  }
+
+  const legacy = normalizeSeniorityLevel(legacyLevel)
+
+  return legacy ? [legacy] : []
+}
+
+export function getSeniorityLabel(value: string) {
+  return SENIORITY_LEVEL_OPTIONS.find((option) => option.value === value)?.label ?? value
 }

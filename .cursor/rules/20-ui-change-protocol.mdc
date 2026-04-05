@@ -1,0 +1,20 @@
+---
+description: Required workflow for CSS and TSX cleanup.
+globs:
+  - "app/**/*.tsx"
+  - "components/**/*.tsx"
+  - "app/styles/**/*.css"
+alwaysApply: true
+---
+
+Before editing UI:
+1. Identify the owning surface and stylesheet.
+2. Inspect the shared component, the owning stylesheet, and the route using it.
+3. Check `AGENTS.md` and `UI_CHANGE_PROTOCOL.md` for layout contracts.
+4. Prefer shared fixes over local overrides.
+5. Verify all affected routes after the change.
+
+Do not:
+- patch multiple files blindly without mapping ownership first
+- introduce alternate spacing systems or new visual patterns when an existing contract already exists
+- change generated folders or build artifacts
