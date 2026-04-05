@@ -1,0 +1,137 @@
+import type {
+  ApplicationPacketRecord,
+  OperatorProfileRecord,
+} from '@/lib/domain/types'
+import { hasOpenAIEnv } from '@/lib/env'
+import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
+import { getLocationDisplay, getSalaryDisplay } from '@/lib/jobs/display'
+import { formatDateLabel, formatWorkflowLabel } from '@/lib/jobs/presentation'
+
+export interface JobFlowHeaderSnapshotItem {
+  label: string
+  value: string
+}
+
+export interface JobFlowHeaderViewModel {
+  companyName: string
+  introLines: string[]
+  pageLabel: string
+  snapshotItems: JobFlowHeaderSnapshotItem[]
+  title: string
+}
+
+export interface JobFlowPageViewModel {
+  canGenerate: boolean
+  draftReady: boolean
+  generationDisabledReason?: string
+  header: JobFlowHeaderViewModel
+  pageIntro: string
+  pageLabel: string
+}
+
+function getDetailIntro(job: QualifiedJobRecord) {
+  if (job.workflowStatus === 'ready_to_apply') {
+    return 'Everything is lined up. Review the role, then apply when you want to move.'
+  }
+
+  if (job.workflowStatus === 'preparing') {
+    return 'The application packet is already in progress. Review the role, then continue when you want.'
+  }
+
+  return ''
+}
+
+function getPrepIntro(job: QualifiedJobRecord) {
+  if (job.workflowStatus === 'ready_to_apply') {
+    return 'Your packet is ready. Review the materials, then apply when you want to submit.'
+  }
+
+  return ''
+}
+
+export function buildJobFlowHeaderViewModel({
+  job,
+  pageIntro,
+  pageLabel,
+  profile,
+}: {
+  job: QualifiedJobRecord
+  pageIntro: string
+  pageLabel: string
+  profile: OperatorProfileRecord
+}): JobFlowHeaderViewModel {
+  const salaryDisplay = getSalaryDisplay(job, profile)
+
+  return {
+    companyName: job.companyName,
+    introLines: [pageIntro, job.aiMatchSummary?.trim() ?? ''].filter(Boolean),
+    pageLabel,
+    snapshotItems: [
+      {
+        label: 'Remote / location',
+        value: getLocationDisplay(job),
+      },
+      {
+        label: 'Salary',
+        value: salaryDisplay.value,
+      },
+      {
+        label: 'Stage',
+        value: formatWorkflowLabel(job.workflowStatus),
+      },
+      {
+        label: 'Posted',
+        value: formatDateLabel(job.postedAt),
+      },
+      {
+        label: 'Freshness',
+        value: job.freshness.label,
+      },
+    ],
+    title: job.title,
+  }
+}
+
+export function buildJobFlowPageViewModel({
+  canSave,
+  issue,
+  job,
+  packet,
+  prepOpen,
+  profile,
+  screeningLocked,
+}: {
+  canSave: boolean
+  issue?: string
+  job: QualifiedJobRecord
+  packet: ApplicationPacketRecord
+  prepOpen: boolean
+  profile: OperatorProfileRecord
+  screeningLocked: boolean
+}): JobFlowPageViewModel {
+  const draftReady = packet.generationStatus === 'generated'
+  const canGenerate = canSave && !screeningLocked && hasOpenAIEnv()
+  const generationDisabledReason = !canSave
+    ? issue
+    : screeningLocked
+      ? 'Complete your profile draft in Settings before preparing applications.'
+      : !canGenerate
+        ? 'Add the OpenAI server environment before generating application materials.'
+        : issue
+  const pageLabel = prepOpen ? 'Application packet' : 'Job review'
+  const pageIntro = prepOpen ? getPrepIntro(job) : getDetailIntro(job)
+
+  return {
+    canGenerate,
+    draftReady,
+    generationDisabledReason,
+    header: buildJobFlowHeaderViewModel({
+      job,
+      pageIntro,
+      pageLabel,
+      profile,
+    }),
+    pageIntro,
+    pageLabel,
+  }
+}

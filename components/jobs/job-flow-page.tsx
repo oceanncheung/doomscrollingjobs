@@ -1,10 +1,9 @@
 import { ApplicationPacketForm } from '@/components/jobs/application-packet-form'
-import { getDetailIntro, getPrepIntro } from '@/components/jobs/job-flow-copy'
 import { JobFlowHeader } from '@/components/jobs/job-flow-header'
 import { JobOverviewSection } from '@/components/jobs/job-overview-section'
 import type { ApplicationPacketRecord, OperatorProfileRecord } from '@/lib/domain/types'
-import { hasOpenAIEnv } from '@/lib/env'
 import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
+import { buildJobFlowPageViewModel } from '@/lib/jobs/job-flow-view-model'
 
 interface JobFlowPageProps {
   canSave: boolean
@@ -27,25 +26,23 @@ export function JobFlowPage({
   profileMaterialReady,
   screeningLocked = false,
 }: JobFlowPageProps) {
-  const draftReady = packet.generationStatus === 'generated'
-  const canGenerate = canSave && !screeningLocked && hasOpenAIEnv()
-  const generationDisabledReason = !canSave
-    ? issue
-    : screeningLocked
-      ? 'Complete your profile draft in Settings before preparing applications.'
-    : !canGenerate
-      ? 'Add the OpenAI server environment before generating application materials.'
-      : issue
-  const pageLabel = prepOpen ? 'Application packet' : 'Job review'
-  const pageIntro = prepOpen ? getPrepIntro(job) : getDetailIntro(job)
+  const viewModel = buildJobFlowPageViewModel({
+    canSave,
+    issue,
+    job,
+    packet,
+    prepOpen,
+    profile,
+    screeningLocked,
+  })
 
   return (
     <>
-      <JobFlowHeader job={job} pageIntro={pageIntro} pageLabel={pageLabel} profile={profile} />
+      <JobFlowHeader header={viewModel.header} />
       <JobOverviewSection
-        canGenerate={canGenerate}
+        canGenerate={viewModel.canGenerate}
         canSave={canSave}
-        generationDisabledReason={generationDisabledReason}
+        generationDisabledReason={viewModel.generationDisabledReason}
         job={job}
         packet={packet}
         prepOpen={prepOpen}
@@ -62,7 +59,7 @@ export function JobFlowPage({
             packet={packet}
             profileMaterialReady={profileMaterialReady}
             screeningLocked={screeningLocked}
-            showGeneratedContent={draftReady}
+            showGeneratedContent={viewModel.draftReady}
           />
         </div>
       ) : null}
