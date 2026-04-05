@@ -233,7 +233,7 @@ export async function getOperatorProfile(): Promise<OperatorProfileResult> {
   if (!hasSupabaseServerEnv()) {
     return {
       issue:
-        'Supabase server environment variables are not configured yet, so this screen is showing a blank onboarding fallback workspace.',
+        "The saved workspace connection isn't available right now, so this screen is showing a blank onboarding workspace.",
       source: 'seed',
       workspace: seededWorkspace,
     }
@@ -243,7 +243,7 @@ export async function getOperatorProfile(): Promise<OperatorProfileResult> {
 
   if (!operatorContext) {
     return {
-      issue: 'Choose an operator before loading the profile workspace.',
+      issue: 'Choose a workspace before loading the profile.',
       source: 'database-fallback',
       workspace: seededWorkspace,
     }

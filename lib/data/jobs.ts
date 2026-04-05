@@ -480,7 +480,7 @@ export const getRankedJobs = cache(async function getRankedJobs(): Promise<Ranke
     return {
       candidatePoolCount: learnedJobs.length,
       issue:
-        'Supabase server environment variables are not configured yet, so the jobs dashboard is showing seeded fallback listings.',
+        "The live jobs feed isn't available right now, so the dashboard is showing fallback listings.",
       jobs: qualificationResult.jobs,
       screeningLocked: qualificationResult.screeningLocked,
       source: 'seed',
@@ -498,7 +498,7 @@ export const getRankedJobs = cache(async function getRankedJobs(): Promise<Ranke
 
     return {
       candidatePoolCount: learnedJobs.length,
-      issue: 'Choose an operator before loading the ranked jobs queue.',
+      issue: 'Choose a workspace before loading the job queue.',
       jobs: qualificationResult.jobs,
       screeningLocked: qualificationResult.screeningLocked,
       source: 'database-fallback',

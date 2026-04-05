@@ -223,7 +223,7 @@ export async function updateJobWorkflow(
 
   if (!hasSupabaseServerEnv()) {
     return {
-      message: 'Add the Supabase server environment before saving shortlist or dismiss signals.',
+      message: "Job updates aren't available right now.",
       status: 'error',
     }
   }
@@ -232,7 +232,7 @@ export async function updateJobWorkflow(
 
   if (!operatorContext) {
     return {
-      message: 'Choose an operator before updating workflow status.',
+      message: 'Choose a workspace before updating this job.',
       status: 'error',
     }
   }
@@ -263,8 +263,7 @@ export async function updateJobWorkflow(
 
   if (!existingScore) {
     return {
-      message:
-        'This job does not have a persisted score row yet, so the workflow status could not be updated.',
+      message: "This job isn't connected to your live queue yet, so its status can't be updated.",
       status: 'error',
     }
   }
@@ -378,8 +377,7 @@ export async function saveApplicationPacket(
 ): Promise<ApplicationPacketActionState> {
   if (!hasSupabaseServerEnv()) {
     return {
-      message:
-        'Add the Supabase server environment before saving packet edits. The screen can still show generated packet content without persistence.',
+      message: "Packet saving isn't available right now.",
       status: 'error',
     }
   }
@@ -400,7 +398,7 @@ export async function saveApplicationPacket(
 
   if (!operatorContext || !operatorContext.resumeMasterId) {
     return {
-      message: 'Choose an operator before saving packet prep.',
+      message: 'Choose a workspace before saving application materials.',
       status: 'error',
     }
   }
@@ -424,8 +422,7 @@ export async function saveApplicationPacket(
 
   if (!jobScoreId) {
     return {
-      message:
-        'This job does not have a persisted score row yet, so the packet cannot be saved against the application workflow.',
+      message: "This job isn't connected to your live queue yet, so application materials can't be saved.",
       status: 'error',
     }
   }

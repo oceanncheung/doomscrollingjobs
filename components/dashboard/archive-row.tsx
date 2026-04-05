@@ -11,6 +11,7 @@ import type { OperatorProfileRecord } from '@/lib/domain/types'
 import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
 import { getJobReviewHref } from '@/lib/jobs/review-navigation'
 import { formatWorkflowLabel } from '@/lib/jobs/presentation'
+import { getWorkflowActionDisabledReason } from '@/lib/jobs/workflow-actions'
 
 export function ArchiveRow({
   actionsEnabled,
@@ -31,7 +32,7 @@ export function ArchiveRow({
             <JobStageActionButton
               actionKind="restore"
               canEdit={actionsEnabled}
-              disabledReason="Switch back to the database-backed queue to return jobs to Potential."
+              disabledReason={getWorkflowActionDisabledReason('restore')}
               jobId={job.id}
               sourceContext="archive-restore"
               variant="secondary"

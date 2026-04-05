@@ -445,7 +445,7 @@ export async function saveOperatorProfile(
 ): Promise<ProfileActionState> {
   if (!hasSupabaseServerEnv()) {
     return {
-      message: 'Add the Supabase URL, publishable key, and service role key before trying to save profile changes.',
+      message: "Profile saving isn't available right now.",
       status: 'error',
     }
   }
@@ -515,7 +515,7 @@ export async function saveOperatorProfile(
 
   if (!operatorContext || !operatorContext.profileId || !operatorContext.resumeMasterId) {
     return {
-      message: 'Choose an operator before saving profile changes.',
+      message: 'Choose a workspace before saving profile changes.',
       status: 'error',
     }
   }
@@ -592,7 +592,7 @@ export async function saveOperatorProfile(
   if (isGenerateProfileIntent) {
     if (!hasOpenAIEnv()) {
       return {
-        message: 'Add the OpenAI server environment before generating canonical profile materials.',
+        message: "Profile generation isn't available right now.",
         status: 'error',
       }
     }
@@ -1184,7 +1184,7 @@ export async function resetProfileWorkspaceForTesting(
 
   if (!hasSupabaseServerEnv()) {
     return {
-      message: 'Add the Supabase server environment before resetting the testing workspace.',
+      message: "Workspace reset isn't available right now.",
       status: 'error',
     }
   }
@@ -1193,7 +1193,7 @@ export async function resetProfileWorkspaceForTesting(
 
   if (!operatorContext || !operatorContext.profileId || !operatorContext.resumeMasterId) {
     return {
-      message: 'Choose an operator before resetting the testing workspace.',
+      message: 'Choose a workspace before resetting this workspace.',
       status: 'error',
     }
   }

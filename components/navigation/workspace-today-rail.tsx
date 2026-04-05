@@ -6,6 +6,7 @@ import { TodayBlockHeading } from '@/components/ui/today-block-heading'
 import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
 import { getApplyNextJob, getDashboardQueues, getMatchReason } from '@/lib/jobs/dashboard-queue'
 import { getApplyNextAction, getJobReviewHref } from '@/lib/jobs/review-navigation'
+import { getWorkflowActionDisabledReason } from '@/lib/jobs/workflow-actions'
 import type { ProfileReadinessPresentation } from '@/lib/profile/readiness-presentation'
 
 interface WorkspaceTodayRailProps {
@@ -72,7 +73,7 @@ export function WorkspaceTodayRail({
               <JobStageActionButton
                 actionKind="skip"
                 canEdit={actionsEnabled}
-                disabledReason="Switch back to the database-backed queue to skip jobs."
+                disabledReason={getWorkflowActionDisabledReason('skip')}
                 jobId={applyNextJob.id}
                 sourceContext="today-rail"
                 variant="secondary"

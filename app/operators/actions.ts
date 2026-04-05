@@ -110,7 +110,7 @@ export async function createOperator(
 ): Promise<OperatorSetupActionState> {
   if (!hasSupabaseServerEnv()) {
     return {
-      message: 'Add the Supabase environment before creating operators.',
+      message: "Account creation isn't available right now.",
       status: 'error',
     }
   }

@@ -21,6 +21,7 @@ import {
 } from '@/lib/jobs/display'
 import { getJobReviewHref } from '@/lib/jobs/review-navigation'
 import { formatDateLabel } from '@/lib/jobs/presentation'
+import { getWorkflowActionDisabledReason } from '@/lib/jobs/workflow-actions'
 
 export function PotentialRow({
   actionsEnabled,
@@ -95,7 +96,7 @@ export function PotentialRow({
             <JobStageActionButton
               actionKind="save"
               canEdit={actionsEnabled}
-              disabledReason="Switch back to the database-backed queue to save jobs."
+              disabledReason={getWorkflowActionDisabledReason('save')}
               jobId={job.id}
               sourceContext="potential-jobs"
               variant="primary"
@@ -105,7 +106,7 @@ export function PotentialRow({
             <JobStageActionButton
               actionKind="skip"
               canEdit={actionsEnabled}
-              disabledReason="Switch back to the database-backed queue to skip jobs."
+              disabledReason={getWorkflowActionDisabledReason('skip')}
               jobId={job.id}
               sourceContext="potential-jobs"
               variant="secondary"

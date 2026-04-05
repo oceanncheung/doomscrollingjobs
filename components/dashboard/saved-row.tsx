@@ -11,6 +11,7 @@ import { JobStageActionButton } from '@/components/jobs/job-stage-action-button'
 import type { OperatorProfileRecord } from '@/lib/domain/types'
 import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
 import { getInternalJobReviewLabel, getJobReviewHref } from '@/lib/jobs/review-navigation'
+import { getWorkflowActionDisabledReason } from '@/lib/jobs/workflow-actions'
 
 export function SavedRow({
   actionsEnabled,
@@ -38,7 +39,7 @@ export function SavedRow({
             <JobStageActionButton
               actionKind="restore"
               canEdit={actionsEnabled}
-              disabledReason="Switch back to the database-backed queue to return jobs to Potential."
+              disabledReason={getWorkflowActionDisabledReason('restore')}
               jobId={job.id}
               sourceContext="saved-review"
               variant="secondary"
@@ -48,7 +49,7 @@ export function SavedRow({
             <JobStageActionButton
               actionKind="archive"
               canEdit={actionsEnabled}
-              disabledReason="Switch back to the database-backed queue to archive saved jobs."
+              disabledReason={getWorkflowActionDisabledReason('archive')}
               jobId={job.id}
               sourceContext="saved-review"
               variant="secondary"

@@ -700,7 +700,7 @@ export async function getApplicationPacketReview(
     return {
       canSave: false,
       issue:
-        'The packet review screen is available, but saving requires the database-backed ranked jobs feed so the packet can tie back to a real job score row.',
+        "This packet is available as a preview right now, but changes can't be saved from this view.",
       job,
       packet: generatedPacket,
       source: 'seed',
@@ -713,7 +713,7 @@ export async function getApplicationPacketReview(
   if (!operatorContext) {
     return {
       canSave: false,
-      issue: 'Choose an operator before loading saved packet data.',
+      issue: 'Choose a workspace before loading saved application materials.',
       job,
       packet: generatedPacket,
       source: 'database-fallback',
@@ -732,7 +732,8 @@ export async function getApplicationPacketReview(
   if (packetError) {
     return {
       canSave: true,
-      issue: `${packetError.message} Showing a generated draft packet from the current profile and job data instead.`,
+      issue:
+        "We couldn't load the saved application materials, so this screen is showing a fresh draft built from your current profile and this job.",
       job,
       packet: generatedPacket,
       source: 'database-fallback',
@@ -769,7 +770,8 @@ export async function getApplicationPacketReview(
     if (createPacketError) {
       return {
         canSave: true,
-        issue: createPacketError.message,
+        issue:
+          "We couldn't create saved application materials for this role yet, so this screen is showing a fresh draft built from your current profile and this job.",
         job,
         packet: generatedPacket,
         source: 'database-fallback',
@@ -784,7 +786,7 @@ export async function getApplicationPacketReview(
     return {
       canSave: true,
       issue:
-        'No saved packet exists for this role yet, so this screen is showing a generated draft assembled from the current workspace and ranked job record.',
+        'No saved application materials exist for this role yet, so this screen is showing a fresh draft built from your current profile and this job.',
       job,
       packet: generatedPacket,
       source: 'database-fallback',

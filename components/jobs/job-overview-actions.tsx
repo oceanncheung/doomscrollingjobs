@@ -2,6 +2,7 @@ import { GeneratePacketButton } from '@/components/jobs/generate-packet-button'
 import { JobStageActionButton } from '@/components/jobs/job-stage-action-button'
 import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
 import type { JobOverviewActionModel } from '@/lib/jobs/job-overview-action-model'
+import { getWorkflowActionDisabledReason } from '@/lib/jobs/workflow-actions'
 
 function PrepSubmitButton({
   canSave,
@@ -66,7 +67,7 @@ export function JobOverviewActions({
               <JobStageActionButton
                 actionKind="mark-applied"
                 canEdit={canSave}
-                disabledReason={saveDisabledReason || 'Switch back to the database-backed queue to mark jobs applied.'}
+                disabledReason={saveDisabledReason || getWorkflowActionDisabledReason('mark-applied')}
                 jobId={job.id}
                 sourceContext="job-flow"
                 variant="secondary"
@@ -104,7 +105,7 @@ export function JobOverviewActions({
               <JobStageActionButton
                 actionKind="archive"
                 canEdit={canSave}
-                disabledReason={saveDisabledReason || 'Switch back to the database-backed queue to archive saved jobs.'}
+                disabledReason={saveDisabledReason || getWorkflowActionDisabledReason('archive')}
                 jobId={job.id}
                 sourceContext="job-flow"
                 variant="secondary"
@@ -127,7 +128,7 @@ export function JobOverviewActions({
           <JobStageActionButton
             actionKind="save"
             canEdit={canSave}
-            disabledReason={saveDisabledReason || 'Switch back to the database-backed queue to save jobs.'}
+            disabledReason={saveDisabledReason || getWorkflowActionDisabledReason('save')}
             jobId={job.id}
             sourceContext="job-flow"
             variant="primary"
@@ -137,7 +138,7 @@ export function JobOverviewActions({
           <JobStageActionButton
             actionKind="skip"
             canEdit={canSave}
-            disabledReason={saveDisabledReason || 'Switch back to the database-backed queue to skip jobs.'}
+            disabledReason={saveDisabledReason || getWorkflowActionDisabledReason('skip')}
             jobId={job.id}
             sourceContext="job-flow"
             variant="secondary"

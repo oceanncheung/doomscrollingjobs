@@ -49,7 +49,7 @@ export async function generateAndPersistApplicationPacket(
     return {
       answerCount: 0,
       jobId,
-      message: 'Add the Supabase server environment before generating application materials.',
+      message: "Application generation isn't available right now.",
       status: 'error',
       workflowStatus: null,
     }
@@ -59,7 +59,7 @@ export async function generateAndPersistApplicationPacket(
     return {
       answerCount: 0,
       jobId,
-      message: 'Add the OpenAI server environment before generating application materials.',
+      message: "Application generation isn't available right now.",
       status: 'error',
       workflowStatus: null,
     }
@@ -81,7 +81,7 @@ export async function generateAndPersistApplicationPacket(
     return {
       answerCount: 0,
       jobId,
-      message: 'Choose an operator before generating application materials.',
+      message: 'Choose a workspace before generating application materials.',
       status: 'error',
       workflowStatus: null,
     }

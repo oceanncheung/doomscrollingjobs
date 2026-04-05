@@ -10,6 +10,7 @@ import { JobStageActionButton } from '@/components/jobs/job-stage-action-button'
 import type { OperatorProfileRecord } from '@/lib/domain/types'
 import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
 import { getJobReviewHref } from '@/lib/jobs/review-navigation'
+import { getWorkflowActionDisabledReason } from '@/lib/jobs/workflow-actions'
 
 export function PreparedRow({
   actionsEnabled,
@@ -40,7 +41,7 @@ export function PreparedRow({
             <JobStageActionButton
               actionKind="mark-applied"
               canEdit={actionsEnabled}
-              disabledReason="Switch back to the database-backed queue to mark jobs as applied."
+              disabledReason={getWorkflowActionDisabledReason('mark-applied')}
               jobId={job.id}
               sourceContext="prepared-apply"
               variant="secondary"

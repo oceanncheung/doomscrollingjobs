@@ -116,7 +116,7 @@ export function buildJobFlowPageViewModel({
       ? readinessPresentation?.generationDisabledReason ??
         'Complete your profile draft in Settings before preparing applications.'
       : !canGenerate
-        ? 'Add the OpenAI server environment before generating application materials.'
+        ? "Content generation isn't available right now."
         : issue
   const pageLabel = prepOpen ? 'Application packet' : 'Job review'
   const pageIntro = prepOpen ? getPrepIntro(job) : getDetailIntro(job)

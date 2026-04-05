@@ -20,6 +20,8 @@ export interface JobWorkflowQuickAction {
   targetStatus: WorkflowStatus
 }
 
+export const workflowEditingUnavailableReason = "Job updates aren't available right now."
+
 const quickActions: Record<JobWorkflowQuickActionKind, JobWorkflowQuickAction> = {
   archive: {
     defaultLabel: 'Archive',
@@ -56,6 +58,21 @@ export function asJobWorkflowQuickActionKind(value: string) {
 
 export function getJobWorkflowQuickAction(kind: JobWorkflowQuickActionKind) {
   return quickActions[kind]
+}
+
+export function getWorkflowActionDisabledReason(kind: JobWorkflowQuickActionKind) {
+  switch (kind) {
+    case 'save':
+      return 'Open the main queue to save this job.'
+    case 'skip':
+      return 'Open the main queue to skip this job.'
+    case 'archive':
+      return 'Open the main queue to archive this job.'
+    case 'restore':
+      return 'Open the main queue to move this job back to Potential.'
+    case 'mark-applied':
+      return 'Open the main queue to mark this job as applied.'
+  }
 }
 
 export function getJobWorkflowTargetStatusForQuickAction(kind: JobWorkflowQuickActionKind) {

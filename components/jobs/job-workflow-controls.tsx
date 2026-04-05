@@ -8,6 +8,7 @@ import { formatWorkflowLabel } from '@/lib/jobs/presentation'
 import {
   getJobWorkflowQuickAction,
   isJobWorkflowQuickActionDisabled,
+  workflowEditingUnavailableReason,
 } from '@/lib/jobs/workflow-actions'
 
 const initialState: JobWorkflowActionState = {
@@ -103,7 +104,7 @@ export function JobWorkflowControls({
 
       {!canEdit && showDisabledNote ? (
         <p className="workflow-note">
-          {disabledReason ?? 'Connect Supabase persistence before saving workflow feedback.'}
+          {disabledReason ?? workflowEditingUnavailableReason}
         </p>
       ) : null
       }
