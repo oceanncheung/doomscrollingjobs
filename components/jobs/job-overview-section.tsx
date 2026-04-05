@@ -2,6 +2,7 @@ import { formatSourceLinkLabel, getDescriptionExcerpt } from '@/components/dashb
 import { JobOverviewActions } from '@/components/jobs/job-overview-actions'
 import type { ApplicationPacketRecord } from '@/lib/domain/types'
 import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
+import { getJobOverviewActionModel } from '@/lib/jobs/job-overview-action-model'
 
 interface JobOverviewSectionProps {
   canGenerate: boolean
@@ -24,14 +25,13 @@ export function JobOverviewSection({
   prepOpen,
   screeningLocked = false,
 }: JobOverviewSectionProps) {
-  const hasOverviewActions =
-    !screeningLocked &&
-    (prepOpen ||
-      job.workflowStatus === 'new' ||
-      job.workflowStatus === 'ranked' ||
-      job.workflowStatus === 'shortlisted' ||
-      job.workflowStatus === 'preparing' ||
-      job.workflowStatus === 'ready_to_apply')
+  const actionModel = getJobOverviewActionModel({
+    job,
+    packet,
+    prepOpen,
+    screeningLocked,
+  })
+  const hasOverviewActions = actionModel !== null
   const overviewText = getDescriptionExcerpt(job)
 
   return (
@@ -67,14 +67,12 @@ export function JobOverviewSection({
           </div>
           {hasOverviewActions ? (
             <JobOverviewActions
+              actionModel={actionModel}
               canGenerate={canGenerate}
               canSave={canSave}
               generationDisabledReason={generationDisabledReason}
               job={job}
-              packet={packet}
-              prepOpen={prepOpen}
               saveDisabledReason={saveDisabledReason}
-              screeningLocked={screeningLocked}
             />
           ) : null}
         </div>

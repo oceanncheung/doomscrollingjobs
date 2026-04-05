@@ -1,7 +1,7 @@
 import { GeneratePacketButton } from '@/components/jobs/generate-packet-button'
 import { JobStageActionButton } from '@/components/jobs/job-stage-action-button'
-import type { ApplicationPacketRecord } from '@/lib/domain/types'
 import type { QualifiedJobRecord } from '@/lib/jobs/contracts'
+import type { JobOverviewActionModel } from '@/lib/jobs/job-overview-action-model'
 
 function PrepSubmitButton({
   canSave,
@@ -28,38 +28,27 @@ function PrepSubmitButton({
 }
 
 interface JobOverviewActionsProps {
+  actionModel: JobOverviewActionModel
   canGenerate: boolean
   canSave: boolean
   generationDisabledReason?: string
   job: QualifiedJobRecord
-  packet: ApplicationPacketRecord
-  prepOpen: boolean
   saveDisabledReason?: string
-  screeningLocked?: boolean
 }
 
 export function JobOverviewActions({
+  actionModel,
   canGenerate,
   canSave,
   generationDisabledReason,
   job,
-  packet,
-  prepOpen,
   saveDisabledReason,
-  screeningLocked = false,
 }: JobOverviewActionsProps) {
-  const hasGeneratedContent = packet.generationStatus === 'generated'
-
-  if (screeningLocked) {
-    return null
-  }
-
-  if (prepOpen) {
-    if (job.workflowStatus === 'ready_to_apply') {
+  if (actionModel.kind === 'ready-to-apply') {
       return (
         <div
           aria-label="Job overview actions"
-          className="screening-actions-bar job-overview-actions job-overview-actions--pair-right"
+          className={`screening-actions-bar job-overview-actions ${actionModel.layoutClass}`}
           role="group"
         >
           <div className="screening-actions-cluster">
@@ -87,39 +76,31 @@ export function JobOverviewActions({
           </div>
         </div>
       )
-    }
+  }
 
-    const showShortlistArchive = job.workflowStatus === 'shortlisted'
-    const slotCount = 1 + (hasGeneratedContent ? 1 : 0) + (showShortlistArchive ? 1 : 0)
-    const layoutClass =
-      slotCount >= 3
-        ? 'job-overview-actions--triple-right'
-        : slotCount >= 2
-          ? 'job-overview-actions--pair-right'
-          : 'job-overview-actions--single-right'
-
+  if (actionModel.kind === 'prep') {
     return (
       <div
         aria-label="Job overview actions"
-        className={`screening-actions-bar job-overview-actions ${layoutClass}`}
+        className={`screening-actions-bar job-overview-actions ${actionModel.layoutClass}`}
         role="group"
       >
         <div className="screening-actions-cluster">
           <div className="screening-action-slot">
-            {hasGeneratedContent ? (
+            {actionModel.hasGeneratedContent ? (
               <PrepSubmitButton canSave={canSave} disabledReason={saveDisabledReason} hasDraft />
             ) : (
               <GeneratePacketButton canEdit={canGenerate} disabledReason={generationDisabledReason} jobId={job.id} />
             )}
           </div>
-          {hasGeneratedContent ? (
+          {actionModel.showReviewAnchor ? (
             <div className="screening-action-slot">
               <a className="button button-ghost button-small" href="#packet-materials-section">
                 Review Materials
               </a>
             </div>
           ) : null}
-          {showShortlistArchive ? (
+          {actionModel.showShortlistArchive ? (
             <div className="screening-action-slot">
               <JobStageActionButton
                 canEdit={canSave}
@@ -137,14 +118,10 @@ export function JobOverviewActions({
     )
   }
 
-  if (job.workflowStatus !== 'new' && job.workflowStatus !== 'ranked') {
-    return null
-  }
-
   return (
     <div
       aria-label="Job overview actions"
-      className="screening-actions-bar job-overview-actions job-overview-actions--pair-right"
+      className={`screening-actions-bar job-overview-actions ${actionModel.layoutClass}`}
       role="group"
     >
       <div className="screening-actions-cluster">
