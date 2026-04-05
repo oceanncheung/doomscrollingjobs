@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 
 import { createOperator, type OperatorSetupActionState } from '@/app/operators/actions'
+import { TodayBlockHeading } from '@/components/ui/today-block-heading'
 
 const initialState: OperatorSetupActionState = {
   message: '',
@@ -14,10 +15,10 @@ export function OperatorCreateForm({ hasOperators }: { hasOperators: boolean }) 
 
   return (
     <section className="today-block operator-create-rail-block">
-      <div className="today-block-heading">
-        <p className="panel-label">{hasOperators ? 'Create account' : 'First account'}</p>
-        <h2>{hasOperators ? 'Create account' : 'Create the first account'}</h2>
-      </div>
+      <TodayBlockHeading
+        label={hasOperators ? 'Create account' : 'First account'}
+        title={hasOperators ? 'Create account' : 'Create the first account'}
+      />
 
       <p className="profile-note">
         Add another internal workspace profile for this browser session.

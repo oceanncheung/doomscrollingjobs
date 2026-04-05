@@ -2,6 +2,7 @@ import { WorkspaceRailShell } from '@/components/navigation/workspace-rail-shell
 import { WorkspaceSurface } from '@/components/navigation/workspace-surface'
 import { ProfileSaveMessageRootProvider } from '@/components/profile/profile-save-message-root'
 import { SystemInventoryPage } from '@/components/system/system-inventory-page'
+import { TodayBlockHeading } from '@/components/ui/today-block-heading'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,20 +10,14 @@ function SystemInventoryRail() {
   return (
     <WorkspaceRailShell ariaLabel="System inventory" className="today-rail settings-profile-rail">
       <section className="today-block">
-        <div className="today-block-heading">
-          <p className="panel-label">System</p>
-          <h2>Inventory</h2>
-        </div>
+        <TodayBlockHeading label="System" title="Inventory" />
         <p className="profile-note">
           Hidden internal route for validating shared primitives and interaction contracts.
         </p>
       </section>
 
       <section className="today-block">
-        <div className="today-block-heading">
-          <p className="panel-label">Coverage</p>
-          <h2>Phase B</h2>
-        </div>
+        <TodayBlockHeading label="Coverage" title="Phase B" />
         <dl className="today-stats">
           <div>
             <dt>Overlay fields</dt>

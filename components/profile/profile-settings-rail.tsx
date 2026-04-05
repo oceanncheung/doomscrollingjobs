@@ -4,6 +4,7 @@ import { ProfileHeadlineTagField } from '@/components/profile/profile-headline-t
 import { ProfileSaveButton } from '@/components/profile/profile-save-button'
 import { FieldLabelRow } from '@/components/ui/field-label-row'
 import { OverlayOptionField } from '@/components/ui/overlay-option-field'
+import { TodayBlockHeading } from '@/components/ui/today-block-heading'
 import type { OperatorWorkspaceRecord } from '@/lib/domain/types'
 import { LOCATION_SUGGESTIONS } from '@/lib/profile/autocomplete-options'
 import { getReviewStateFromText } from '@/lib/profile/master-assets'
@@ -77,10 +78,7 @@ export function ProfileSettingsRail({ formId, workspace }: ProfileSettingsRailPr
         <div className="settings-profile-rail-footer">
           <section className="today-block settings-rail-actions-block">
             <div className="settings-rail-heading-with-status">
-              <div className="today-block-heading">
-                <p className="panel-label">Actions</p>
-                <h2>Account</h2>
-              </div>
+              <TodayBlockHeading label="Actions" title="Account" />
               {updatedAtLabel ? (
                 <p className="settings-rail-updated-at">
                   <span className="settings-rail-updated-at-label">Last updated</span>
@@ -105,10 +103,7 @@ export function ProfileSettingsRail({ formId, workspace }: ProfileSettingsRailPr
     >
         <section className="today-block">
           <div className="settings-profile-rail-heading-stack">
-            <div className="today-block-heading">
-              <p className="panel-label">About you</p>
-              <h2>Identity</h2>
-            </div>
+            <TodayBlockHeading label="About you" title="Identity" />
             <p className="profile-note">
               This is the information the workspace uses in applications, packet drafts, and saved materials.
             </p>
@@ -160,10 +155,7 @@ export function ProfileSettingsRail({ formId, workspace }: ProfileSettingsRailPr
         </section>
 
         <section className="today-block">
-          <div className="today-block-heading">
-            <p className="panel-label">Links</p>
-            <h2>Public links</h2>
-          </div>
+          <TodayBlockHeading label="Links" title="Public links" />
 
           <div className="profile-fields">
             <label className="field">
