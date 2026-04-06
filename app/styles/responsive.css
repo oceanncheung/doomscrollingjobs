@@ -564,6 +564,16 @@
     background: var(--accent);
   }
 
+  .screening-summary-grid,
+  .stage-row-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .screening-title-cell,
+  .stage-column-title {
+    grid-column: 1 / -1;
+  }
+
   .flow-header,
   .queue-meta,
   .job-flow-header,
@@ -666,6 +676,11 @@
 @media (max-width: 390px) {
   .workspace-main > main:not(.jobs-index):not(.workspace-surface) {
     padding: 12px;
+  }
+
+  .screening-summary-grid,
+  .stage-row-grid {
+    grid-template-columns: 1fr;
   }
 
   .site-brand {
