@@ -81,6 +81,114 @@
     --settings-section-pad-right: 0px;
   }
 
+  .settings-page .dashboard-workspace .queue-column > form.settings-main.profile-form {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .settings-main > section.panel.disclosure.disclosure-experience,
+  .settings-main > section.panel.disclosure.disclosure-cover-letter,
+  .settings-main > section.panel.disclosure.disclosure-experience > .settings-section-state-shell,
+  .settings-main > section.panel.disclosure.disclosure-cover-letter > .settings-section-state-shell,
+  .settings-main > section.panel.disclosure.disclosure-experience .settings-section-state-content,
+  .settings-main > section.panel.disclosure.disclosure-cover-letter .settings-section-state-content,
+  .settings-main > section.panel.disclosure.disclosure-experience > .settings-section-state-shell > .settings-section-state-content > .settings-tab-shell,
+  .settings-main > section.panel.disclosure.disclosure-cover-letter > .settings-section-state-shell > .settings-section-state-content > .settings-tab-shell {
+    min-width: 0;
+  }
+
+  .settings-tab-toolbar-shell::-webkit-scrollbar {
+    display: none;
+  }
+
+  .settings-main > section.panel.disclosure.disclosure-experience .settings-tab-toolbar-shell,
+  .settings-main > section.panel.disclosure.disclosure-cover-letter .settings-tab-toolbar-shell {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    padding-bottom: 0;
+    margin-bottom: 0;
+  }
+
+  .settings-main > section.panel.disclosure.disclosure-experience .settings-tab-shell.has-selection .settings-tab-toolbar-shell,
+  .settings-main > section.panel.disclosure.disclosure-cover-letter .settings-tab-shell.has-selection .settings-tab-toolbar-shell {
+    padding-bottom: 2px;
+    margin-bottom: -2px;
+  }
+
+  .settings-main > section.panel.disclosure.disclosure-experience .settings-tab-toolbar,
+  .settings-main > section.panel.disclosure.disclosure-cover-letter .settings-tab-toolbar {
+    flex-wrap: nowrap;
+    width: max-content;
+    min-width: 100%;
+    padding-left: var(--queue-column-pad);
+    padding-right: var(--queue-column-pad);
+    box-sizing: border-box;
+  }
+
+  .settings-main > section.panel.disclosure.disclosure-experience .settings-tab-shell.has-selection,
+  .settings-main > section.panel.disclosure.disclosure-cover-letter .settings-tab-shell.has-selection {
+    background: transparent;
+    padding-bottom: 0;
+  }
+
+  .settings-main > section.panel.disclosure.disclosure-experience .settings-tab-shell.has-selection .settings-tab-button.is-active,
+  .settings-main > section.panel.disclosure.disclosure-cover-letter .settings-tab-shell.has-selection .settings-tab-button.is-active,
+  .settings-main > section.panel.disclosure.disclosure-experience .settings-tab-shell.has-selection .settings-tab-button.is-active:hover,
+  .settings-main > section.panel.disclosure.disclosure-cover-letter .settings-tab-shell.has-selection .settings-tab-button.is-active:hover {
+    background: var(--surface-soft);
+    color: var(--text);
+    border-color: var(--line);
+  }
+
+  .settings-main > section.panel.disclosure.disclosure-experience .settings-tab-shell.has-selection .settings-tab-button.is-active::after,
+  .settings-main > section.panel.disclosure.disclosure-cover-letter .settings-tab-shell.has-selection .settings-tab-button.is-active::after {
+    content: '';
+    position: absolute;
+    left: -1px;
+    right: -1px;
+    bottom: -2px;
+    height: 2px;
+    background: var(--surface-soft);
+    pointer-events: none;
+  }
+
+  .settings-main > section.panel.disclosure.disclosure-experience .settings-tab-shell.has-selection .settings-tab-panel,
+  .settings-main > section.panel.disclosure.disclosure-cover-letter .settings-tab-shell.has-selection .settings-tab-panel {
+    padding-bottom: calc(24px + 48px);
+  }
+
+  .settings-main > section.panel.disclosure.disclosure-experience .settings-tab-toolbar-shell::-webkit-scrollbar,
+  .settings-main > section.panel.disclosure.disclosure-cover-letter .settings-tab-toolbar-shell::-webkit-scrollbar {
+    display: none;
+  }
+
+  .settings-main > section.panel.disclosure.disclosure-experience .settings-tab-button,
+  .settings-main > section.panel.disclosure.disclosure-cover-letter .settings-tab-button {
+    flex: 0 0 auto;
+  }
+
+  .settings-main > section.panel.disclosure.disclosure-experience .settings-tab-button,
+  .settings-main > section.panel.disclosure.disclosure-cover-letter .settings-tab-button,
+  .settings-main > section.panel.settings-section .settings-action-disclosure .settings-action-toggle,
+  .settings-main > section.panel.disclosure.disclosure-experience .settings-tab-button-icon,
+  .settings-main > section.panel.disclosure.disclosure-cover-letter .settings-tab-button-icon,
+  .settings-main > section.panel.settings-section .settings-action-disclosure .settings-action-toggle-icon {
+    transition: none;
+  }
+
+  .settings-main > section.panel.settings-section .settings-action-disclosure[open] .settings-action-toggle:hover {
+    background: var(--surface-soft);
+    color: var(--text);
+    border-color: var(--line);
+  }
+
   .site-workflow-link {
     padding: 0 16px;
   }
@@ -105,7 +213,7 @@
   .settings-source-grid,
   .settings-source-uploads-row,
   .settings-core-grid,
-  .settings-job-targets-row,
+  .settings-job-targets-pair,
   .settings-advanced-tags-row,
   .strengths-experience-grid,
   .field-grid-2,
@@ -325,6 +433,7 @@
 @media (max-width: 900px) {
   :root {
     --site-header-height: calc(var(--site-header-row-height) + 1px);
+    --mobile-collapsed-rail-height: var(--site-header-row-height);
   }
 
   .dashboard-workspace {
@@ -335,6 +444,11 @@
 
   .dashboard-rail-column {
     display: block;
+  }
+
+  .dashboard-workspace .dashboard-rail-column:has(.today-rail.has-rail-collapse.is-rail-collapsed) {
+    height: 0;
+    min-height: 0;
   }
 
   .dashboard-rail-spacer {
@@ -370,11 +484,46 @@
   }
 
   .dashboard-workspace .today-rail.settings-profile-rail {
+    width: auto;
+    max-width: none;
     height: auto;
     max-height: none;
     min-height: auto;
     overflow: visible;
     align-self: stretch;
+  }
+
+  .dashboard-workspace .today-rail.has-rail-collapse.is-rail-collapsed {
+    position: fixed;
+    top: calc(var(--site-header-height) - 1px);
+    left: 0;
+    right: 0;
+    width: auto;
+    z-index: 4;
+    background: var(--bg);
+  }
+
+  .dashboard-workspace .today-rail.has-rail-collapse:not(.is-rail-collapsed) {
+    position: fixed;
+    top: calc(var(--site-header-height) - 1px);
+    left: 0;
+    right: 0;
+    width: auto;
+    height: calc(100dvh - var(--site-header-height) + 1px);
+    max-height: calc(100dvh - var(--site-header-height) + 1px);
+    min-height: calc(100dvh - var(--site-header-height) + 1px);
+    overflow: hidden;
+    z-index: 4;
+    background: var(--bg);
+  }
+
+  .dashboard-workspace .today-rail.has-rail-collapse {
+    padding-top: 0;
+  }
+
+  .dashboard-workspace .today-rail.has-rail-collapse:not(.is-rail-collapsed) .rail-collapse-handle,
+  .dashboard-workspace .today-rail.has-rail-collapse:not(.is-rail-collapsed) .rail-collapse-handle.has-action {
+    min-height: calc(var(--site-header-row-height) + 2px);
   }
 
   .dashboard-workspace .today-rail.settings-profile-rail > .settings-profile-rail-scroll {
@@ -385,22 +534,81 @@
 
   .rail-collapse-handle {
     display: block;
+    position: relative;
+    top: -1px;
+    z-index: 1;
+    margin-left: calc(-1 * var(--today-rail-pad-left));
+    margin-right: calc(-1 * var(--today-rail-pad-right));
+    margin-bottom: -1px;
+    width: calc(100% + var(--today-rail-pad-left) + var(--today-rail-pad-right));
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+    box-sizing: border-box;
+    min-height: var(--site-header-row-height);
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .rail-collapse-handle.has-action {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto var(--site-header-row-height);
+    align-items: center;
+    column-gap: 0;
+    min-height: var(--site-header-row-height);
   }
 
   .rail-collapse-toggle {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: 16px;
     width: 100%;
-    min-height: 56px;
-    padding: 16px 24px;
-    border: 1px solid var(--line);
+    min-height: var(--site-header-row-height);
+    padding: 0 0 0 var(--today-rail-pad-left);
+    border: 0;
     border-radius: 0;
-    background: var(--bg);
+    background: transparent;
     box-shadow: none;
     color: inherit;
     text-align: left;
+    appearance: none;
+  }
+
+  .rail-collapse-handle.has-action .rail-collapse-toggle {
+    width: 100%;
+  }
+
+  .rail-collapse-action {
+    display: flex;
+    align-items: center;
+    justify-self: end;
+    align-self: center;
+    padding-right: 0;
+  }
+
+  .rail-collapse-action .settings-save-button {
+    min-height: 30px;
+    padding: 0 14px;
+    border: 1px solid var(--line);
+    justify-content: center;
+    white-space: nowrap;
+    align-self: center;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    line-height: 1;
+  }
+
+  .rail-collapse-icon-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--site-header-row-height);
+    min-width: var(--site-header-row-height);
+    min-height: var(--site-header-row-height);
+    align-self: stretch;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
     appearance: none;
   }
 
@@ -408,6 +616,8 @@
     display: grid;
     gap: 4px;
     min-width: 0;
+    align-content: center;
+    padding-right: 16px;
   }
 
   .rail-collapse-label {
@@ -431,7 +641,7 @@
 
   .rail-collapse-indicator {
     font-family: var(--font-body), sans-serif;
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 400;
     line-height: 1;
   }
@@ -443,18 +653,84 @@
     display: none;
   }
 
+  .dashboard-workspace .today-rail.has-rail-collapse:not(.is-rail-collapsed) > .today-rail-scroll,
+  .dashboard-workspace .today-rail.has-rail-collapse:not(.is-rail-collapsed) > .settings-profile-rail-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .settings-profile-rail {
     min-height: auto;
     padding-bottom: 0;
+  }
+
+  .settings-main {
+    --settings-section-pad-right: var(--queue-column-pad);
+  }
+
+  /* Stack checkboxes; 12px gap (narrow screening-summary rhythm), still grid so display wins over .settings-toggle-row flex. */
+  .settings-job-targets-grid .settings-job-targets-flex-toggles {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   .settings-main .settings-source-uploads-row--materials > .upload-slot-chip-btn--action {
     margin-top: 8px;
   }
 
+  .settings-action-body .settings-job-targets-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .settings-action-body .settings-job-targets-grid > .settings-job-targets-pair {
+    display: contents;
+  }
+
+  .settings-action-body .settings-job-targets-grid > .settings-job-targets-pair:nth-child(1) > :first-child {
+    grid-row: 1;
+  }
+
+  .settings-action-body .settings-job-targets-grid > .settings-job-targets-pair:nth-child(2) > :first-child {
+    grid-row: 2;
+  }
+
+  .settings-action-body .settings-job-targets-grid > .settings-job-targets-pair:nth-child(3) > :first-child {
+    grid-row: 3;
+  }
+
+  .settings-action-body .settings-job-targets-grid > .settings-job-targets-pair:nth-child(4) > :first-child {
+    grid-row: 4;
+  }
+
+  .settings-action-body .settings-job-targets-grid > .settings-job-targets-pair:nth-child(1) > :nth-child(2) {
+    grid-row: 5;
+  }
+
+  .settings-action-body .settings-job-targets-grid > .settings-job-targets-pair:nth-child(2) > :nth-child(2) {
+    grid-row: 6;
+  }
+
+  .settings-action-body .settings-job-targets-grid > .settings-job-targets-pair:nth-child(3) > :nth-child(2) {
+    grid-row: 7;
+  }
+
+  .settings-action-body .settings-job-targets-grid > .settings-job-targets-pair:nth-child(4) > :nth-child(2) {
+    display: none;
+  }
+
   .settings-profile-rail-footer {
     margin-top: 0;
     padding-bottom: 24px;
+  }
+
+  .settings-profile-rail-footer .settings-save-button {
+    display: none;
   }
 
   .dashboard-workspace .queue-column {
@@ -466,6 +742,14 @@
     padding-top: 24px;
   }
 
+  .dashboard-workspace:has(.today-rail.has-rail-collapse.is-rail-collapsed) .queue-column {
+    padding-top: var(--mobile-collapsed-rail-height);
+  }
+
+  .settings-page .dashboard-workspace:has(.today-rail.has-rail-collapse.is-rail-collapsed) .queue-column {
+    padding-top: calc(var(--mobile-collapsed-rail-height) + 24px);
+  }
+
   .settings-page .dashboard-workspace .queue-column {
     grid-template-rows: auto;
   }
@@ -475,8 +759,32 @@
   }
 
   .dashboard-workspace .queue-column > .queue-meta::after {
-    left: 0;
-    width: 100%;
+    left: calc(-1 * var(--queue-column-pad));
+    width: calc(100% + (2 * var(--queue-column-pad)));
+  }
+
+  .dashboard-workspace .queue-column > .queue-meta,
+  .dashboard-workspace .queue-column > .page-stack > .page-header,
+  .dashboard-workspace .queue-column > .page-stack > .panel,
+  .dashboard-workspace .queue-column > .page-stack > .stage-section,
+  .dashboard-workspace .queue-column > .page-stack > .stage-shell,
+  .dashboard-workspace .queue-column > .page-stack > .empty-state,
+  .settings-main > .queue-meta,
+  .settings-main > section.panel.settings-section,
+  .settings-main > section.panel.disclosure {
+    width: calc(100% + (2 * var(--queue-column-pad)));
+    margin-left: calc(-1 * var(--queue-column-pad));
+    margin-right: calc(-1 * var(--queue-column-pad));
+    padding-left: var(--queue-column-pad);
+    padding-right: var(--queue-column-pad);
+    box-sizing: border-box;
+  }
+
+  .settings-main > section.panel.settings-section::before,
+  .settings-main > section.panel.disclosure::before,
+  .settings-main > section.panel.settings-section#source-files.is-standalone::after {
+    left: calc(-1 * var(--queue-column-pad));
+    width: calc(100% + (2 * var(--queue-column-pad)));
   }
 
   .profile-testing-reset {
@@ -539,6 +847,7 @@
     right: 0;
     z-index: 1;
     background: var(--bg);
+    border-top: 1px solid var(--line);
     border-bottom: 1px solid var(--line);
   }
 
@@ -553,11 +862,37 @@
     gap: 16px;
     min-height: 56px;
     padding: 0 24px;
+    width: 100%;
+    border: 0;
+    border-radius: 0;
+    background: var(--bg);
+    color: inherit;
+    text-align: left;
+    appearance: none;
+    box-shadow: none;
+    cursor: pointer;
     font-family: var(--font-body), sans-serif;
     font-size: 0.8125rem;
     font-weight: 500;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+  }
+
+  .site-mobile-menu-item-meta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+
+  .site-mobile-menu-settings-mark {
+    width: 24px;
+    height: 24px;
+  }
+
+  .site-mobile-menu-settings-mark .site-profile-icon {
+    width: 16px;
+    height: 16px;
   }
 
   .site-mobile-menu-link + .site-mobile-menu-link {
@@ -568,16 +903,36 @@
     background: var(--accent);
   }
 
-  .settings-tab-toolbar {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
+  .settings-main .settings-tab-toolbar-shell {
+    width: 100%;
+    margin-right: 0;
   }
 
-  .settings-tab-toolbar::-webkit-scrollbar {
-    display: none;
+  .settings-main .settings-source-uploads-row--materials {
+    width: calc(100% + var(--queue-column-pad) + var(--settings-section-pad-right));
+    margin-left: calc(-1 * var(--queue-column-pad));
+    margin-right: calc(-1 * var(--settings-section-pad-right));
+  }
+
+  .settings-main .settings-source-uploads-row--materials .upload-slot-chip-btn:not(.upload-slot-chip-btn--action),
+  .settings-main .settings-source-uploads-row--materials > .upload-slot-chip-btn--action {
+    border-left-width: 0;
+    border-right-width: 0;
+  }
+
+  .settings-tab-panel .bullet-list-editor,
+  .settings-main > section.panel.disclosure .bullet-list-editor {
+    height: auto;
+    min-height: 0;
+    overflow-y: hidden;
+  }
+
+  .settings-tab-panel .field--fixed-scroll textarea,
+  .settings-main > section.panel.disclosure .field--fixed-scroll textarea {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: hidden;
   }
 
   .screening-summary-grid,
@@ -607,6 +962,30 @@
   .detail-page-header-stack .job-flow-heading,
   .job-flow-header-stack .job-flow-heading {
     grid-column: 1 / -1;
+  }
+
+  main.jobs-index .queue-list .screening-row,
+  main.jobs-index .queue-list .stage-row {
+    width: calc(100% + (2 * var(--queue-column-pad)));
+    margin-right: calc(-1 * var(--queue-column-pad));
+    padding-right: var(--queue-column-pad);
+  }
+
+  main.jobs-index .queue-list .screening-summary-grid > .screening-cell:last-child {
+    padding-right: 0;
+  }
+
+  main.jobs-index .queue-list .screening-actions-bar,
+  main.jobs-index .queue-list .stage-actions-bar {
+    width: calc(100% + (2 * var(--queue-column-pad)));
+    margin-left: calc(-1 * var(--queue-column-pad));
+    margin-right: calc(-1 * var(--queue-column-pad));
+  }
+
+  main.jobs-index .queue-list .screening-actions-bar .button,
+  main.jobs-index .queue-list .stage-actions-bar .button {
+    border-left-width: 0;
+    border-right-width: 0;
   }
 }
 
@@ -658,17 +1037,12 @@
     padding: 0 16px;
   }
 
-  .rail-collapse-toggle {
-    padding: 16px;
-  }
-
   .settings-page-toolbar {
     grid-template-columns: 1fr;
     align-items: start;
   }
 
   .stage-actions,
-  .repeat-card-header,
   .section-header,
   .profile-form-footer,
   .workflow-control-meta,
@@ -680,6 +1054,11 @@
 
   .button {
     justify-content: flex-start;
+  }
+
+  .repeat-card-header {
+    align-items: center;
+    flex-direction: row;
   }
 
   .screening-actions-bar .button,
@@ -726,10 +1105,6 @@
 
   .site-mobile-menu-link {
     padding: 0 12px;
-  }
-
-  .rail-collapse-toggle {
-    padding: 12px;
   }
 
   .dashboard-workspace .today-rail {

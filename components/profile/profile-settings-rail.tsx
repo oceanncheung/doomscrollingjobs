@@ -76,6 +76,7 @@ export function ProfileSettingsRail({ formId, workspace }: ProfileSettingsRailPr
     <WorkspaceRailShell
       ariaLabel="Profile setup"
       className="today-rail settings-profile-rail"
+      collapseAction={<ProfileSaveButton formId={formId} />}
       collapsedLabel="Identity"
       collapsedPreview={identityPreview}
       footer={

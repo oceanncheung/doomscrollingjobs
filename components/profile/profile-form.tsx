@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useRef, useState } from 'react'
+import { useActionState, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { OperatorWorkspaceRecord } from '@/lib/domain/types'
 
@@ -50,12 +50,21 @@ interface ProfileFormProps {
 }
 
 export function ProfileForm({ workspace }: ProfileFormProps) {
-  const [, formAction] = useActionState(saveOperatorProfile, initialState)
+  const [actionState, formAction] = useActionState(saveOperatorProfile, initialState)
   const formRef = useRef<HTMLFormElement>(null)
+  const lastSubmitIntentRef = useRef<string | null>(null)
+  const dirtyCheckFrameRef = useRef<number | null>(null)
+  const lastHandledSuccessKeyRef = useRef<string | null>(null)
+  const baselineFormSnapshotRef = useRef<string | null>(null)
   const { applicationTitleTags, setApplicationTitleTags } = useProfileApplicationTitles()
-  const { requestSaveButtonFlash } = useProfileSaveButtonAttention()
+  const { requestSaveButtonFlash, setHasUnsavedChanges } = useProfileSaveButtonAttention()
   const { setReviewIndicatorsVisible } = useProfileReviewIndicators()
   const initialFormState = createProfileFormInitialState(workspace)
+  const initialDraftState = getProfileFormDraftState({
+    sourceResumeFileName: initialFormState.sourceResumeFileName,
+    sourceCoverLetterFileName: initialFormState.sourceCoverLetterFileName,
+    workspace,
+  })
   const [activeStrengthsTab, setActiveStrengthsTab] = useState<StrengthsTab | null>(null)
   const [activeCoverLetterTab, setActiveCoverLetterTab] = useState<CoverLetterStrategyTab | null>(null)
   const [bioSummary, setBioSummary] = useState(initialFormState.bioSummary)
@@ -71,6 +80,15 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
   const [sourceResumeFileName, setSourceResumeFileName] = useState<string | null>(
     initialFormState.sourceResumeFileName,
   )
+  const [generatedSourceSnapshot, setGeneratedSourceSnapshot] = useState(() => ({
+    coverLetterFileName: initialDraftState.isGeneratedFromCurrentSources
+      ? initialFormState.sourceCoverLetterFileName
+      : null,
+    resumeFileName: initialDraftState.isGeneratedFromCurrentSources
+      ? initialFormState.sourceResumeFileName
+      : null,
+  }))
+  const [hasSourceChangesSinceGeneration, setHasSourceChangesSinceGeneration] = useState(false)
   const [experienceEntries, setExperienceEntries] = useState(initialFormState.experienceEntries)
   const [educationEntries, setEducationEntries] = useState(initialFormState.educationEntries)
   const [portfolioItems, setPortfolioItems] = useState(initialFormState.portfolioItems)
@@ -102,9 +120,70 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
     initialFormState.industriesPreferredTags,
   )
   const { hasGeneratedDraft, hasCoverLetterSource } = getProfileFormDraftState({
+    sourceResumeFileName,
     sourceCoverLetterFileName,
     workspace,
   })
+  const isProfileGeneratedCurrent =
+    hasGeneratedDraft &&
+    !hasSourceChangesSinceGeneration &&
+    generatedSourceSnapshot.resumeFileName === sourceResumeFileName &&
+    generatedSourceSnapshot.coverLetterFileName === sourceCoverLetterFileName
+
+  const serializeCurrentForm = useMemo(
+    () => () => {
+      const form = formRef.current
+
+      if (!form) {
+        return ''
+      }
+
+      const snapshot = new FormData(form)
+      const entries: string[] = []
+
+      for (const [key, value] of snapshot.entries()) {
+        if (value instanceof File) {
+          continue
+        }
+
+        entries.push(`${key}=${String(value)}`)
+      }
+
+      return entries.join('\n')
+    },
+    [],
+  )
+
+  const syncDirtyState = useMemo(
+    () => () => {
+      const nextSnapshot = serializeCurrentForm()
+
+      if (!nextSnapshot) {
+        return
+      }
+
+      if (baselineFormSnapshotRef.current === null) {
+        baselineFormSnapshotRef.current = nextSnapshot
+      }
+
+      setHasUnsavedChanges(nextSnapshot !== baselineFormSnapshotRef.current)
+    },
+    [serializeCurrentForm, setHasUnsavedChanges],
+  )
+
+  const scheduleDirtyCheck = useMemo(
+    () => () => {
+      if (dirtyCheckFrameRef.current !== null) {
+        window.cancelAnimationFrame(dirtyCheckFrameRef.current)
+      }
+
+      dirtyCheckFrameRef.current = window.requestAnimationFrame(() => {
+        dirtyCheckFrameRef.current = null
+        syncDirtyState()
+      })
+    },
+    [syncDirtyState],
+  )
 
   const summaryReviewState = getReviewStateFromText(
     bioSummary,
@@ -168,6 +247,103 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
       getSectionConfidence(workspace.coverLetterMaster.sectionProvenance, 'keyDifferentiators'),
     ),
   ])
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const snapshot = serializeCurrentForm()
+
+      if (!snapshot) {
+        return
+      }
+
+      baselineFormSnapshotRef.current = snapshot
+      setHasUnsavedChanges(false)
+    })
+
+    return () => {
+      window.cancelAnimationFrame(frame)
+    }
+  }, [serializeCurrentForm, setHasUnsavedChanges])
+
+  useEffect(() => {
+    const handlePotentialFormChange = (event: Event) => {
+      const form = formRef.current
+      const target = event.target
+
+      if (!form || !(target instanceof Element)) {
+        return
+      }
+
+      const linkedControl = target.closest(`[form="${form.id}"]`)
+
+      if (!form.contains(target) && !linkedControl) {
+        return
+      }
+
+      scheduleDirtyCheck()
+    }
+
+    document.addEventListener('input', handlePotentialFormChange, true)
+    document.addEventListener('change', handlePotentialFormChange, true)
+    document.addEventListener('click', handlePotentialFormChange, true)
+
+    return () => {
+      document.removeEventListener('input', handlePotentialFormChange, true)
+      document.removeEventListener('change', handlePotentialFormChange, true)
+      document.removeEventListener('click', handlePotentialFormChange, true)
+    }
+  }, [scheduleDirtyCheck])
+
+  useEffect(() => {
+    if (actionState.status !== 'success' || lastSubmitIntentRef.current !== 'generate-profile') {
+      return
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      setGeneratedSourceSnapshot({
+        coverLetterFileName: sourceCoverLetterFileName,
+        resumeFileName: sourceResumeFileName,
+      })
+      setHasSourceChangesSinceGeneration(false)
+      lastSubmitIntentRef.current = null
+    })
+
+    return () => {
+      window.cancelAnimationFrame(frame)
+    }
+  }, [actionState.message, actionState.status, sourceCoverLetterFileName, sourceResumeFileName])
+
+  useEffect(() => {
+    if (actionState.status !== 'success') {
+      return
+    }
+
+    const successKey = `${actionState.status}:${actionState.message}`
+
+    if (lastHandledSuccessKeyRef.current === successKey) {
+      return
+    }
+
+    lastHandledSuccessKeyRef.current = successKey
+
+    const frame = window.requestAnimationFrame(() => {
+      baselineFormSnapshotRef.current = serializeCurrentForm()
+      setHasUnsavedChanges(false)
+    })
+
+    return () => {
+      window.cancelAnimationFrame(frame)
+    }
+  }, [actionState.message, actionState.status, serializeCurrentForm, setHasUnsavedChanges])
+
+  useEffect(
+    () => () => {
+      if (dirtyCheckFrameRef.current !== null) {
+        window.cancelAnimationFrame(dirtyCheckFrameRef.current)
+      }
+    },
+    [],
+  )
   useProfileNavigationGuard({
     hasGeneratedDraft,
     historyReviewState,
@@ -193,6 +369,10 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
           submitter instanceof HTMLButtonElement &&
           submitter.name === 'intent' &&
           submitter.value === 'generate-profile'
+        lastSubmitIntentRef.current =
+          submitter instanceof HTMLButtonElement && submitter.value
+            ? submitter.value
+            : null
 
         setReviewIndicatorsVisible(!isGenerateIntent)
       }}
@@ -221,9 +401,18 @@ export function ProfileForm({ workspace }: ProfileFormProps) {
       />
 
       <ApplicationMaterialsSection
+        isProfileGeneratedCurrent={isProfileGeneratedCurrent}
         standalone={!hasGeneratedDraft}
-        setSourceCoverLetterFileName={setSourceCoverLetterFileName}
-        setSourceResumeFileName={setSourceResumeFileName}
+        setSourceCoverLetterFileName={(value) => {
+          setSourceCoverLetterFileName(value)
+          setHasSourceChangesSinceGeneration(true)
+          setHasUnsavedChanges(true)
+        }}
+        setSourceResumeFileName={(value) => {
+          setSourceResumeFileName(value)
+          setHasSourceChangesSinceGeneration(true)
+          setHasUnsavedChanges(true)
+        }}
         sourceCoverLetterFileName={sourceCoverLetterFileName}
         sourceResumeFileName={sourceResumeFileName}
       />

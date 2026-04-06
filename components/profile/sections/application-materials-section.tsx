@@ -4,6 +4,7 @@ import { FileUploadSlot } from '@/components/settings/file-upload-slot'
 import { SectionHeading } from '@/components/ui/section-heading'
 
 interface ApplicationMaterialsSectionProps {
+  isProfileGeneratedCurrent: boolean
   standalone: boolean
   setSourceCoverLetterFileName: (value: string | null) => void
   setSourceResumeFileName: (value: string | null) => void
@@ -12,6 +13,7 @@ interface ApplicationMaterialsSectionProps {
 }
 
 export function ApplicationMaterialsSection({
+  isProfileGeneratedCurrent,
   standalone,
   setSourceCoverLetterFileName,
   setSourceResumeFileName,
@@ -19,6 +21,8 @@ export function ApplicationMaterialsSection({
   sourceResumeFileName,
 }: ApplicationMaterialsSectionProps) {
   const hasResumeInput = Boolean(sourceResumeFileName)
+  const isGenerateDisabled = !hasResumeInput || isProfileGeneratedCurrent
+  const generateButtonLabel = isProfileGeneratedCurrent ? 'Profile generated' : 'Generate profile'
 
   return (
     <section
@@ -60,14 +64,20 @@ export function ApplicationMaterialsSection({
         />
         <button
           className="upload-slot-chip-btn upload-slot-chip-btn--action settings-source-generate-button"
-          disabled={!hasResumeInput}
+          disabled={isGenerateDisabled}
           formNoValidate
           name="intent"
-          title={!hasResumeInput ? 'Upload your resume first.' : undefined}
+          title={
+            !hasResumeInput
+              ? 'Upload your resume first.'
+              : isProfileGeneratedCurrent
+                ? 'Upload a new resume or cover letter to regenerate.'
+                : undefined
+          }
           type="submit"
           value="generate-profile"
         >
-          <span>Generate profile</span>
+          <span>{generateButtonLabel}</span>
         </button>
       </div>
     </section>

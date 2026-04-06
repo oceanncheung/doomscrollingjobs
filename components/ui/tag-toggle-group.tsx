@@ -10,6 +10,7 @@ interface TagToggleGroupOption {
 
 interface TagToggleGroupProps {
   helper?: string
+  hideLabel?: boolean
   label: string
   onChange: (values: string[]) => void
   options: TagToggleGroupOption[]
@@ -19,6 +20,7 @@ interface TagToggleGroupProps {
 
 export function TagToggleGroup({
   helper,
+  hideLabel = false,
   label,
   onChange,
   options,
@@ -37,8 +39,12 @@ export function TagToggleGroup({
   }
 
   return (
-    <div className={`field tag-input-field${reviewState ? ` field--${reviewState}` : ''}`}>
-      <FieldLabelRow reviewState={reviewState}>{label}</FieldLabelRow>
+    <div
+      aria-label={hideLabel ? label : undefined}
+      className={`field tag-input-field${reviewState ? ` field--${reviewState}` : ''}`}
+      role={hideLabel ? 'group' : undefined}
+    >
+      {hideLabel ? null : <FieldLabelRow reviewState={reviewState}>{label}</FieldLabelRow>}
       <div className="tag-toggle-group">
         {options.map((option) => {
           const isSelected = selectedValues.has(option.value)

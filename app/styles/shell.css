@@ -127,6 +127,7 @@
 .dashboard-workspace .today-rail {
   --today-rail-pad-left: var(--site-gutter);
   --today-rail-pad-right: var(--today-rail-pad-left);
+  --today-rail-scroll-tail: 72px;
   padding-top: 24px;
   padding-left: var(--today-rail-pad-left);
   padding-right: var(--today-rail-pad-right);
@@ -161,7 +162,7 @@
   gap: 24px;
   align-content: start;
   justify-items: stretch;
-  padding-bottom: 24px;
+  padding-bottom: var(--today-rail-scroll-tail);
   box-sizing: border-box;
 }
 
@@ -197,7 +198,7 @@
   flex-direction: column;
   gap: 24px;
   padding-top: 0;
-  padding-bottom: 24px;
+  padding-bottom: var(--today-rail-scroll-tail);
   box-sizing: border-box;
 }
 

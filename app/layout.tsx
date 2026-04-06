@@ -67,12 +67,15 @@ function HeaderFallback({ counts }: { counts?: Partial<Record<QueueView, number>
           <Link className="site-mobile-menu-link" href={getQueueViewHref(view)} key={view}>
             <span>{getQueueViewLabel(view)}</span>
             {typeof counts?.[view] === 'number' ? (
-              <span className="site-workflow-count">{counts[view]}</span>
+              <span className="site-mobile-menu-item-meta site-workflow-count">{counts[view]}</span>
             ) : null}
           </Link>
         ))}
-        <Link className="site-mobile-menu-link" href="/profile">
+        <Link className="site-mobile-menu-link site-mobile-menu-link--settings" href="/profile">
           <span>Profile Settings</span>
+          <span className="site-mobile-menu-item-meta site-mobile-menu-settings-mark">
+            <ProfileSettingsIcon className="site-profile-icon" />
+          </span>
         </Link>
       </div>
     </header>

@@ -128,9 +128,11 @@ export function createProfileFormInitialState(workspace: OperatorWorkspaceRecord
 }
 
 export function getProfileFormDraftState({
+  sourceResumeFileName,
   sourceCoverLetterFileName,
   workspace,
 }: {
+  sourceResumeFileName: string | null
   sourceCoverLetterFileName: string | null
   workspace: OperatorWorkspaceRecord
 }) {
@@ -144,6 +146,25 @@ export function getProfileFormDraftState({
   const persistedCoverLetterSourceFileName =
     getSourceContentString(resumeSourceContent, 'coverLetterSourceFileName') ||
     getSourceContentString(coverLetterSourceContent, 'coverLetterSourceFileName')
+  const generatedResumeSourceFileName =
+    normalizeFileName(getSourceContentString(resumeSourceContent, 'generatedResumeSourceFileName')) ??
+    normalizeFileName(workspace.resumeMaster.resumePdfFileName)
+  const generatedCoverLetterSourceFileName =
+    normalizeFileName(getSourceContentString(resumeSourceContent, 'generatedCoverLetterSourceFileName')) ??
+    normalizeFileName(getSourceContentString(coverLetterSourceContent, 'generatedCoverLetterSourceFileName')) ??
+    normalizeFileName(workspace.resumeMaster.coverLetterPdfFileName)
+  const normalizedCurrentResumeSourceFileName = normalizeFileName(sourceResumeFileName)
+  const normalizedCurrentCoverLetterSourceFileName = normalizeFileName(sourceCoverLetterFileName)
+  const hasGeneratedDraft = Boolean(
+    workspace.status.sourceState === 'draft_generated' ||
+      resumeGeneratedFrom === 'raw-source-upload' ||
+      resumeDraftGeneratedAt,
+  )
+  const isGeneratedFromCurrentSources =
+    hasGeneratedDraft &&
+    Boolean(normalizedCurrentResumeSourceFileName) &&
+    generatedResumeSourceFileName === normalizedCurrentResumeSourceFileName &&
+    generatedCoverLetterSourceFileName === normalizedCurrentCoverLetterSourceFileName
 
   return {
     hasCoverLetterSource: Boolean(
@@ -151,10 +172,7 @@ export function getProfileFormDraftState({
         persistedCoverLetterSourceText ||
         persistedCoverLetterSourceFileName,
     ),
-    hasGeneratedDraft: Boolean(
-      workspace.status.sourceState === 'draft_generated' ||
-        resumeGeneratedFrom === 'raw-source-upload' ||
-        resumeDraftGeneratedAt,
-    ),
+    hasGeneratedDraft,
+    isGeneratedFromCurrentSources,
   }
 }

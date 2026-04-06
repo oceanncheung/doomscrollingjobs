@@ -11,6 +11,8 @@ import type { ReviewState } from '@/lib/profile/master-assets'
 
 interface TagInputProps {
   helper?: string
+  /** When true, omit the label row (use an external `FieldLabelRow`). */
+  hideLabel?: boolean
   label: string
   onChange: (tags: string[]) => void
   placeholder?: string
@@ -22,6 +24,7 @@ interface TagInputProps {
 
 export function TagInput({
   helper,
+  hideLabel = false,
   label,
   onChange,
   preserveCase = false,
@@ -207,8 +210,12 @@ export function TagInput({
   )
 
   return (
-    <div className={`field tag-input-field${reviewState ? ` field--${reviewState}` : ''}`}>
-      <FieldLabelRow reviewState={reviewState}>{label}</FieldLabelRow>
+    <div
+      aria-label={hideLabel ? label : undefined}
+      className={`field tag-input-field${reviewState ? ` field--${reviewState}` : ''}`}
+      role={hideLabel ? 'group' : undefined}
+    >
+      {hideLabel ? null : <FieldLabelRow reviewState={reviewState}>{label}</FieldLabelRow>}
       <div className="tag-input-container tag-input-container--square" ref={containerRef}>
         <div className="tag-list">
           {tags.map((tag, i) => (

@@ -215,30 +215,105 @@
   gap: var(--settings-stack-gap);
 }
 
-.settings-job-targets-row {
+.settings-job-targets-grid {
   grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-  align-items: start;
-}
-
-.settings-job-targets-col-left,
-.settings-job-targets-col-right {
-  display: grid;
-  gap: 16px;
-  align-items: start;
   min-width: 0;
 }
 
-.settings-job-targets-salary-range {
+.settings-job-targets-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.settings-job-targets-stack-sm {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.settings-job-targets-stack-sm .field-label-row {
+  align-items: flex-start;
+}
+
+.settings-job-targets-stack-sm--spacer .settings-job-targets-stack-sm-content {
+  min-height: 0;
+}
+
+.settings-job-targets-stack-sm-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-width: 0;
+  min-height: 0;
+}
+
+.settings-job-targets-eyebrow {
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.settings-job-targets-salary-eyebrow-band {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
 
-.settings-job-targets-row .settings-salary-currency-field select {
+.settings-job-targets-salary-eyebrow-label {
+  cursor: pointer;
+  margin: 0;
+}
+
+.settings-job-targets-salary-inputs-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.settings-job-targets-grid .settings-job-targets-flex-toggles {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  min-height: 0;
+  /* Match `.tag-input-container` top padding so controls sit on the same band after the 6px stack gap */
+  padding: 8px 0 0;
+  box-sizing: border-box;
+}
+
+/* Prioritize | Remote: keep the global 6px eyebrow→content gap; do not center in the stretched flex slot */
+.settings-job-targets-pair:has(.settings-job-targets-flex-toggles) .settings-job-targets-stack-sm-content {
+  justify-content: flex-start;
+}
+
+/* Match salary currency (`.field .overlay-option-button__label`) + sit on same band as tag chips */
+.settings-job-targets-grid .settings-job-targets-flex-toggles .checkbox-field span {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.16px;
+  text-transform: none;
+  color: var(--text);
+}
+
+.settings-job-targets-control-field {
+  width: 100%;
+  min-width: 0;
+}
+
+.settings-job-targets-control-field .overlay-option-field {
   width: 100%;
 }
 
@@ -272,14 +347,13 @@
 
 .strengths-tag-stack .tag-input-field,
 .settings-tag-row .tag-input-field,
-.settings-job-targets-col-left .tag-input-field {
+.settings-job-targets-grid .tag-input-field {
   gap: 6px;
   align-content: start;
 }
 
 .strengths-tag-stack .tag-input-container,
-.settings-tag-row .tag-input-container,
-.settings-job-targets-col-left .tag-input-container {
+.settings-tag-row .tag-input-container {
   min-height: 40px;
   padding: 8px 0;
   border: 0;
@@ -288,15 +362,35 @@
   box-sizing: border-box;
 }
 
+/* Match `.settings-advanced-tags-row` / square tag fields: no full-width rule under chips */
+.settings-job-targets-grid .tag-input-container {
+  min-height: 0;
+  padding: 8px 0 0;
+  border: 0;
+  border-bottom: none;
+  align-items: flex-end;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.settings-job-targets-grid .tag-toggle-group {
+  padding: 8px 0 0;
+  min-height: 0;
+  align-items: flex-end;
+  align-content: flex-end;
+  flex-wrap: wrap;
+  box-sizing: border-box;
+}
+
 .strengths-tag-stack .tag-list,
 .settings-tag-row .tag-list,
-.settings-job-targets-col-left .tag-list {
+.settings-job-targets-grid .tag-list {
   gap: 8px;
 }
 
 .strengths-tag-stack .field small,
 .settings-tag-row .field small,
-.settings-job-targets-col-left .field small {
+.settings-job-targets-grid .field small {
   margin-top: 0;
 }
 
@@ -449,6 +543,11 @@
 .field--needs-input .tag-input-container {
   background: transparent;
   border-bottom-width: 1px;
+}
+
+.settings-job-targets-grid .field--needs-input .tag-input-container {
+  border-bottom: none;
+  border-bottom-width: 0;
 }
 
 .field textarea,
@@ -705,19 +804,18 @@
   align-self: start;
 }
 
-/* Label row: same height as experience `.field` inputs; Context uses AutoSizeTextarea below. */
-.repeat-card-proof-stack > .field.field--fixed-scroll {
-  height: 59px;
-  grid-template-rows: auto minmax(0, 1fr);
-  align-content: start;
+.repeat-card-proof-label {
+  min-width: 0;
 }
 
-.repeat-card-proof-stack > .field.field--fixed-scroll textarea {
+.repeat-card-proof-label textarea {
+  box-sizing: border-box;
   min-height: 0;
-  height: 100%;
-  max-height: none;
+  overflow-y: hidden;
   resize: none;
-  overflow-y: auto;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .settings-main .repeat-card-proof-stack .settings-field-autosize textarea {

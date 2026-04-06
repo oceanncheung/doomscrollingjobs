@@ -1,12 +1,13 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 interface WorkspaceRailShellProps {
   ariaLabel?: string
   children: ReactNode
   className?: string
+  collapseAction?: ReactNode
   collapsedLabel?: string
   collapsedPreview?: string | null
   footer?: ReactNode
@@ -17,6 +18,7 @@ export function WorkspaceRailShell({
   ariaLabel,
   children,
   className = 'today-rail',
+  collapseAction,
   collapsedLabel,
   collapsedPreview,
   footer,
@@ -24,6 +26,30 @@ export function WorkspaceRailShell({
 }: WorkspaceRailShellProps) {
   const hasRailCollapse = Boolean(collapsedLabel)
   const [isRailCollapsed, setIsRailCollapsed] = useState(hasRailCollapse)
+  const toggleRailCollapsed = () => setIsRailCollapsed((collapsed) => !collapsed)
+
+  useEffect(() => {
+    if (!hasRailCollapse || isRailCollapsed || typeof window === 'undefined') {
+      return undefined
+    }
+
+    const mediaQuery = window.matchMedia('(max-width: 900px)')
+
+    if (!mediaQuery.matches) {
+      return undefined
+    }
+
+    const previousBodyOverflow = document.body.style.overflow
+    const previousHtmlOverflow = document.documentElement.style.overflow
+
+    document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow
+      document.documentElement.style.overflow = previousHtmlOverflow
+    }
+  }, [hasRailCollapse, isRailCollapsed])
 
   return (
     <div className="dashboard-rail-column">
@@ -39,11 +65,11 @@ export function WorkspaceRailShell({
           .join(' ')}
       >
         {hasRailCollapse ? (
-          <div className="rail-collapse-handle">
+          <div className={`rail-collapse-handle${collapseAction ? ' has-action' : ''}`}>
             <button
               aria-expanded={!isRailCollapsed}
               className="rail-collapse-toggle"
-              onClick={() => setIsRailCollapsed((collapsed) => !collapsed)}
+              onClick={toggleRailCollapsed}
               type="button"
             >
               <span className="rail-collapse-copy">
@@ -52,6 +78,15 @@ export function WorkspaceRailShell({
                   <span className="rail-collapse-preview">{collapsedPreview}</span>
                 ) : null}
               </span>
+            </button>
+            {collapseAction ? <div className="rail-collapse-action">{collapseAction}</div> : null}
+            <button
+              aria-expanded={!isRailCollapsed}
+              aria-label={`${isRailCollapsed ? 'Expand' : 'Collapse'} ${collapsedLabel}`}
+              className="rail-collapse-icon-toggle"
+              onClick={toggleRailCollapsed}
+              type="button"
+            >
               <span aria-hidden="true" className="rail-collapse-indicator">
                 {isRailCollapsed ? '+' : '−'}
               </span>

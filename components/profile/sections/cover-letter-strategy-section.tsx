@@ -173,9 +173,11 @@ export function CoverLetterStrategySection({
                     </div>
                     <div className="repeat-card-proof-grid">
                       <div className="repeat-card-proof-stack">
-                        <label className={`field field--${proofBankReviewState} field--fixed-scroll`}>
+                        <label
+                          className={`field settings-field-autosize repeat-card-proof-label field--${proofBankReviewState}`}
+                        >
                           <span>Label</span>
-                          <textarea
+                          <AutoSizeTextarea
                             name="coverLetterProofLabel"
                             onChange={(event) => {
                               const label = event.target.value.replace(/\r?\n/g, '')
@@ -190,7 +192,6 @@ export function CoverLetterStrategySection({
                                 event.preventDefault()
                               }
                             }}
-                            rows={1}
                             value={entry.label}
                           />
                         </label>

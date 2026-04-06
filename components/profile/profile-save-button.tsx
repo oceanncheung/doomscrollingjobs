@@ -3,7 +3,7 @@
 import { useProfileSaveButtonAttention } from '@/components/profile/profile-save-message-root'
 
 export function ProfileSaveButton({ formId }: { formId: string }) {
-  const { saveButtonFlashToken } = useProfileSaveButtonAttention()
+  const { hasUnsavedChanges, saveButtonFlashToken } = useProfileSaveButtonAttention()
   const flashClassName =
     saveButtonFlashToken === 0
       ? ''
@@ -14,10 +14,11 @@ export function ProfileSaveButton({ formId }: { formId: string }) {
   return (
     <button
       className={`button button-primary settings-save-button${flashClassName}`}
+      disabled={!hasUnsavedChanges}
       form={formId}
       type="submit"
     >
-      Save settings
+      Save Profile
     </button>
   )
 }

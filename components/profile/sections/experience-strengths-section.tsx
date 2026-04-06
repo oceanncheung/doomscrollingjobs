@@ -279,9 +279,9 @@ export function ExperienceStrengthsSection({
                     </div>
                   </div>
                   <div className="field-grid field-grid-2">
-                    <label className="field field--fixed-scroll">
+                    <label className="field settings-field-autosize">
                       <span>What you did</span>
-                      <textarea
+                      <AutoSizeTextarea
                         name="experienceSummary"
                         onChange={(event) => {
                           setExperienceEntries((current) =>
@@ -290,7 +290,6 @@ export function ExperienceStrengthsSection({
                             ),
                           )
                         }}
-                        rows={5}
                         value={entry.summary}
                       />
                     </label>

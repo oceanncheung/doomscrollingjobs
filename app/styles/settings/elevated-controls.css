@@ -211,6 +211,10 @@
   z-index: 1;
 }
 
+.settings-tab-toolbar-shell {
+  position: relative;
+}
+
 .settings-tab-shell.has-selection .settings-tab-toolbar {
   background: var(--bg);
   box-sizing: border-box;

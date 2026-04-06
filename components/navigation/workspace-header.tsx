@@ -1,8 +1,8 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 
 import { ProfileSettingsIcon } from '@/components/navigation/profile-settings-icon'
 import {
@@ -15,6 +15,7 @@ import { getQueueViewLabel } from '@/lib/jobs/workflow-state'
 
 export function WorkspaceHeader({ counts }: { counts?: Partial<Record<QueueView, number>> }) {
   const pathname = usePathname()
+  const router = useRouter()
   const searchParams = useSearchParams()
   const currentRouteKey = `${pathname}?${searchParams.toString()}`
   const [mobileMenuState, setMobileMenuState] = useState({
@@ -45,11 +46,13 @@ export function WorkspaceHeader({ counts }: { counts?: Partial<Record<QueueView,
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [currentRouteKey, mobileMenuOpen])
 
-  const closeMobileMenu = () =>
+  const navigateMobileMenu = (href: string) => () => {
     setMobileMenuState({
       open: false,
       routeKey: currentRouteKey,
     })
+    router.push(href)
+  }
 
   return (
     <header className="site-header">
@@ -108,27 +111,30 @@ export function WorkspaceHeader({ counts }: { counts?: Partial<Record<QueueView,
         id="site-mobile-menu"
       >
         {queueViews.map((view) => (
-          <Link
+          <button
             aria-current={activeView === view ? 'page' : undefined}
             className="site-mobile-menu-link"
-            href={getQueueViewHref(view)}
             key={view}
-            onClick={closeMobileMenu}
+            onClick={navigateMobileMenu(getQueueViewHref(view))}
+            type="button"
           >
             <span>{getQueueViewLabel(view)}</span>
             {typeof counts?.[view] === 'number' ? (
-              <span className="site-workflow-count">{counts[view]}</span>
+              <span className="site-mobile-menu-item-meta site-workflow-count">{counts[view]}</span>
             ) : null}
-          </Link>
+          </button>
         ))}
-        <Link
+        <button
           aria-current={profileActive ? 'page' : undefined}
-          className="site-mobile-menu-link"
-          href="/profile"
-          onClick={closeMobileMenu}
+          className="site-mobile-menu-link site-mobile-menu-link--settings"
+          onClick={navigateMobileMenu('/profile')}
+          type="button"
         >
           <span>Profile Settings</span>
-        </Link>
+          <span className="site-mobile-menu-item-meta site-mobile-menu-settings-mark">
+            <ProfileSettingsIcon className="site-profile-icon" />
+          </span>
+        </button>
       </div>
     </header>
   )

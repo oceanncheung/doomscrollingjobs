@@ -807,6 +807,12 @@ export async function saveOperatorProfile(
       achievementCount: achievementBank.length,
       coverLetterSourceFileName: parsedRawCoverLetterDocument.fileName,
       coverLetterSourceText: parsedRawCoverLetterDocument.parsedText,
+      generatedCoverLetterSourceFileName: isGenerateProfileIntent
+        ? parsedRawCoverLetterDocument.fileName
+        : asOptionalUnknownText(existingResumeSourceContent?.generatedCoverLetterSourceFileName),
+      generatedResumeSourceFileName: isGenerateProfileIntent
+        ? parsedRawResumeDocument.fileName
+        : asOptionalUnknownText(existingResumeSourceContent?.generatedResumeSourceFileName),
       educationCount: educationEntries.length,
       experienceCount: experienceEntries.length,
       portfolioDocumentText:
@@ -902,6 +908,12 @@ export async function saveOperatorProfile(
       ...existingCoverLetterMaster.sourceContent,
       coverLetterSourceFileName: parsedRawCoverLetterDocument.fileName,
       coverLetterSourceText: parsedRawCoverLetterDocument.parsedText,
+      generatedCoverLetterSourceFileName: isGenerateProfileIntent
+        ? parsedRawCoverLetterDocument.fileName
+        : asOptionalUnknownText(existingCoverLetterMaster.sourceContent.generatedCoverLetterSourceFileName),
+      generatedResumeSourceFileName: isGenerateProfileIntent
+        ? parsedRawResumeDocument.fileName
+        : asOptionalUnknownText(existingCoverLetterMaster.sourceContent.generatedResumeSourceFileName),
       proofBankCount: proofBankEntries.length,
       updatedFrom: 'profile-workspace',
     },
@@ -1169,7 +1181,7 @@ export async function saveOperatorProfile(
 
   return {
     message: isGenerateProfileIntent
-      ? `${operatorPayload.display_name} profile draft refreshed from the uploaded documents. Review the editable sections, then save settings when ready.${unresolvedDraftNote}${rankingRefreshNote}`
+      ? `${operatorPayload.display_name} profile draft refreshed from the uploaded documents. Review the editable sections, then save profile when ready.${unresolvedDraftNote}${rankingRefreshNote}`
       : `${operatorPayload.display_name} workspace saved with ${experienceEntries.length} experience entries and ${portfolioItems.length} portfolio items.${approvalNote}${unresolvedDraftNote}${coverLetterDraftNote}${rankingRefreshNote}`,
     status: 'success',
   }
