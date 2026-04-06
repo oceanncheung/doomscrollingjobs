@@ -51,6 +51,7 @@ export function PacketHiddenFields({
       <textarea hidden name="tailoringNotes" readOnly value={packet.resumeVersion.tailoringNotes} />
       <textarea hidden name="coverLetterDraft" readOnly value={packet.coverLetterDraft} />
       <textarea hidden name="coverLetterSummary" readOnly value={packet.coverLetterSummary} />
+      <textarea hidden name="coverLetterChangeSummary" readOnly value={packet.coverLetterChangeSummary} />
       <textarea hidden name="professionalSummary" readOnly value={packet.professionalSummary} />
       <input name="portfolioPrimaryLabel" type="hidden" value={packet.portfolioRecommendation.primaryLabel} />
       <input name="portfolioPrimaryUrl" type="hidden" value={packet.portfolioRecommendation.primaryUrl} />

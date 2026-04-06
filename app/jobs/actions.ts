@@ -501,6 +501,7 @@ export async function saveApplicationPacket(
     {
       application_checklist: asList(formData.get('checklistItems')),
       case_study_selection: caseStudySelection,
+      cover_letter_change_summary: asOptionalText(formData.get('coverLetterChangeSummary')),
       cover_letter_draft: asOptionalText(formData.get('coverLetterDraft')),
       cover_letter_summary: asOptionalText(formData.get('coverLetterSummary')),
       generated_at: existingPacket?.generated_at ?? now,

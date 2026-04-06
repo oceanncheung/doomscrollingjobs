@@ -2,6 +2,7 @@ import { PacketStatus } from '@/components/jobs/packet-primitives'
 import { SectionHeading } from '@/components/ui/section-heading'
 
 interface PacketMaterialsSectionProps {
+  coverLetterChangeSummary: string
   coverLetterReady: boolean
   coverLetterSummary: string
   resumeChangeSummary: string
@@ -10,6 +11,7 @@ interface PacketMaterialsSectionProps {
 }
 
 export function PacketMaterialsSection({
+  coverLetterChangeSummary,
   coverLetterReady,
   coverLetterSummary,
   resumeChangeSummary,
@@ -48,6 +50,13 @@ export function PacketMaterialsSection({
             </div>
             <p className="packet-material-copy">{coverLetterSummary}</p>
             <PacketStatus ready={coverLetterReady} />
+          </article>
+
+          <article className="packet-material-block">
+            <div className="packet-material-heading">
+              <p className="upload-slot-label">Cover letter changes</p>
+            </div>
+            <p className="packet-material-copy">{coverLetterChangeSummary}</p>
           </article>
         </div>
       </div>

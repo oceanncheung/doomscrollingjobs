@@ -196,6 +196,7 @@ export async function generateAndPersistApplicationPacket(
       {
         application_checklist: review.packet.checklistItems,
         case_study_selection: review.packet.caseStudySelection,
+        cover_letter_change_summary: generated.coverLetter.changeSummaryForUser,
         cover_letter_draft: generated.coverLetter.draft,
         cover_letter_summary: generated.coverLetter.summary,
         generated_at: now,

@@ -197,6 +197,7 @@ export interface ApplicationPacketRecord {
   answers: ApplicationAnswerRecord[]
   caseStudySelection: PacketCaseStudyRecord[]
   checklistItems: string[]
+  coverLetterChangeSummary: string
   coverLetterDraft: string
   coverLetterSummary: string
   generationError?: string

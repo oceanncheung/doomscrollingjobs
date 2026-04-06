@@ -26,6 +26,7 @@ function getPreviewText(value: string, fallback: string, maxLength = 220) {
 }
 
 export interface PacketMaterialsViewModel {
+  coverLetterChangeSummary: string
   coverLetterReady: boolean
   coverLetterSummary: string
   readyAnswerCount: number
@@ -49,8 +50,18 @@ export function buildPacketMaterialsViewModel(packet: ApplicationPacketRecord): 
   const lifecycle = getPacketLifecycle(packet)
   const resumeSource = getFirstFilledText(packet.resumeVersion.summaryText, packet.professionalSummary)
   const coverLetterSource = packet.coverLetterDraft.trim()
+  const coverLetterChangeDedicated = getFirstFilledText(packet.coverLetterChangeSummary)
+  /* Same pipeline as resume change summary: AI `changeSummaryForUser` → DB. If missing (legacy row), reuse the one-line cover letter summary so this cell isn’t stuck on the pre-gen placeholder. */
+  const coverLetterChangeDisplay =
+    coverLetterChangeDedicated ||
+    (coverLetterSource ? getFirstFilledText(packet.coverLetterSummary) : '')
+  const coverLetterChangeFallback =
+    coverLetterSource && !coverLetterChangeDisplay
+      ? 'Regenerate application materials to capture the cover-letter change summary for this packet.'
+      : 'A short explanation of how the cover letter was tailored will appear here once the application materials are generated.'
 
   return {
+    coverLetterChangeSummary: getPreviewText(coverLetterChangeDisplay, coverLetterChangeFallback),
     coverLetterReady: Boolean(coverLetterSource),
     coverLetterSummary: getPreviewText(
       packet.coverLetterSummary || coverLetterSource,

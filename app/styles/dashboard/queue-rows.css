@@ -178,6 +178,13 @@ main.jobs-index .queue-list .stage-disclosure {
 .screening-cell {
   display: grid;
   gap: 6px;
+  min-width: 0;
+}
+
+/* Trailing column only: inset from queue-column right edge (grid gap does not pad the outer edge). */
+.screening-summary-grid > .screening-cell:last-child {
+  padding-right: 10px;
+  box-sizing: border-box;
 }
 
 .screening-cell .stage-column-label {
@@ -453,6 +460,11 @@ main.jobs-index .queue-list .stage-disclosure {
 
 .stage-actions-bar .stage-action-slot + .stage-action-slot {
   margin-left: calc(-1 * var(--adjacent-control-overlap));
+}
+
+/* Jobs index: adjacent slot buttons share one vertical rule (two 1px borders + overlap read as a thick line). */
+main.jobs-index .queue-list .stage-actions-bar .stage-action-slot + .stage-action-slot .button {
+  border-left-width: 0;
 }
 
 .screening-action-slot + .screening-action-slot {

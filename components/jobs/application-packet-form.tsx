@@ -47,6 +47,7 @@ export function ApplicationPacketForm({
       {lifecycle.hasGeneratedContent ? (
         <>
           <PacketMaterialsSection
+            coverLetterChangeSummary={viewModel.coverLetterChangeSummary}
             coverLetterReady={viewModel.coverLetterReady}
             coverLetterSummary={viewModel.coverLetterSummary}
             resumeChangeSummary={viewModel.resumeChangeSummary}

@@ -36,7 +36,7 @@ export async function generateCoverLetter(input: CoverLetterInput): Promise<Cove
     `Cover-letter output constraints: ${input.workspace.coverLetterMaster.outputConstraints.join(' | ')}`,
   ].join('\n')
 
-  const response = await generateOpenAIJson<CoverLetterOutput>({
+  const response = await generateOpenAIJson<Record<string, unknown>>({
     model: packetModel,
     promptVersion: generateCoverLetterPrompt.version,
     schemaHint: generateCoverLetterPrompt.schemaHint,
@@ -44,12 +44,19 @@ export async function generateCoverLetter(input: CoverLetterInput): Promise<Cove
     user,
   })
 
-  const normalized = {
-    draft: String(response.draft ?? '').trim(),
-    summary: cleanLine(response.summary ?? ''),
+  const changeSummaryForUser = cleanLine(
+    String(response.changeSummaryForUser ?? response.change_summary_for_user ?? ''),
+  )
+  const draft = String(response.draft ?? '').trim()
+  const summary = cleanLine(String(response.summary ?? ''))
+
+  const normalized: CoverLetterOutput = {
+    changeSummaryForUser,
+    draft,
+    summary,
   }
 
-  if (!normalized.draft || !normalized.summary) {
+  if (!normalized.draft || !normalized.summary || !normalized.changeSummaryForUser) {
     throw new Error('Cover letter generation returned incomplete content.')
   }
 

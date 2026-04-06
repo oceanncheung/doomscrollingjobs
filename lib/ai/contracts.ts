@@ -57,6 +57,7 @@ export interface CoverLetterInput {
 }
 
 export interface CoverLetterOutput {
+  changeSummaryForUser: string
   draft: string
   summary: string
 }

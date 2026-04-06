@@ -308,6 +308,7 @@ export function buildGeneratedPacket(
     answers: [],
     caseStudySelection,
     checklistItems: buildChecklist(job, caseStudySelection),
+    coverLetterChangeSummary: '',
     coverLetterDraft: buildCoverLetterDraft(workspace, job, caseStudySelection),
     coverLetterSummary: buildCoverLetterSummary(buildCoverLetterDraft(workspace, job, caseStudySelection)),
     generationStatus: 'not_started',

@@ -363,6 +363,8 @@ export async function getApplicationPacketReview(
         asStringArray(packetRow.application_checklist).length > 0
           ? asStringArray(packetRow.application_checklist)
           : generatedPacket.checklistItems,
+      coverLetterChangeSummary:
+        asString(packetRow.cover_letter_change_summary) || generatedPacket.coverLetterChangeSummary,
       coverLetterDraft: asString(packetRow.cover_letter_draft) || generatedPacket.coverLetterDraft,
       coverLetterSummary: asString(packetRow.cover_letter_summary) || generatedPacket.coverLetterSummary,
       generationError: asString(packetRow.generation_error) || undefined,

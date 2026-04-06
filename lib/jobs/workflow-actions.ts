@@ -34,7 +34,7 @@ const quickActions: Record<JobWorkflowQuickActionKind, JobWorkflowQuickAction> =
     targetStatus: 'applied',
   },
   restore: {
-    defaultLabel: 'Back to Potential',
+    defaultLabel: 'Potential',
     kind: 'restore',
     targetStatus: 'ranked',
   },
