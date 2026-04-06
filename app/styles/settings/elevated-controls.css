@@ -26,13 +26,15 @@
 }
 
 .settings-action-summary {
-  display: flex;
+  display: inline-flex;
   justify-content: flex-start;
   align-items: stretch;
   margin: 0;
   padding-bottom: 0;
   list-style: none;
-  cursor: pointer;
+  width: max-content;
+  max-width: 100%;
+  cursor: default;
 }
 
 .settings-action-summary::-webkit-details-marker {
@@ -146,8 +148,9 @@
   border: 0;
   outline: 0;
   background-color: var(--bg);
-  padding-left: var(--queue-column-pad);
-  padding-right: var(--settings-section-pad-right);
+  margin-left: var(--queue-column-pad);
+  padding-left: 0;
+  padding-right: 0;
   box-sizing: border-box;
 }
 
