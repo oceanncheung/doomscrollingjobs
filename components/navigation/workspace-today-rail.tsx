@@ -30,10 +30,17 @@ export function WorkspaceTodayRail({
   const applyNextJob = getApplyNextJob({ preparedJobs, savedJobs })
   const applyNextAction = applyNextJob ? getApplyNextAction(applyNextJob) : null
   const newTodayCount = getNewTodayCount(jobs)
+  const railPreview = screeningLocked
+    ? (readinessPresentation?.todayRailLines[0] ?? 'Complete your profile to unlock the queue.')
+    : applyNextJob
+      ? `${applyNextJob.title} — ${applyNextJob.companyName}`
+      : 'No job ready yet'
 
   return (
     <WorkspaceRailShell
       ariaLabel="Today"
+      collapsedLabel="Apply next"
+      collapsedPreview={railPreview}
       footer={
         <div className="today-rail-footer">
           <section className="today-block">

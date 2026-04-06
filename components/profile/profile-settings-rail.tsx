@@ -69,11 +69,15 @@ export function ProfileSettingsRail({ formId, workspace }: ProfileSettingsRailPr
     workspace.profile.updatedAt,
     workspace.profile.timezone || 'America/Toronto',
   )
+  const identityPreview =
+    workspace.profile.displayName.trim() || workspace.profile.email.trim() || 'Profile info'
 
   return (
     <WorkspaceRailShell
       ariaLabel="Profile setup"
       className="today-rail settings-profile-rail"
+      collapsedLabel="Identity"
+      collapsedPreview={identityPreview}
       footer={
         <div className="settings-profile-rail-footer">
           <section className="today-block settings-rail-actions-block">
