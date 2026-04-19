@@ -794,7 +794,19 @@
    * 1px border is absorbed from the content area — the chip's outer
    * dimensions don't change, siblings don't stretch, nothing shifts.
    */
-  .settings-tab-shell.has-selection .settings-tab-button.is-active {
+  /*
+   * Cover both the plain and `:hover` selectors — on iOS Safari, `:hover`
+   * sticks to a tapped element until the user taps somewhere else, so the
+   * freshly-activated chip ends up matching the upstream `:hover { border-
+   * bottom: 0 }` rule (line ~464). That was nullifying the 1px border and
+   * letting the shell hairline show through. Matching `:hover` here brings
+   * us to the same (0,5,0) specificity at a later source position, so our
+   * border wins. The more-specific disclosure-experience/cover-letter
+   * :hover rule only sets border-bottom-color, not width, so it composes
+   * cleanly on top of this.
+   */
+  .settings-tab-shell.has-selection .settings-tab-button.is-active,
+  .settings-tab-shell.has-selection .settings-tab-button.is-active:hover {
     border-bottom: 1px solid var(--surface-soft);
   }
 
