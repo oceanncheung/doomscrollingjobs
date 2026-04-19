@@ -807,7 +807,11 @@
    */
   .settings-tab-shell.has-selection .settings-tab-button.is-active,
   .settings-tab-shell.has-selection .settings-tab-button.is-active:hover {
-    border-bottom: 1px solid var(--surface-soft);
+    /* 2px (not 1px) to absorb subpixel drift at 3x DPR on iOS — the
+       computed y-positions align exactly (button.bottom === shell::after.bottom)
+       but at 3x, border and hairline can split across adjacent device pixels,
+       leaving a sliver uncovered. 2px guarantees full overlap. */
+    border-bottom: 2px solid var(--surface-soft);
   }
 
   /* Mask pseudo no longer carries the load — retire it on iOS. */
