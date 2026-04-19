@@ -776,6 +776,24 @@
  */
 @supports (-webkit-touch-callout: none) {
   .settings-tab-toolbar-track {
+    /*
+     * The base rule sets `-webkit-overflow-scrolling: touch`, which on iOS
+     * Safari promotes this scroll container to its own GPU compositing
+     * layer. Once the track is on its own layer, the active chip inside
+     * is confined to that layer's paint, and `shell::after` (a pseudo of
+     * toolbar-shell, which lives OUTSIDE the track) ends up on a separate
+     * layer that the iOS compositor places above the track layer —
+     * regardless of what CSS z-index says. That's why the chip's 2px
+     * border-bottom + z-index:10 had no effect on device: the whole
+     * stacking-order conversation was happening at the CSS layer, but
+     * the pixels were being composed at the layer level.
+     *
+     * Overriding to `auto` drops the compositing-layer promotion.
+     * Momentum scrolling is the default on iOS 13+ regardless, so this
+     * is a no-op for scroll feel; it just puts the track back into the
+     * same paint pass as toolbar-shell so standard CSS stacking applies.
+     */
+    -webkit-overflow-scrolling: auto;
     padding-bottom: 4px;
     margin-bottom: -4px;
   }
@@ -807,24 +825,19 @@
    */
   .settings-tab-shell.has-selection .settings-tab-button.is-active,
   .settings-tab-shell.has-selection .settings-tab-button.is-active:hover {
-    /* 2px (not 1px) to absorb subpixel drift at 3x DPR on iOS. */
-    border-bottom: 2px solid var(--surface-soft);
-
     /*
-     * iOS Safari has a long-standing quirk where `position: relative` +
-     * `z-index` elements inside an overflow-hidden scroll container can
-     * end up painted BELOW sibling pseudos that have a lower z-index,
-     * violating the spec's stacking order. Computed data from the real
-     * device confirms the border applied at 2px but still didn't cover
-     * the hairline — meaning iOS is putting the hairline's paint above
-     * the button despite z-index: 2 vs z-index: 1.
-     *
-     * The fix: force the active chip onto its own compositing layer via
-     * `translateZ(0)`, and raise its z-index so there's no ambiguity.
-     * GPU-composited layers on iOS tend to follow z-index properly.
+     * 2px (not 1px) to absorb any 3x-DPR subpixel drift between the
+     * chip's border-box bottom and where shell::after paints.
+     */
+    border-bottom: 2px solid var(--surface-soft);
+    /*
+     * Raise z-index so the chip wins stacking cleanly now that the track
+     * is no longer on its own compositing layer and standard CSS order
+     * applies. No transform here — translateZ would re-introduce a
+     * nested compositing layer inside the track's previous layer and
+     * recreate the exact ordering bug we just removed.
      */
     z-index: 10;
-    transform: translateZ(0);
   }
 
   /* Mask pseudo no longer carries the load — retire it on iOS. */
