@@ -164,6 +164,43 @@ function SourceField({
   )
 }
 
+function LinkedinUrlField({
+  formId,
+  initialLinkedinUrl,
+}: {
+  formId: string
+  initialLinkedinUrl: string
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null)
+
+  // Mirror initialLinkedinUrl into the uncontrolled input's DOM value after
+  // ProfileForm's router.refresh(). <input defaultValue> only seeds on mount,
+  // so without this re-sync the field stays stale after save even though the
+  // server persisted the new URL. Sibling SourceField inputs handle this
+  // internally; the LinkedIn field is a plain <input> (no source-pull
+  // semantics) so it mirrors the same pattern here.
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.value = initialLinkedinUrl
+    }
+  }, [initialLinkedinUrl])
+
+  return (
+    <label className="field">
+      <span>LinkedIn profile</span>
+      <input
+        defaultValue={initialLinkedinUrl}
+        form={formId}
+        inputMode="url"
+        name="linkedinUrl"
+        placeholder="linkedin.com/in/your-name"
+        ref={inputRef}
+        type="text"
+      />
+    </label>
+  )
+}
+
 export function ProfilePublicLinks({
   formId,
   initialPortfolioUrl,
@@ -190,17 +227,7 @@ export function ProfilePublicLinks({
         sourceKind="personal_site"
         sourceLabel="personal website"
       />
-      <label className="field">
-        <span>LinkedIn profile</span>
-        <input
-          defaultValue={initialLinkedinUrl}
-          form={formId}
-          inputMode="url"
-          name="linkedinUrl"
-          placeholder="linkedin.com/in/your-name"
-          type="text"
-        />
-      </label>
+      <LinkedinUrlField formId={formId} initialLinkedinUrl={initialLinkedinUrl} />
     </div>
   )
 }
