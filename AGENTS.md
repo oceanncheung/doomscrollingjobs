@@ -117,6 +117,18 @@ This refinement zone exists to improve implementation quality and maintainabilit
 - Do **not** turn the current ruled editorial UI into card-heavy, rounded, shadowed, gradient, or generic SaaS styling.
 - Do **not** merge distinct pattern families just to make the product feel more uniform.
 
+### Visual deny-list (never introduce any of these without explicit instruction)
+
+- Shadows of any kind (box-shadow, drop-shadow, elevation)
+- `border-radius > 0` — the system is 0px radius everywhere
+- A second accent color — `#D4E700` chartreuse is the only chromatic hue
+- Gradients (linear, radial, conic)
+- Rounded pills, chip-like rounded containers
+- Decorative CSS (dot patterns, background illustrations, non-structural ornamentation)
+- Accent as **text color** on white backgrounds (insufficient contrast)
+- Accent as **link color** — links are black, underline-on-hover, not accent
+- Font weight 700 at sizes below 32px — Light (300) at display, Regular (400) at body, Medium (500) for labels, SemiBold (600) for emphasis
+
 ### Protected Surfaces
 
 - Global workflow header and queue navigation:
