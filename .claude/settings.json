@@ -24,6 +24,19 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // empty'); [ -z \"$f\" ] && exit 0; case \"$f\" in app/*|components/*) ;; *) exit 0 ;; esac; case \"$f\" in *.css|*.tsx) ;; *) exit 0 ;; esac; echo '{\"systemMessage\":\"UI file touched. Before claiming done: run npm run capture:ui and Read the affected screenshot from .codex-artifacts/eval/latest/ui/ to verify rendered output. Flush-to-edge, alignment, hierarchy problems are invisible without seeing the result.\"}'",
+            "timeout": 5,
+            "statusMessage": "UI edit: verify rendered output"
+          }
+        ]
+      }
     ]
   }
 }
