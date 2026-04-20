@@ -421,15 +421,44 @@ export async function saveOperatorProfile(
   _previousState: ProfileActionState,
   formData: FormData,
 ): Promise<ProfileActionState> {
+  const intent = asTextValue(formData.get('intent')) || 'save'
+  const isGenerateProfileIntent = intent === 'generate-profile'
+
+  // Top-level safety net so unhandled throws (from normalizers, supabase
+  // clients, Next cache APIs, OpenAI SDK internals) surface as a visible
+  // error banner instead of escaping the action and landing the user on
+  // Next's blank error page. The per-step inner try/catches don't cover
+  // middle-of-function code (parsing, normalization, upsert prep, parallel
+  // upserts, revalidatePath/refresh), so a TypeError there would otherwise
+  // bypass useActionState's error state entirely.
+  try {
+    return await runSaveOperatorProfile(formData, { isGenerateProfileIntent })
+  } catch (error) {
+    console.error('[saveOperatorProfile] unhandled action error', {
+      intent,
+      error: error instanceof Error ? { message: error.message, stack: error.stack } : error,
+    })
+    const failureLabel = isGenerateProfileIntent ? 'Profile generation' : 'Save'
+    return {
+      message:
+        error instanceof Error
+          ? `${failureLabel} failed: ${error.message}`
+          : `${failureLabel} failed for an unknown reason. Check the server log.`,
+      status: 'error',
+    }
+  }
+}
+
+async function runSaveOperatorProfile(
+  formData: FormData,
+  { isGenerateProfileIntent }: { isGenerateProfileIntent: boolean },
+): Promise<ProfileActionState> {
   if (!hasSupabaseServerEnv()) {
     return {
       message: "Profile saving isn't available right now.",
       status: 'error',
     }
   }
-
-  const intent = asTextValue(formData.get('intent')) || 'save'
-  const isGenerateProfileIntent = intent === 'generate-profile'
 
   const experienceResult = parseExperienceEntries(formData)
   const achievementResult = parseAchievementBank(formData)
