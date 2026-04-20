@@ -43,7 +43,12 @@ Thumbs.db
 # Editor files
 .idea/
 .vscode/
-.claude/
+
+# Claude Code: track project-wide settings.json + launch.json,
+# ignore user-specific permissions, worktrees, and Finder junk
+.claude/settings.local.json
+.claude/worktrees/
+.claude/.DS_Store
 
 # Package manager artifacts generated locally
 .pnpm-store/

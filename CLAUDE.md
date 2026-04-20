@@ -80,6 +80,19 @@ Do **not** save things derivable from the code, git history, or these docs.
 
 ---
 
+## Hooks + retros
+
+`.claude/settings.json` (project-tracked) configures two hooks:
+
+- **SessionStart** — surfaces the latest [docs/retros/](docs/retros/) entry and the path to `.codex-artifacts/eval/latest/report.md` so the next session has continuity.
+- **Stop** — writes a stub at `docs/retros/YYYY-MM-DD-session.md` if today's retro doesn't exist; runs `npm run typecheck` if any `.ts/.tsx` files are dirty and warns on failure (output buffered to `/tmp/claude-tsc-last.log`).
+
+Retro pattern + template: [docs/retros/README.md](docs/retros/README.md) and [docs/retros/_template.md](docs/retros/_template.md).
+
+`.claude/settings.local.json` (gitignored) holds user-specific permission allowlists. `.claude/worktrees/` is gitignored — per the work-from-main rule, no Claude worktrees should exist.
+
+---
+
 ## Verification commands (quick reference)
 
 ```

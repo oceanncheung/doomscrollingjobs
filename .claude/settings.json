@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "DATE=$(date +%Y-%m-%d); STUB=\"docs/retros/${DATE}-session.md\"; MSGS=(); if [ ! -f \"$STUB\" ] && [ -f docs/retros/_template.md ]; then cp docs/retros/_template.md \"$STUB\" && MSGS+=(\"Retro stub created: $STUB\"); fi; DIRTY=$(git status --porcelain 2>/dev/null | grep -E '\\.(ts|tsx)$' | head -1); if [ -n \"$DIRTY\" ]; then if ! npm run typecheck >/tmp/claude-tsc-last.log 2>&1; then MSGS+=(\"typecheck failed (see /tmp/claude-tsc-last.log): $(tail -2 /tmp/claude-tsc-last.log | head -1 | cut -c1-120)\"); fi; fi; if [ ${#MSGS[@]} -gt 0 ]; then jq -nc --arg msg \"$(printf '%s\\n' \"${MSGS[@]}\")\" '{systemMessage:$msg}'; fi; exit 0",
+            "timeout": 90,
+            "statusMessage": "Stop hook: retro stub + typecheck if dirty"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{ LATEST=$(ls -1t docs/retros/[0-9]*.md 2>/dev/null | head -1); [ -n \"$LATEST\" ] && { echo \"### Latest retro: $LATEST\"; cat \"$LATEST\"; echo; }; [ -f .codex-artifacts/eval/latest/report.md ] && echo \"### Latest eval report: .codex-artifacts/eval/latest/report.md\"; } | jq -Rs 'select(length > 0) | {hookSpecificOutput:{hookEventName:\"SessionStart\",additionalContext:.}}'",
+            "timeout": 10,
+            "statusMessage": "SessionStart hook: load latest retro + eval report"
+          }
+        ]
+      }
+    ]
+  }
+}
