@@ -25,14 +25,15 @@ This file is the canonical AI entrypoint. Read it first; it tells you which deep
 
 ## Hard rules (no exceptions without explicit approval)
 
-1. **Work on `main` directly.** No feature branches, no Claude worktrees. If `.claude/worktrees/*` exists, those are stale — do not create more.
-2. **Verify before claiming done.** Run the smallest relevant verification (`npm run typecheck`, smoke, or `npm run eval` if a scored layer is touched) and show output. Never report success without proof.
-3. **One fix per commit.** Atomic. Don't bundle "while I'm here" cleanup into a bug fix.
-4. **Never edit generated artifacts** — `.next`, `.next 2`, `.trace`, `cache/`. Treat `.codex-artifacts/` as read-only inputs.
-5. **Never touch `.env*`, secrets, `middleware.ts`, auth, or payment handlers** without explicit approval.
-6. **Preserve the editorial design language.** No card-heavy, rounded, shadowed, gradient, or generic SaaS conversions. See [AGENTS.md](AGENTS.md) "UI Red Lines" + "Custom UI Protection Rules".
-7. **Root-first fixes.** Identify the layer (token → shared contract → shared component → surface) and edit at the root, not the symptom. See `feedback_root_first_ui_fixes` memory.
-8. **After `git push origin main`, start a background Monitor on the Cloud Run deploy** and notify when complete. See [docs/cloud-run-deployment.md](docs/cloud-run-deployment.md) and `feedback_post_push_deploy_monitor` memory.
+1. **At session start, read the newest `docs/retros/[date]-*.md`.** It carries open threads from the last session. The SessionStart hook also injects it as `additionalContext`, but read the file directly to be sure. If the file is just template placeholders (e.g. `<one sentence...>`, `<commit hash>`), it's an unfilled stub — treat as no-op.
+2. **Work on `main` directly.** No feature branches, no Claude worktrees. If `.claude/worktrees/*` exists, those are stale — do not create more.
+3. **Verify before claiming done.** Run the smallest relevant verification (`npm run typecheck`, smoke, or `npm run eval` if a scored layer is touched) and show output. Never report success without proof.
+4. **One fix per commit.** Atomic. Don't bundle "while I'm here" cleanup into a bug fix.
+5. **Never edit generated artifacts** — `.next`, `.next 2`, `.trace`, `cache/`. Treat `.codex-artifacts/` as read-only inputs.
+6. **Never touch `.env*`, secrets, `middleware.ts`, auth, or payment handlers** without explicit approval.
+7. **Preserve the editorial design language.** No card-heavy, rounded, shadowed, gradient, or generic SaaS conversions. See [AGENTS.md](AGENTS.md) "UI Red Lines" + "Custom UI Protection Rules".
+8. **Root-first fixes.** Identify the layer (token → shared contract → shared component → surface) and edit at the root, not the symptom. See `feedback_root_first_ui_fixes` memory.
+9. **After `git push origin main`, start a background Monitor on the Cloud Run deploy** and notify when complete. See [docs/cloud-run-deployment.md](docs/cloud-run-deployment.md) and `feedback_post_push_deploy_monitor` memory.
 
 ---
 
