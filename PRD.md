@@ -330,10 +330,4 @@ Statuses for Phase 1:
 - more advanced packet generation and version comparison
 - optional integrations for tracking and performance analysis
 
-## 13. Immediate Build Priorities
-
-1. Lock the schema for users, jobs, scoring, and application packets.
-2. Turn the scoring framework into a clear contract with explanations and penalties.
-3. Scaffold the web app and authentication foundation.
-4. Build the jobs dashboard and detail view around normalized records.
-5. Add application packet generation after the data model is stable.
+> §13 "Immediate Build Priorities" removed — all five items (schema lock, scoring framework, app scaffold, dashboard, packet generation) are shipped and marked complete in TASKS.md. Current priorities live in [TASKS.md](TASKS.md).

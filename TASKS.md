@@ -1,7 +1,5 @@
 # Execution Checklist
 
-_Last updated: April 2, 2026_
-
 ## Completed
 
 - [x] Write and keep the product docs in `README.md`, `PRD.md`, `SCHEMA.md`, `SCORING.md`, and `DECISIONS.md`.
