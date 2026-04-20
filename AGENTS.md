@@ -1,5 +1,7 @@
 # Agent notes (UI system + profile/settings)
 
+> **Read [CLAUDE.md](CLAUDE.md) first** for project-wide hard rules, doc map, scope discipline, and verification commands. This file owns UI-specific governance — stylesheet ownership, protected surfaces, shared contracts, and refinement scope.
+
 Use this when editing UI code in this repo, especially:
 - `app/globals.css`
 - `app/styles/*.css`
@@ -33,26 +35,12 @@ Use this when editing UI code in this repo, especially:
 
 ## Default Harness Workflow
 
-- Treat the harness as the default repo operating mode.
-- Read the latest harness artifacts first:
-  - `.codex-artifacts/eval/latest/report.json`
-  - `.codex-artifacts/eval/latest/report.md`
-  - relevant logs and UI artifacts when needed
-- Always use `repo-harness-triage` for diagnosis and prioritization unless explicitly instructed otherwise.
-- If no failure exists, select the highest-value weak spot or coverage caveat instead of inventing new work.
+The full harness workflow + natural-language triggers live in [docs/repo-harness.md](docs/repo-harness.md). Project-wide verification commands and scope discipline live in [CLAUDE.md](CLAUDE.md). For UI work specifically:
+
 - Always operate on a single issue at a time. Do not bundle multiple fixes.
-- Default implementation path for one approved issue: use `repo-controlled-fix-loop`.
-- Rerun the smallest relevant verification first.
-- Rerun `npm run eval` when the issue affects a scored layer, shared contract, workflow behavior, UI contracts, or UI artifacts.
-- Keep external live diagnostics separate from the deterministic core harness. `npm run diagnostic:external-sourcing` is non-gating and must not be treated as part of `npm run eval`.
-
-Natural-language triggers that should follow this workflow:
-
-- "Check the latest harness run and tell me what to fix next."
-- "Use the latest eval results and fix the top issue."
-- "What is the highest-value weak spot after the last eval?"
-- "Inspect the harness output and make one safe fix."
-- "Review the latest screenshots and fix one real inconsistency."
+- Use `repo-harness-triage` for diagnosis and `repo-controlled-fix-loop` for implementation unless instructed otherwise.
+- If no failure exists, pick the highest-value weak spot from the latest eval — do not invent new work.
+- Rerun `npm run eval` when the change affects a scored layer, shared contract, workflow behavior, UI contracts, or UI artifacts. Otherwise rerun the smallest relevant verification first.
 
 ## Custom UI Protection Rules
 

@@ -2,7 +2,10 @@
 
 This repo uses a split CSS architecture. Do not assume a single `globals.css` stylesheet.
 
+The canonical AI entrypoint is [CLAUDE.md](/Users/oceancheung/Documents/Startup/MM.S/z_misc./Doom%20Scrolling%20Jobs/CLAUDE.md) — read it first for project-wide hard rules, doc map, scope discipline, and verification commands. The files below own deeper UI/design context.
+
 Before editing any UI:
+- read [CLAUDE.md](/Users/oceancheung/Documents/Startup/MM.S/z_misc./Doom%20Scrolling%20Jobs/CLAUDE.md)
 - read [UI_CHANGE_PROTOCOL.md](/Users/oceancheung/Documents/Startup/MM.S/z_misc./Doom%20Scrolling%20Jobs/UI_CHANGE_PROTOCOL.md)
 - read [AGENTS.md](/Users/oceancheung/Documents/Startup/MM.S/z_misc./Doom%20Scrolling%20Jobs/AGENTS.md)
 - read [DESIGN.md](/Users/oceancheung/Documents/Startup/MM.S/z_misc./Doom%20Scrolling%20Jobs/DESIGN.md)

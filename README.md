@@ -81,6 +81,7 @@ The product is currently set up as a **single-user internal tool**, so there is 
 - `lib/jobs/` -> source registry, company watchlist, Greenhouse ATS importer, deterministic dedupe, remote + designer-first import gates, and the workflow-learning loop that reweights ranking from shortlist/dismiss/apply signals
 - `supabase/` -> migrations, seed data, and local project config
 - `.env.example` -> required Supabase public URL plus the server-only service role key for internal writes
+- `CLAUDE.md` -> canonical AI entrypoint (hard rules, doc map, scope discipline, verification commands)
 - `README.md` / `PRD.md` / `SCHEMA.md` / `SCORING.md` / `TASKS.md` / `DECISIONS.md` / `DESIGN.md` / `AGENTS.md` / `UI_CHANGE_PROTOCOL.md` -> durable product and repo context
 
 ## 7. Local Setup
