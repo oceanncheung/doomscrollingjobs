@@ -132,82 +132,25 @@ It also captures focused UI contract surfaces for:
 - experience tabs open
 - system-inventory active tab shell
 
-## UI Review Workflow
+## Iteration workflow
 
-After running `npm run eval`, open the screenshots in `.codex-artifacts/eval/latest/ui/`.
+Every pass through the harness follows the same baseline loop:
 
-Review them for:
+1. Run `npm run eval`.
+2. Inspect `.codex-artifacts/eval/latest/report.json`, `report.md`, and screenshots in `.codex-artifacts/eval/latest/ui/`.
+3. Identify one high-confidence issue. Do not bundle multiple fixes.
+4. Fix it (see focus areas below).
+5. Re-run `npm run eval`.
 
-- hierarchy
-- spacing consistency
-- alignment
-- component reuse
-- responsiveness
+### Focus areas (what counts as "high-confidence" varies by task type)
 
-Fix the top 2–3 issues before the next iteration.
+- **UI review (visual/composition):** hierarchy, spacing consistency, alignment, component reuse, responsiveness. Fix top 2–3 issues per pass.
+- **Consistency refinement:** gaps, spacing rhythm, alignment, text hierarchy, padding, same-family sizing. Prefer minimal localized fixes — no layout or component redesign.
+- **Correctness / workflow failures:** fix the failing layer or weakest area surfaced in `report.md`.
 
-## Safe UI Improvement Workflow
+### Guardrails (apply to every variant)
 
-- run `npm run eval`
-- inspect `report.json`, `report.md`, and the screenshots in `.codex-artifacts/eval/latest/ui/`
-- identify only high-confidence UI issues
-- focus on usability, hierarchy, responsiveness, accessibility, and true inconsistency within the same pattern family
-- avoid generic cleanup or aesthetic normalization
-- preserve the custom design language and existing page composition unless the task explicitly asks for a visual change
-- fix one focused issue at a time
-- re-run `npm run eval`
-
-## Consistency Pass Workflow
-
-- inspect the latest `report.json`, `report.md`, and UI artifacts in `.codex-artifacts/eval/latest/ui/`
-- identify only high-confidence consistency issues
-- focus on gaps, spacing rhythm, alignment, text hierarchy, padding, and same-family sizing
-- avoid layout or component redesign
-- prefer minimal localized fixes
-- fix one focused issue at a time
-- rerun `npm run eval` after each pass
-
-## Iteration Loop
-
-- run `npm run eval`
-- identify the failing layer or weakest area
-- fix one focused issue
-- re-run `npm run eval`
-- repeat
-
-## Codex Prompt Template For UI Work
-
-Use a prompt like this when asking Codex to improve the interface:
-
-```text
-Inspect the repo and latest eval artifacts before changing anything.
-
-Preserve the existing custom design language.
-Do not genericize bespoke UI.
-Do not flatten distinct pattern families into a single uniform treatment.
-Do not replace custom components with generic abstractions unless explicitly instructed.
-Propose only minimal, localized changes.
-Treat current visuals as intentional unless they are clearly broken, inaccessible, unresponsive, or inconsistent within the same pattern family.
-
-Focus on one specific UI issue.
-Explain why the proposed fix preserves the intended design character.
-After changes, run the repo harness and verify the affected screenshots.
-```
-
-## Codex Prompt Template For Consistency Refinement
-
-Use a prompt like this when asking Codex to run a consistency pass:
-
-```text
-Inspect the repo and latest eval artifacts before changing anything.
-
-Preserve the existing layout, component choices, and custom design language.
-Do not redesign anything.
-Focus only on spacing, alignment, text hierarchy, padding, and same-family sizing.
-Avoid layout changes, component swaps, or visual simplification.
-Propose only the smallest localized changes.
-Explain why each proposed fix is safe and why it preserves the intended design character.
-
-Fix one focused consistency issue at a time.
-After changes, rerun the repo harness and verify the affected screenshots.
-```
+- Preserve the custom design language and existing page composition unless the task explicitly asks for a visual change.
+- Avoid generic cleanup or aesthetic normalization.
+- Avoid component swaps or broad refactors unless explicitly instructed.
+- Red lines + deny-list live in [AGENTS.md](../AGENTS.md); design spec in [DESIGN.md](../DESIGN.md); edit protocol in [UI_CHANGE_PROTOCOL.md](../UI_CHANGE_PROTOCOL.md).

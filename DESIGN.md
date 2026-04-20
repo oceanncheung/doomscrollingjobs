@@ -283,34 +283,9 @@ Implementation note:
 
 **Shadow Philosophy**: Zero shadows. No `box-shadow`, no `drop-shadow`, no `text-shadow`. Depth comes from background-color layering and 1px rules. For floating elements (modals, dropdowns), use a dark scrim overlay (`rgba(0,0,0,0.5)`) with the element on a white surface — still no shadow. This flatness references print design.
 
-## 7. Do's and Don'ts
+> Visual deny-list + do/don't rules now live in [AGENTS.md](AGENTS.md) "UI Red Lines" + "Visual deny-list" — single source of truth for governance.
 
-### Do
-- Use IBM Plex Sans as the primary typeface for all UI text
-- Use IBM Plex Mono for data values, scores, timestamps, numbers, and the app title
-- Use weight 300 (Light) at display sizes (32px+) for editorial elegance
-- Apply 0.16px letter-spacing on 14px text and 0.32px on 12px text
-- Use uppercase + 0.08em tracking on all labels, column headers, dates, and metadata
-- Use 1px horizontal rules between every row, card, and section
-- Keep all border-radius at 0px — rectangles are the identity
-- Use accent (#D4E700) only for active tab state and primary CTA
-- Use the outlined (ghost) style for the user profile indicator to distinguish from nav tabs
-- Maintain the base-8 spacing scale for all padding, margin, and gap values
-- Use Plex Mono for numerical data to visually separate it from descriptive text
-
-### Don't
-- Don't add box-shadow to any element
-- Don't round any corners — 0px border-radius everywhere
-- Don't introduce a second accent color
-- Don't use padding alone to separate sections — always include a visible rule
-- Don't use accent as link color — links are black with underline hover
-- Don't use weight 700 (Bold) below 32px — card titles and section heads use 600
-- Don't add letter-spacing to display/heading text — tracking is only for 14px and below
-- Don't center-align text unless it's a single-line hero statement
-- Don't use gradients, blurs, glows, or decorative CSS effects
-- Don't deviate from the spacing scale — no 10px, 15px, 20px, 30px
-
-## 8. Responsive Behavior
+## 7. Responsive Behavior
 
 ### Breakpoints
 Five canonical seams used in `app/styles/responsive.css`. These are max-widths — a rule written as `@media (max-width: N)` targets widths ≤ that seam. Token names available in `app/styles/tokens.css`: `--bp-xs` / `-sm` / `-md` / `-lg` / `-xl`.
@@ -344,50 +319,4 @@ Five canonical seams used in `app/styles/responsive.css`. These are max-widths �
 - No border-radius on images
 - Rectangular containers only
 
-## 9. Agent Prompt Guide
-
-### Quick Color Reference
-- Page background: White (`#FFFFFF`)
-- Heading text: Black (`#000000`)
-- Body text: Black (`#000000`)
-- Secondary text: Grey 600 (`#525252`)
-- Label/metadata text: Grey 600 (`#525252`), uppercase
-- Surface/card fill: Grey 100 (`#F5F5F5`)
-- Border/rule (default): Grey 200 (`#E5E5E5`)
-- Border/rule (strong): Black (`#000000`)
-- Primary CTA: Accent (`#D4E700`) bg, Black text
-- Active nav tab: Accent (`#D4E700`) bg, Black text
-- Profile indicator: 1px solid Black border, no fill, Black text
-- Link default: Black, no underline
-- Link hover: Black, underline
-- Error: Red (`#DA1E28`)
-- Success: Green (`#24A148`)
-
-### Quick Font Reference
-- App title: IBM Plex Mono, 14px, weight 700, 0.04em tracking
-- Nav tabs: IBM Plex Sans, 14px, weight 500, 0.08em tracking, uppercase
-- Page heading: IBM Plex Sans, 42px, weight 300, line-height 1.17
-- Section heading: IBM Plex Sans, 32px, weight 300, line-height 1.2
-- Card title: IBM Plex Sans, 20px, weight 600, line-height 1.3
-- Body: IBM Plex Sans, 16px, weight 400, line-height 1.5
-- Small text: IBM Plex Sans, 14px, weight 400, 0.16px tracking
-- Labels/metadata: IBM Plex Sans, 12px, weight 500, 0.08em tracking, uppercase
-- Data values/scores: IBM Plex Mono, 14px, weight 400, 0.16px tracking
-- Captions: IBM Plex Sans, 12px, weight 400, 0.32px tracking
-
-### Example Component Prompts
-- "Create a navigation bar: white background, 48px height, 1px solid #E5E5E5 bottom border. App title far left in IBM Plex Mono 14px weight 700, 0.04em tracking, #000000. Tabs: 14px Plex Sans weight 500, uppercase, 0.08em tracking. Inactive tabs: #000000 text, no background. Active tab: #D4E700 background, #000000 text. User profile indicator far right: 1px solid #000000 outlined container, 14px uppercase, no fill. Profile hover: inverts to #000000 fill, #FFFFFF text."
-- "Create a job listing card: title at 20px Plex Sans weight 600, #000000. Company name below at 14px weight 400, #525252. Metadata columns right-aligned: headers at 12px Plex Sans weight 500 uppercase 0.08em tracking #525252, values at 14px Plex Sans weight 600 #000000. Fit score value in Plex Mono 14px. Description at 14px weight 400 #525252. Action row below: Save and Skip as 14px weight 600 text buttons separated by a 1px vertical rule. Card separated by 1px solid #E5E5E5 bottom border."
-- "Build a sidebar section: label at 12px Plex Sans uppercase weight 500 0.08em tracking #525252. Title at 20px Plex Sans weight 600 #000000. Stat rows: 14px Plex Sans weight 400 label left, 14px Plex Mono weight 400 value right-aligned. Section separated by 1px solid #E5E5E5 bottom border."
-
-### Iteration Guide
-1. IBM Plex Sans for all text; IBM Plex Mono for data values, scores, numbers, timestamps, and app title
-2. Weight 300 at 32px+ for display, weight 600 for titles/emphasis, weight 500 for labels/UI, weight 400 for body
-3. 0.16px letter-spacing at 14px, 0.32px at 12px, 0.08em on uppercase labels — never on display text
-4. 1px rules between every row, card, and section — this is the defining visual pattern
-5. Border-radius is 0px on everything — no exceptions
-6. Accent (#D4E700) for active tab and primary CTA only — never decorative
-7. User profile uses outlined (ghost) container — not filled like the active tab
-8. Shadows do not exist in this system
-9. Spacing uses the base-8 scale only: 4, 8, 12, 16, 24, 32, 48, 64, 96, 128
-10. When in doubt, add a rule. Missing lines are the #1 cause of visual disconnection.
+> Quick color/font references and example component prompts removed — they duplicated §2 (Color Palette), §3 (Typography), and §4 (Component Stylings). Read those sections directly.

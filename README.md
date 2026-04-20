@@ -145,7 +145,7 @@ One-offs:
 - `npm run cleanup:packet-generation`
 - `npm run deploy:cloud-run`
 
-## 8.5 Quality Harness
+## 8. Quality Harness
 
 The repo now has one standard quality gate:
 
@@ -159,7 +159,7 @@ It runs the full repo harness across correctness, workflows, UI assertions, and 
 
 See `docs/repo-harness.md` for the layer breakdown and scoring model.
 
-## 8. Deployment
+## 9. Deployment
 
 The app now supports a direct Google Cloud Run deployment flow.
 
@@ -170,7 +170,7 @@ The app now supports a direct Google Cloud Run deployment flow.
 
 GitHub is now the deployment source of truth: pushes to `main` deploy the service through GitHub Actions.
 
-## 9. Project Structure
+## 10. Project Structure
 
 Current structure and intended ownership:
 
@@ -183,7 +183,7 @@ Current structure and intended ownership:
 - `supabase/` -> SQL schema, policies, seeds, and local config
 - `docs/` -> later home for long-form docs if the root gets too crowded
 
-## 10. Next Steps
+## 11. Next Steps
 
 Current priorities (see `TASKS.md` for the full execution checklist):
 

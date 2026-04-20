@@ -13,29 +13,11 @@ Use this when editing UI code in this repo, especially:
 - Preserve the current layout unless the request explicitly changes it.
 - This repo uses a split CSS architecture. Do **not** treat `app/globals.css` as the styling home.
 - Generated artifacts are never part of the design system. Do not edit `.next`, `.next 2`, caches, or traces.
-- Before editing CSS or TSX, read `DESIGN.md` and `UI_CHANGE_PROTOCOL.md`.
+- Before editing CSS or TSX, read [DESIGN.md](DESIGN.md) (design language + spec) and [UI_CHANGE_PROTOCOL.md](UI_CHANGE_PROTOCOL.md) (stylesheet ownership map + edit protocol). This file owns governance (red lines, protected surfaces, contracts), not the protocol itself.
 
-## Stylesheet ownership map
+## UI work expectations
 
-- `app/styles/tokens.css`: variables and global tokens
-- `app/styles/shell.css`: app shell, header, shared rail/container scaffolding
-- `app/styles/controls.css`: shared button/control primitives and edge-bleed utilities
-- `app/styles/dashboard.css`: queue rows, left rail, detail/prep shared surfaces
-- `app/styles/settings.css`: settings-page layout contracts and elevated controls
-- `app/styles/forms.css`: shared fields, uploads, disclosures, form states
-- `app/styles/operators.css`: operators/account screen only
-- `app/styles/responsive.css`: breakpoint-only overrides
-
-## UI change protocol
-
-1. Identify the owning route, shared component, and stylesheet before changing anything.
-2. Prefer shared contract fixes over local overrides.
-3. Keep zero visual diff during cleanup unless the user explicitly asks for a visible change.
-4. Verify every affected route after CSS or TSX changes.
-
-## Default Harness Workflow
-
-The full harness workflow + natural-language triggers live in [docs/repo-harness.md](docs/repo-harness.md). Project-wide verification commands and scope discipline live in [CLAUDE.md](CLAUDE.md). For UI work specifically:
+For harness workflow, verification commands, and scope discipline → [CLAUDE.md](CLAUDE.md) + [docs/repo-harness.md](docs/repo-harness.md). For UI work specifically:
 
 - Always operate on a single issue at a time. Do not bundle multiple fixes.
 - Use `repo-harness-triage` for diagnosis and `repo-controlled-fix-loop` for implementation unless instructed otherwise.
